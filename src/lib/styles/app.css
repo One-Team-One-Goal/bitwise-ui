@@ -1,0 +1,43 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap");
+@import "tailwindcss" source("../../");
+@import "tw-animate-css";
+
+/* Custom variant for dark mode using the new syntax */
+@custom-variant dark (&:is(.dark *));
+
+/* Global styles */
+* {
+  box-sizing: border-box;
+  font-family: "Poppins", sans-serif;
+}
+
+/* Light mode design tokens */
+:root {
+  --background: hsl(0 0% 100%);
+  --foreground: hsl(0 0% 14.5%);
+  /* Add more color tokens here */
+}
+
+/* Dark mode design tokens */
+.dark {
+  --background: hsl(240 10% 3.9%);
+  --foreground: hsl(0 0% 98%);
+  /* Add more dark mode tokens here */
+}
+
+/* Theme mapping using @theme inline (Tailwind 4+) */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  /* Add more theme mappings here */
+}
+
+/* Base layer styles */
+@layer base {
+  * {
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}

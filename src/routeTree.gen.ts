@@ -11,14 +11,49 @@
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as SignupImport } from './routes/signup'
+import { Route as RoadmapImport } from './routes/roadmap'
 import { Route as ProfileImport } from './routes/profile'
+import { Route as LoginImport } from './routes/login'
+import { Route as ConverterImport } from './routes/converter'
+import { Route as CalculatorImport } from './routes/calculator'
 import { Route as IndexImport } from './routes/index'
 
 // Create/Update Routes
 
+const SignupRoute = SignupImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const RoadmapRoute = RoadmapImport.update({
+  id: '/roadmap',
+  path: '/roadmap',
+  getParentRoute: () => rootRoute,
+} as any)
+
 const ProfileRoute = ProfileImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const LoginRoute = LoginImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const ConverterRoute = ConverterImport.update({
+  id: '/converter',
+  path: '/converter',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const CalculatorRoute = CalculatorImport.update({
+  id: '/calculator',
+  path: '/calculator',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -39,11 +74,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexImport
       parentRoute: typeof rootRoute
     }
+    '/calculator': {
+      id: '/calculator'
+      path: '/calculator'
+      fullPath: '/calculator'
+      preLoaderRoute: typeof CalculatorImport
+      parentRoute: typeof rootRoute
+    }
+    '/converter': {
+      id: '/converter'
+      path: '/converter'
+      fullPath: '/converter'
+      preLoaderRoute: typeof ConverterImport
+      parentRoute: typeof rootRoute
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginImport
+      parentRoute: typeof rootRoute
+    }
     '/profile': {
       id: '/profile'
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof ProfileImport
+      parentRoute: typeof rootRoute
+    }
+    '/roadmap': {
+      id: '/roadmap'
+      path: '/roadmap'
+      fullPath: '/roadmap'
+      preLoaderRoute: typeof RoadmapImport
+      parentRoute: typeof rootRoute
+    }
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupImport
       parentRoute: typeof rootRoute
     }
   }
@@ -53,37 +123,84 @@ declare module '@tanstack/react-router' {
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/calculator': typeof CalculatorRoute
+  '/converter': typeof ConverterRoute
+  '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
+  '/roadmap': typeof RoadmapRoute
+  '/signup': typeof SignupRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/calculator': typeof CalculatorRoute
+  '/converter': typeof ConverterRoute
+  '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
+  '/roadmap': typeof RoadmapRoute
+  '/signup': typeof SignupRoute
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
+  '/calculator': typeof CalculatorRoute
+  '/converter': typeof ConverterRoute
+  '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
+  '/roadmap': typeof RoadmapRoute
+  '/signup': typeof SignupRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/profile'
+  fullPaths:
+    | '/'
+    | '/calculator'
+    | '/converter'
+    | '/login'
+    | '/profile'
+    | '/roadmap'
+    | '/signup'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/profile'
-  id: '__root__' | '/' | '/profile'
+  to:
+    | '/'
+    | '/calculator'
+    | '/converter'
+    | '/login'
+    | '/profile'
+    | '/roadmap'
+    | '/signup'
+  id:
+    | '__root__'
+    | '/'
+    | '/calculator'
+    | '/converter'
+    | '/login'
+    | '/profile'
+    | '/roadmap'
+    | '/signup'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CalculatorRoute: typeof CalculatorRoute
+  ConverterRoute: typeof ConverterRoute
+  LoginRoute: typeof LoginRoute
   ProfileRoute: typeof ProfileRoute
+  RoadmapRoute: typeof RoadmapRoute
+  SignupRoute: typeof SignupRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CalculatorRoute: CalculatorRoute,
+  ConverterRoute: ConverterRoute,
+  LoginRoute: LoginRoute,
   ProfileRoute: ProfileRoute,
+  RoadmapRoute: RoadmapRoute,
+  SignupRoute: SignupRoute,
 }
 
 export const routeTree = rootRoute
@@ -97,14 +214,34 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
-        "/profile"
+        "/calculator",
+        "/converter",
+        "/login",
+        "/profile",
+        "/roadmap",
+        "/signup"
       ]
     },
     "/": {
       "filePath": "index.tsx"
     },
+    "/calculator": {
+      "filePath": "calculator.tsx"
+    },
+    "/converter": {
+      "filePath": "converter.tsx"
+    },
+    "/login": {
+      "filePath": "login.tsx"
+    },
     "/profile": {
       "filePath": "profile.tsx"
+    },
+    "/roadmap": {
+      "filePath": "roadmap.tsx"
+    },
+    "/signup": {
+      "filePath": "signup.tsx"
     }
   }
 }

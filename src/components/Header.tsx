@@ -165,7 +165,11 @@ const Header = () => {
 
         {/* Right: Login Button */}
         <Link to="/login">
-          <Button variant={'bluezOutline'} size={'lg'}>
+          <Button
+            variant={'bluezOutline'}
+            size={'lg'}
+            className="hover:bg-transparent hover:text-black"
+          >
             Learn for free <span aria-hidden="true">&rarr;</span>
           </Button>
         </Link>

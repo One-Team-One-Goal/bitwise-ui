@@ -4,14 +4,22 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Link } from '@tanstack/react-router'
 import logoArrow from '@/assets/icons/outline-logo.svg'
+import { toast } from 'sonner'
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<'div'>) {
+  // Handler for login
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault()
+    toast.info('Logging in...') // Show informative toast
+    // Add your login logic here
+  }
+
   return (
     <div className={cn('flex flex-col gap-6', className)} {...props}>
-      <form>
+      <form onSubmit={handleLogin}>
         <div className="flex flex-col gap-6">
           <div className="flex flex-col items-center gap-2">
             <a

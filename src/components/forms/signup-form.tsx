@@ -6,6 +6,7 @@ import UserRoleButton from '@/components/common/user-role-button'
 import Stepper from '@/components/common/stepper'
 import { AlertDialog } from '@/components/ui/alert-dialog'
 import { Link } from '@tanstack/react-router'
+import { toast } from 'sonner'
 
 // Dummy validation schemas and handlers for demonstration
 const validationSchemas = [null, null, null, null]
@@ -28,11 +29,15 @@ const SignupForm = () => {
   // Dummy handlers
   const handleVerifyCode = async () => {
     setVerificationSent(true)
+    toast.success('Verification code sent! Please check your email.', {
+      duration: 3000,
+    })
     return Promise.resolve()
   }
   const handleSubmit = async () => {
-    // Submit logic here
-    // navigate('/login')
+    // ...your submit logic...
+    toast.success('Account created! You can now log in.', { duration: 3000 })
+    // navigate('/login') // if you want to redirect
   }
 
   const renderStepFields = (setFieldValue, values) => {
@@ -211,7 +216,7 @@ const SignupForm = () => {
               {({ values, setFieldValue, isSubmitting, isValid }) => (
                 <Form className="w-3/4 mx-auto flex flex-col flex-1">
                   {/* Content area with fixed height and scroll if needed */}
-                  <div className="flex-1 space-y-4 overflow-y-auto min-h-0 mb-6">
+                  <div className="flex-1 space-y-4 overflow-y-auto min-h-0 px-1 mb-6">
                     {renderStepFields(setFieldValue, values)}
                   </div>
 

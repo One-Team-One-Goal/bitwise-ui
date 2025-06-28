@@ -7,6 +7,12 @@ import Stepper from '@/components/common/stepper'
 import { AlertDialog } from '@/components/ui/alert-dialog'
 import { Link } from '@tanstack/react-router'
 import { toast } from 'sonner'
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSeparator,
+  InputOTPSlot,
+} from '@/components/ui/input-otp'
 
 // Dummy validation schemas and handlers for demonstration
 const validationSchemas = [null, null, null, null]
@@ -158,13 +164,27 @@ const SignupForm = () => {
               We've sent a 6-digit verification code to your email. Please enter
               it below to complete your registration.
             </p>
-            <label>Enter verification code</label>
-            <Input
-              id="verificationCode"
-              name="verificationCode"
-              type="text"
-              placeholder="XXXX-XXXX"
-            />
+            <div className="flex justify-center flex-col items-center space-y-4 h-32">
+              <InputOTP
+                id="verificationCode"
+                name="verificationCode"
+                maxLength={8}
+              >
+                <InputOTPGroup>
+                  <InputOTPSlot index={0} />
+                  <InputOTPSlot index={1} />
+                  <InputOTPSlot index={2} />
+                  <InputOTPSlot index={3} />
+                </InputOTPGroup>
+                <InputOTPSeparator />
+                <InputOTPGroup>
+                  <InputOTPSlot index={4} />
+                  <InputOTPSlot index={5} />
+                  <InputOTPSlot index={6} />
+                  <InputOTPSlot index={7} />
+                </InputOTPGroup>
+              </InputOTP>
+            </div>
           </>
         )
       default:
@@ -181,7 +201,7 @@ const SignupForm = () => {
 
         {isLoading ? (
           <div className="flex justify-center items-center flex-1">
-            <div className="loader border-t-4 border-bluez rounded-full w-12 h-12 animate-spin"></div>
+            <div className="loader border-t-4 border-bluez rounded-full w-8 h-8 animate-spin"></div>
             <p className="ml-4 text-lg text-gray-600">Processing...</p>
           </div>
         ) : (

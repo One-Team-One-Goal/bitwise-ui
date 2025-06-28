@@ -150,7 +150,7 @@ function RouteComponent() {
       <div className="flex-1 flex justify-center items-start">
         <Timeline position="alternate" sx={{ m: 0, p: 0 }}>
           {timelineItems.map((item, idx) => (
-            <TimelineItem key={item.id}>
+            <TimelineItem key={item.id} sx={{ minHeight: 100, mb: 4 }}>
               <TimelineOppositeContent
                 sx={{
                   display: 'flex',
@@ -168,7 +168,14 @@ function RouteComponent() {
                     : `Lesson ${lessons.findIndex((l) => l.id === item.id) + 1}`}
                 </span>
               </TimelineOppositeContent>
-              <TimelineSeparator>
+              <TimelineSeparator
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
                 <AnimatedAssessmentButton
                   onClick={() => setSelected(item)}
                   isSelected={

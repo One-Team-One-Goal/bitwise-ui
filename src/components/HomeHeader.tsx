@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/navigation-menu'
 import { Cpu, CircleHelpIcon, Headset } from 'lucide-react'
 
-const Header = () => {
+const HomeHeader = () => {
   const isVisible = useScrollDirection()
   const location = useLocation()
 
@@ -199,4 +199,4 @@ function ListItem({
   )
 }
 
-export default Header
+export default HomeHeader

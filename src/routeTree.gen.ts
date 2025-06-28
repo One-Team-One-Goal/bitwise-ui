@@ -15,6 +15,7 @@ import { Route as SignupImport } from './routes/signup'
 import { Route as RoadmapImport } from './routes/roadmap'
 import { Route as ProfileImport } from './routes/profile'
 import { Route as LoginImport } from './routes/login'
+import { Route as LessonImport } from './routes/lesson'
 import { Route as ConverterImport } from './routes/converter'
 import { Route as CalculatorImport } from './routes/calculator'
 import { Route as IndexImport } from './routes/index'
@@ -42,6 +43,12 @@ const ProfileRoute = ProfileImport.update({
 const LoginRoute = LoginImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const LessonRoute = LessonImport.update({
+  id: '/lesson',
+  path: '/lesson',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -88,6 +95,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConverterImport
       parentRoute: typeof rootRoute
     }
+    '/lesson': {
+      id: '/lesson'
+      path: '/lesson'
+      fullPath: '/lesson'
+      preLoaderRoute: typeof LessonImport
+      parentRoute: typeof rootRoute
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -125,6 +139,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/calculator': typeof CalculatorRoute
   '/converter': typeof ConverterRoute
+  '/lesson': typeof LessonRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
   '/roadmap': typeof RoadmapRoute
@@ -135,6 +150,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/calculator': typeof CalculatorRoute
   '/converter': typeof ConverterRoute
+  '/lesson': typeof LessonRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
   '/roadmap': typeof RoadmapRoute
@@ -146,6 +162,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/calculator': typeof CalculatorRoute
   '/converter': typeof ConverterRoute
+  '/lesson': typeof LessonRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
   '/roadmap': typeof RoadmapRoute
@@ -158,6 +175,7 @@ export interface FileRouteTypes {
     | '/'
     | '/calculator'
     | '/converter'
+    | '/lesson'
     | '/login'
     | '/profile'
     | '/roadmap'
@@ -167,6 +185,7 @@ export interface FileRouteTypes {
     | '/'
     | '/calculator'
     | '/converter'
+    | '/lesson'
     | '/login'
     | '/profile'
     | '/roadmap'
@@ -176,6 +195,7 @@ export interface FileRouteTypes {
     | '/'
     | '/calculator'
     | '/converter'
+    | '/lesson'
     | '/login'
     | '/profile'
     | '/roadmap'
@@ -187,6 +207,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CalculatorRoute: typeof CalculatorRoute
   ConverterRoute: typeof ConverterRoute
+  LessonRoute: typeof LessonRoute
   LoginRoute: typeof LoginRoute
   ProfileRoute: typeof ProfileRoute
   RoadmapRoute: typeof RoadmapRoute
@@ -197,6 +218,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CalculatorRoute: CalculatorRoute,
   ConverterRoute: ConverterRoute,
+  LessonRoute: LessonRoute,
   LoginRoute: LoginRoute,
   ProfileRoute: ProfileRoute,
   RoadmapRoute: RoadmapRoute,
@@ -216,6 +238,7 @@ export const routeTree = rootRoute
         "/",
         "/calculator",
         "/converter",
+        "/lesson",
         "/login",
         "/profile",
         "/roadmap",
@@ -230,6 +253,9 @@ export const routeTree = rootRoute
     },
     "/converter": {
       "filePath": "converter.tsx"
+    },
+    "/lesson": {
+      "filePath": "lesson.tsx"
     },
     "/login": {
       "filePath": "login.tsx"

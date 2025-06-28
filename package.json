@@ -60,6 +60,7 @@
     "clsx": "^2.1.1",
     "dotenv": "^16.5.0",
     "formik": "^2.4.6",
+    "input-otp": "^1.4.2",
     "lottie-react": "^2.4.1",
     "lucide-react": "^0.513.0",
     "mathlive": "^0.105.3",

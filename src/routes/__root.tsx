@@ -1,14 +1,19 @@
-import * as React from 'react'
-import { Outlet, createRootRoute } from '@tanstack/react-router'
-import Header from '@/components/Header'
+import { Outlet, createRootRoute, useLocation } from '@tanstack/react-router'
+import HomeHeader from '@/components/HomeHeader'
 
-export const Route = createRootRoute({
-  component: () => (
+function RootComponent() {
+  const location = useLocation()
+  const isLesson = location.pathname.startsWith('/lesson')
+  return (
     <>
-      <Header />
+      {!isLesson && <HomeHeader />}
       <main>
         <Outlet />
       </main>
     </>
-  ),
+  )
+}
+
+export const Route = createRootRoute({
+  component: RootComponent,
 })

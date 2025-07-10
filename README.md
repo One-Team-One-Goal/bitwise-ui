@@ -222,7 +222,7 @@ Beautiful, accessible components built on proven UI primitives with full theming
 
 ## 📈 **Development Roadmap**
 
-- [x] 🏗️ **Project Setup** - Initialize with Vite + TypeScript
+- [0] 🏗️ **Project Setup** - Initialize with Vite + TypeScript
 - [ ] 🛣️ **Routing System** - Implement TanStack Router
 - [ ] 🎯 **State Management** - Configure Zustand + React Query
 - [ ] 🎨 **UI Foundation** - Set up Shadcn/UI + Tailwind

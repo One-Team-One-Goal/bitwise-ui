@@ -22,6 +22,7 @@ import roadmapSample from '@/assets/bg-icon/roadmapsample1.png'
 import booleImg from '@/assets/bg-icon/GeorgeBoole.png'
 import vennImg from '@/assets/bg-icon/venn.jpg'
 import circuitImg from '@/assets/bg-icon/circuits.jpg'
+import { SparklesText } from '@/components/magicui/sparkles-text'
 
 export const Route = createFileRoute('/')({
   component: RouteComponent,
@@ -79,9 +80,13 @@ function RouteComponent() {
                   alt="My Icon"
                   className="absolute bottom-0 right-1/6 md:right-1/5 w-10 md:w-max"
                 />
-                <h1 className="addgrotesk text-4xl md:text-7xl font-black text-center w-2/3 z-10 relative pt-6">
-                  Interact, Learn. Master logic
-                </h1>
+                <div className="w-2/3">
+                  <SparklesText>
+                    <h1 className="addgrotesk text-4xl md:text-7xl font-black text-center z-10 relative pt-6">
+                      Interact, Learn. Master logic
+                    </h1>
+                  </SparklesText>
+                </div>
               </div>
             </div>
           </div>

@@ -41,8 +41,8 @@ const LessonHeader = ({ progress }: LessonHeaderProps) => {
         <div className="absolute right-4 top-1/2 -translate-y-1/2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost">
-                <Menu /> Menu
+              <Button variant="bluezOutline">
+                <Menu /> Mars
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-42" align="end">

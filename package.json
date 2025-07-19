@@ -63,6 +63,7 @@
     "cobe": "^0.6.4",
     "dotenv": "^16.5.0",
     "formik": "^2.4.6",
+    "gsap": "^3.13.0",
     "input-otp": "^1.4.2",
     "lottie-react": "^2.4.1",
     "lucide-react": "^0.513.0",

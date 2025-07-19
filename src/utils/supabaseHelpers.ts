@@ -42,6 +42,17 @@ export const authService = {
   getCurrentSession: async () => {
     const { data: { session }, error } = await supabase.auth.getSession()
     return { session, error }
+  },
+
+  // Sign in with OTP
+  signInWithOtp: async (email: string) => {
+    const { data, error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: 'http://localhost:5173/profile'
+      }
+    })
+    return { data, error }
   }
 }
 

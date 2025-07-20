@@ -5,16 +5,30 @@ import { Label } from '@/components/ui/label'
 import { Link } from '@tanstack/react-router'
 import logoArrow from '@/assets/icons/outline-logo.svg'
 import { toast } from 'sonner'
+import { supabase } from '@/utils/supabase'
+import { authService } from '@/utils/supabaseHelpers'
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<'div'>) {
   // Handler for login
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    toast.info('Logging in...') // Show informative toast
-    // Add your login logic here
+    toast.info('Logging in...')
+    
+    const form = e.currentTarget
+    const email = (form.elements.namedItem('email') as HTMLInputElement)?.value
+    
+    
+    try {
+      await authService.signInWithOtp(email)
+      toast.success('Check your email for the login link!');
+    } catch (error) {
+      toast.error('Login failed. Please try again.')
+      console.error('Login error:', error)
+      return
+    }
   }
 
   return (
@@ -39,6 +53,7 @@ export function LoginForm({
               <Input
                 id="email"
                 type="email"
+                name='email'
                 placeholder="m@example.com"
                 required
               />
@@ -49,7 +64,7 @@ export function LoginForm({
                 id="password"
                 type="password"
                 placeholder="••••••••"
-                required
+                //required
               />
             </div>
             <Button variant={'default'} size={'lg'} type="submit">

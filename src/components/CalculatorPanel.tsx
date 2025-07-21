@@ -96,7 +96,7 @@ const CalculatorPanel: React.FC = () => {
   }
 
   return (
-    <Card className="border-2 border-black rounded-lg box-shadow py-0 w-[500px] h-[600px]">
+    <Card className="border-2 border-black rounded-lg box-shadow py-0 w-[500px] h-[600px] min-w-[320px] mx-auto">
       {/* Display */}
       <div className="rounded-lg py-10 px-8">
         <div className="text-right">

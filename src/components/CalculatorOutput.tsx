@@ -3,6 +3,8 @@ import { distributivePrompt } from '../utils/data'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import type { Step } from '../utils/data'
 import gsap from 'gsap'
+import { BlockMath } from 'react-katex'
+import 'katex/dist/katex.min.css'
 
 interface CalculatorOutputProps {
   value: string | number
@@ -35,7 +37,7 @@ const style = `
   color: black;
 }
 .paren-animate-active {
-  color: #FFD600;
+  color: #9000FD;
 }
 `
 if (
@@ -77,6 +79,24 @@ const animateParentheses = (container: HTMLDivElement | null) => {
   )
 }
 
+const toKatex = (expr: string) => {
+  // Replace NOT (apostrophe) with overline, e.g., A' -> \overline{A}
+  let out = expr
+    .replace(/([A-Za-z0-9]+)'/g, '\\overline{$1}')
+    // Replace * with \cdot for AND
+    .replace(/\*/g, ' \\cdot ')
+    // Replace + with + (for OR, keep as is)
+    .replace(/\bAND\b/gi, ' \\cdot ')
+    .replace(/\bOR\b/gi, ' + ')
+    // Remove F= or F(...) = for just the expression
+    .replace(/F\([A-Za-z, ]+\)\s*=\s*/g, '')
+    .replace(/F\s*=\s*/g, '')
+    // Remove extra spaces
+    .replace(/\s+/g, ' ')
+    .trim()
+  return out
+}
+
 const CalculatorOutput: React.FC<CalculatorOutputProps> = () => {
   const distributiveRef = useRef<HTMLDivElement>(null)
 
@@ -95,9 +115,9 @@ const CalculatorOutput: React.FC<CalculatorOutputProps> = () => {
       <CardHeader>
         <CardTitle className="text-lg">The expression to simplify:</CardTitle>
         <div className="text-base font-mono">
-          <code className="bg-muted relative rounded px-[0.3rem] py-[0.2rem]">
-            {distributivePrompt.expression}
-          </code>
+          <div className="px-[0.3rem] py-[0.2rem]">
+            <BlockMath math={toKatex(distributivePrompt.expression)} />
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -124,9 +144,9 @@ const CalculatorOutput: React.FC<CalculatorOutputProps> = () => {
                   {getStepName(step.type, idx)}
                 </div>
                 <div className="font-mono">
-                  <code className="bg-muted relative rounded px-[0.3rem] py-[0.2rem]">
-                    {result}
-                  </code>
+                  <div className="px-[0.3rem] py-[0.2rem]">
+                    <BlockMath math={toKatex(step.result)} />
+                  </div>
                 </div>
               </div>
             )
@@ -140,7 +160,7 @@ const CalculatorOutput: React.FC<CalculatorOutputProps> = () => {
             >
               <div
                 className={
-                  step.type === 'final' ? 'font-semibold' : 'font-semibold mb-1'
+                  step.type === 'final' ? 'font-semibold' : 'font-semibold'
                 }
               >
                 {getStepName(step.type, idx)}
@@ -150,9 +170,9 @@ const CalculatorOutput: React.FC<CalculatorOutputProps> = () => {
                   step.type === 'final' ? 'font-mono text-lg' : 'font-mono'
                 }
               >
-                <code className="bg-muted relative rounded px-[0.3rem] py-[0.2rem]">
-                  {step.result}
-                </code>
+                <div className="px-[0.3rem] py-[0.2rem]">
+                  <BlockMath math={toKatex(step.result)} />
+                </div>
               </div>
             </div>
           )

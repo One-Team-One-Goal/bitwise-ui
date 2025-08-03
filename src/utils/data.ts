@@ -292,3 +292,47 @@ export const lessons: Lesson[] = [
     ],
   },
 ]
+
+export const samplePrompt: Prompt = {
+  id: 'sample',
+  title: 'Sample Prompt',
+  expression: "F(A, B, C) = A'BC' + A'BC + AB'C' + ABC'",
+  steps: [
+    {
+      type: 'distributive',
+      result: "F = (A'BC' + A'BC) + (AB'C' + ABC')",
+    },
+  ],
+}
+
+export const distributivePrompt: Prompt = {
+  id: 'distributive-example',
+  title: 'Boolean Simplification Example',
+  expression: "F(A, B, C) = A'BC' + A'BC + AB'C' + ABC'",
+  steps: [
+    {
+      type: 'distributive',
+      result: "F = (A'BC' + A'BC) + (AB'C' + ABC')",
+    },
+    {
+      type: 'factoring',
+      result: "F = A'B(C' + C) + AC'(B' + B)",
+    },
+    {
+      type: 'complement',
+      result: "(C' + C) = 1, (B' + B) = 1",
+    },
+    {
+      type: 'substitution',
+      result: "F = A'B(1) + AC'(1)",
+    },
+    {
+      type: 'identity',
+      result: "F = A'B + AC'",
+    },
+    {
+      type: 'final',
+      result: "F(A, B, C) = A'B + AC'",
+    },
+  ],
+}

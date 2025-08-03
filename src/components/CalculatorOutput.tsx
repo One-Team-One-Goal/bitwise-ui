@@ -79,35 +79,37 @@ const animateParentheses = (container: HTMLDivElement | null) => {
   )
 }
 
-const toKatex = (expr: string) => {
-  // Replace NOT (apostrophe) with overline, e.g., A' -> \overline{A}
+const toKatex = (expr: string, animateParens = false) => {
   let out = expr
     .replace(/([A-Za-z0-9]+)'/g, '\\overline{$1}')
-    // Replace * with \cdot for AND
     .replace(/\*/g, ' \\cdot ')
-    // Replace + with + (for OR, keep as is)
     .replace(/\bAND\b/gi, ' \\cdot ')
     .replace(/\bOR\b/gi, ' + ')
-    // Remove F= or F(...) = for just the expression
     .replace(/F\([A-Za-z, ]+\)\s*=\s*/g, '')
     .replace(/F\s*=\s*/g, '')
-    // Remove extra spaces
     .replace(/\s+/g, ' ')
     .trim()
+  if (animateParens) {
+    // Use unique Unicode markers for ( and )
+    out = out.replace(/\(/g, '\u2985').replace(/\)/g, '\u2986')
+  }
   return out
 }
 
 const CalculatorOutput: React.FC<CalculatorOutputProps> = () => {
-  const distributiveRef = useRef<HTMLDivElement>(null)
+  const stepRefs = useRef<(HTMLDivElement | null)[]>([])
 
   useEffect(() => {
-    let ctx: gsap.Context | undefined
-    if (distributiveRef.current) {
-      ctx = gsap.context(() => {
-        animateParentheses(distributiveRef.current)
-      }, distributiveRef)
-    }
-    return () => ctx && ctx.revert()
+    stepRefs.current.forEach((ref) => {
+      if (ref) {
+        ref.querySelectorAll('.katex').forEach((katexEl) => {
+          katexEl.innerHTML = katexEl.innerHTML
+            .replace(/\u2985/g, '<span class="paren-animate inline-block">(</span>')
+            .replace(/\u2986/g, '<span class="paren-animate inline-block">)</span>')
+        })
+        animateParentheses(ref)
+      }
+    })
   }, [])
 
   return (
@@ -116,67 +118,33 @@ const CalculatorOutput: React.FC<CalculatorOutputProps> = () => {
         <CardTitle className="text-lg">The expression to simplify:</CardTitle>
         <div className="text-base font-mono">
           <div className="px-[0.3rem] py-[0.2rem]">
-            <BlockMath math={toKatex(distributivePrompt.expression)} />
+            <BlockMath math={toKatex(distributivePrompt.expression, true)} />
           </div>
         </div>
       </CardHeader>
       <CardContent>
-        {distributivePrompt.steps.map((step, idx) => {
-          if (step.type === 'distributive') {
-            // Animate parentheses for distributive step
-            const result = step.result.split('').map((char, i) => {
-              if (char === '(' || char === ')') {
-                return (
-                  <span key={i} className="paren-animate inline-block">
-                    {char}
-                  </span>
-                )
-              }
-              return char
-            })
-            return (
-              <div
-                key={idx}
-                ref={distributiveRef}
-                className={idx !== 0 ? 'my-8' : 'mb-8'}
-              >
-                <div className="font-semibold mb-1">
-                  {getStepName(step.type, idx)}
-                </div>
-                <div className="font-mono">
-                  <div className="px-[0.3rem] py-[0.2rem]">
-                    <BlockMath math={toKatex(step.result)} />
-                  </div>
-                </div>
-              </div>
-            )
-          }
-          return (
-            <div
-              key={idx}
-              className={
-                step.type === 'final' ? 'mt-8' : idx !== 0 ? 'my-8' : 'mb-8'
-              }
-            >
-              <div
-                className={
-                  step.type === 'final' ? 'font-semibold' : 'font-semibold'
-                }
-              >
-                {getStepName(step.type, idx)}
-              </div>
-              <div
-                className={
-                  step.type === 'final' ? 'font-mono text-lg' : 'font-mono'
-                }
-              >
-                <div className="px-[0.3rem] py-[0.2rem]">
-                  <BlockMath math={toKatex(step.result)} />
-                </div>
+        {distributivePrompt.steps.map((step, idx) => (
+          <div
+            key={idx}
+            ref={el => stepRefs.current[idx] = el}
+            className={
+              step.type === 'final'
+                ? 'mt-8'
+                : idx !== 0
+                ? 'my-8'
+                : 'mb-8'
+            }
+          >
+            <div className={step.type === 'final' ? 'font-semibold' : 'font-semibold mb-1'}>
+              {getStepName(step.type, idx)}
+            </div>
+            <div className={step.type === 'final' ? 'font-mono text-lg' : 'font-mono'}>
+              <div className="px-[0.3rem] py-[0.2rem]">
+                <BlockMath math={toKatex(step.result, step.type === 'distributive')} />
               </div>
             </div>
-          )
-        })}
+          </div>
+        ))}
       </CardContent>
     </Card>
   )

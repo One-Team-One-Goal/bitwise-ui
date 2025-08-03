@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/navigation-menu'
 import { Cpu, CircleHelpIcon, Headset } from 'lucide-react'
 
-const HomeHeader = () => {
+const LawsHeader = () => {
   const isVisible = useScrollDirection()
   const location = useLocation()
 
@@ -80,7 +80,7 @@ const HomeHeader = () => {
                         </a>
                       </NavigationMenuLink>
                     </li>
-                    <ListItem href="/lesson" title="Basics">
+                    <ListItem href="/roadmap" title="Basics">
                       Grasp variables, constants, and logic operations.
                     </ListItem>
                     <ListItem href="/laws" title="Laws">
@@ -199,4 +199,4 @@ function ListItem({
   )
 }
 
-export default HomeHeader
+export default LawsHeader

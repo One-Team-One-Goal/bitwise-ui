@@ -16,9 +16,12 @@ import { Route as RoadmapImport } from './routes/roadmap'
 import { Route as ProfileImport } from './routes/profile'
 import { Route as LoginImport } from './routes/login'
 import { Route as LessonImport } from './routes/lesson'
+import { Route as LawsImport } from './routes/laws'
 import { Route as ConverterImport } from './routes/converter'
 import { Route as CalculatorImport } from './routes/calculator'
 import { Route as IndexImport } from './routes/index'
+import { Route as LawsIndexImport } from './routes/laws/index'
+import { Route as LawsSlugImport } from './routes/laws/$slug'
 
 // Create/Update Routes
 
@@ -52,6 +55,12 @@ const LessonRoute = LessonImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const LawsRoute = LawsImport.update({
+  id: '/laws',
+  path: '/laws',
+  getParentRoute: () => rootRoute,
+} as any)
+
 const ConverterRoute = ConverterImport.update({
   id: '/converter',
   path: '/converter',
@@ -68,6 +77,18 @@ const IndexRoute = IndexImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRoute,
+} as any)
+
+const LawsIndexRoute = LawsIndexImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => LawsRoute,
+} as any)
+
+const LawsSlugRoute = LawsSlugImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => LawsRoute,
 } as any)
 
 // Populate the FileRoutesByPath interface
@@ -93,6 +114,13 @@ declare module '@tanstack/react-router' {
       path: '/converter'
       fullPath: '/converter'
       preLoaderRoute: typeof ConverterImport
+      parentRoute: typeof rootRoute
+    }
+    '/laws': {
+      id: '/laws'
+      path: '/laws'
+      fullPath: '/laws'
+      preLoaderRoute: typeof LawsImport
       parentRoute: typeof rootRoute
     }
     '/lesson': {
@@ -130,20 +158,49 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignupImport
       parentRoute: typeof rootRoute
     }
+    '/laws/$slug': {
+      id: '/laws/$slug'
+      path: '/$slug'
+      fullPath: '/laws/$slug'
+      preLoaderRoute: typeof LawsSlugImport
+      parentRoute: typeof LawsImport
+    }
+    '/laws/': {
+      id: '/laws/'
+      path: '/'
+      fullPath: '/laws/'
+      preLoaderRoute: typeof LawsIndexImport
+      parentRoute: typeof LawsImport
+    }
   }
 }
 
 // Create and export the route tree
 
+interface LawsRouteChildren {
+  LawsSlugRoute: typeof LawsSlugRoute
+  LawsIndexRoute: typeof LawsIndexRoute
+}
+
+const LawsRouteChildren: LawsRouteChildren = {
+  LawsSlugRoute: LawsSlugRoute,
+  LawsIndexRoute: LawsIndexRoute,
+}
+
+const LawsRouteWithChildren = LawsRoute._addFileChildren(LawsRouteChildren)
+
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/calculator': typeof CalculatorRoute
   '/converter': typeof ConverterRoute
+  '/laws': typeof LawsRouteWithChildren
   '/lesson': typeof LessonRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
   '/roadmap': typeof RoadmapRoute
   '/signup': typeof SignupRoute
+  '/laws/$slug': typeof LawsSlugRoute
+  '/laws/': typeof LawsIndexRoute
 }
 
 export interface FileRoutesByTo {
@@ -155,6 +212,8 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRoute
   '/roadmap': typeof RoadmapRoute
   '/signup': typeof SignupRoute
+  '/laws/$slug': typeof LawsSlugRoute
+  '/laws': typeof LawsIndexRoute
 }
 
 export interface FileRoutesById {
@@ -162,11 +221,14 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/calculator': typeof CalculatorRoute
   '/converter': typeof ConverterRoute
+  '/laws': typeof LawsRouteWithChildren
   '/lesson': typeof LessonRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
   '/roadmap': typeof RoadmapRoute
   '/signup': typeof SignupRoute
+  '/laws/$slug': typeof LawsSlugRoute
+  '/laws/': typeof LawsIndexRoute
 }
 
 export interface FileRouteTypes {
@@ -175,11 +237,14 @@ export interface FileRouteTypes {
     | '/'
     | '/calculator'
     | '/converter'
+    | '/laws'
     | '/lesson'
     | '/login'
     | '/profile'
     | '/roadmap'
     | '/signup'
+    | '/laws/$slug'
+    | '/laws/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -190,16 +255,21 @@ export interface FileRouteTypes {
     | '/profile'
     | '/roadmap'
     | '/signup'
+    | '/laws/$slug'
+    | '/laws'
   id:
     | '__root__'
     | '/'
     | '/calculator'
     | '/converter'
+    | '/laws'
     | '/lesson'
     | '/login'
     | '/profile'
     | '/roadmap'
     | '/signup'
+    | '/laws/$slug'
+    | '/laws/'
   fileRoutesById: FileRoutesById
 }
 
@@ -207,6 +277,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CalculatorRoute: typeof CalculatorRoute
   ConverterRoute: typeof ConverterRoute
+  LawsRoute: typeof LawsRouteWithChildren
   LessonRoute: typeof LessonRoute
   LoginRoute: typeof LoginRoute
   ProfileRoute: typeof ProfileRoute
@@ -218,6 +289,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CalculatorRoute: CalculatorRoute,
   ConverterRoute: ConverterRoute,
+  LawsRoute: LawsRouteWithChildren,
   LessonRoute: LessonRoute,
   LoginRoute: LoginRoute,
   ProfileRoute: ProfileRoute,
@@ -238,6 +310,7 @@ export const routeTree = rootRoute
         "/",
         "/calculator",
         "/converter",
+        "/laws",
         "/lesson",
         "/login",
         "/profile",
@@ -254,6 +327,13 @@ export const routeTree = rootRoute
     "/converter": {
       "filePath": "converter.tsx"
     },
+    "/laws": {
+      "filePath": "laws.tsx",
+      "children": [
+        "/laws/$slug",
+        "/laws/"
+      ]
+    },
     "/lesson": {
       "filePath": "lesson.tsx"
     },
@@ -268,6 +348,14 @@ export const routeTree = rootRoute
     },
     "/signup": {
       "filePath": "signup.tsx"
+    },
+    "/laws/$slug": {
+      "filePath": "laws/$slug.tsx",
+      "parent": "/laws"
+    },
+    "/laws/": {
+      "filePath": "laws/index.tsx",
+      "parent": "/laws"
     }
   }
 }

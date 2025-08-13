@@ -4,17 +4,24 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Link } from '@tanstack/react-router'
 import logoArrow from '@/assets/icons/outline-logo.svg'
-import { toast } from 'sonner'
+import { useSignInWithOtp } from '@/hooks/useAuthQueries'
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<'div'>) {
+  const signInWithOtpMutation = useSignInWithOtp()
+
   // Handler for login
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    toast.info('Logging in...') // Show informative toast
-    // Add your login logic here
+    
+    const form = e.currentTarget
+    const email = (form.elements.namedItem('email') as HTMLInputElement)?.value
+    
+    if (!email) return
+
+    signInWithOtpMutation.mutate(email)
   }
 
   return (
@@ -39,6 +46,7 @@ export function LoginForm({
               <Input
                 id="email"
                 type="email"
+                name='email'
                 placeholder="m@example.com"
                 required
               />
@@ -49,7 +57,7 @@ export function LoginForm({
                 id="password"
                 type="password"
                 placeholder="••••••••"
-                required
+                //required
               />
             </div>
             <Button variant={'default'} size={'lg'} type="submit">

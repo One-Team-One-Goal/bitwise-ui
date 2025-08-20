@@ -57,10 +57,10 @@ export function LoginForm({
                 id="password"
                 type="password"
                 placeholder="••••••••"
-                //required
+                required
               />
             </div>
-            <Button variant={'default'} size={'lg'} type="submit">
+            <Button variant={'bluez'} size={'lg'} type="submit">
               Login
             </Button>
           </div>

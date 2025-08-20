@@ -1,284 +1,94 @@
-import React, { useState } from 'react'
-import { Formik, Form } from 'formik'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import UserRoleButton from '@/components/common/user-role-button'
-import Stepper from '@/components/common/stepper'
-import { AlertDialog } from '@/components/ui/alert-dialog'
+import { Label } from '@/components/ui/label'
 import { Link } from '@tanstack/react-router'
-import { toast } from 'sonner'
-import {
-  InputOTP,
-  InputOTPGroup,
-  InputOTPSeparator,
-  InputOTPSlot,
-} from '@/components/ui/input-otp'
+import logoArrow from '@/assets/icons/outline-logo.svg'
+import { useSignInWithOtp } from '@/hooks/useAuthQueries'
+import { FcGoogle } from 'react-icons/fc'
 
-// Dummy validation schemas and handlers for demonstration
-const validationSchemas = [null, null, null, null]
-const formValues = {
-  userType: '',
-  name: '',
-  email: '',
-  username: '',
-  password: '',
-  confirmPassword: '',
-  verificationCode: '',
-}
+export function SignUpForm({
+  className,
+  ...props
+}: React.ComponentProps<'div'>) {
+  const signInWithOtpMutation = useSignInWithOtp()
 
-const SignupForm = () => {
-  const [step, setStep] = useState(1)
-  const [isLoading, setIsLoading] = useState(false)
-  const [showAlert, setShowAlert] = useState(false)
-  const [verificationSent, setVerificationSent] = useState(false)
+  // Handler for signup
+  const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    
+    const form = e.currentTarget
+    const email = (form.elements.namedItem('email') as HTMLInputElement)?.value
+    
+    if (!email) return
 
-  // Dummy handlers
-  const handleVerifyCode = async () => {
-    setVerificationSent(true)
-    toast.success('Verification code sent! Please check your email.', {
-      duration: 3000,
-    })
-    return Promise.resolve()
-  }
-  const handleSubmit = async () => {
-    // ...your submit logic...
-    toast.success('Account created! You can now log in.', { duration: 3000 })
-    // navigate('/login') // if you want to redirect
-  }
-
-  const renderStepFields = (setFieldValue, values) => {
-    switch (step) {
-      case 1:
-        return (
-          <>
-            <p className="text-3xl font-bold text-black-500 mb-2">
-              Choose your role
-            </p>
-            <p className="text-sm text-black-500 mb-8">
-              Are you a teacher or a student? Select the option that best
-              describes you to personalize your experience.
-            </p>
-            <div className="flex justify-center items-center mb-4 space-x-12">
-              <UserRoleButton
-                type="button"
-                onClick={() => {
-                  setFieldValue('userType', 1)
-                }}
-                className={`bg-amber-50 text-black hover:bg-gray-600 btn-shadow-square addgrotesk ${
-                  values.userType === 1 ? 'bg-bluez' : ''
-                }`}
-              >
-                Student
-              </UserRoleButton>
-              <UserRoleButton
-                type="button"
-                onClick={() => {
-                  setFieldValue('userType', 2)
-                }}
-                className={`bg-amber-50 text-black hover:bg-gray-600 btn-shadow-square addgrotesk ${
-                  values.userType === 2 ? 'bg-bluez' : ''
-                }`}
-              >
-                Teacher
-              </UserRoleButton>
-            </div>
-          </>
-        )
-      case 2:
-        return (
-          <>
-            <p className="text-3xl font-bold text-black-500 mb-2">
-              Let's start with your name & email
-            </p>
-            <p className="text-sm text-black-500 mb-8">
-              This helps us personalize your experience. Don't worry, we won't
-              share your info!
-            </p>
-            <label>Enter your name</label>
-            <Input id="name" name="name" type="text" placeholder="John Doe" />
-            <label>Enter your email</label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="m@example.com"
-            />
-          </>
-        )
-      case 3:
-        return (
-          <>
-            <p className="text-3xl font-bold text-black-500 mb-2">
-              Almost there! Please enter your username & password
-            </p>
-            <p className="text-sm text-black-500 mb-8">
-              This step helps secure your account. Rest assured, your
-              information is safe with us!
-            </p>
-            <label>Enter your username</label>
-            <Input
-              id="username"
-              name="username"
-              type="text"
-              placeholder="Username"
-            />
-            <label>Enter your password</label>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              placeholder="Password"
-            />
-            <label>Confirm password</label>
-            <Input
-              id="confirmPassword"
-              name="confirmPassword"
-              type="password"
-              placeholder="Confirm password"
-            />
-            {verificationSent && (
-              <p className="text-green-600 text-sm mt-2">
-                Verification code sent! Check your email.
-              </p>
-            )}
-          </>
-        )
-      case 4:
-        return (
-          <>
-            {showAlert && (
-              <div className="fixed top-0 left-1/2 transform -translate-x-1/2 w-1/2 z-50 pt-10">
-                <AlertDialog
-                  variant="filled"
-                  severity="success"
-                  onClose={() => setShowAlert(false)}
-                >
-                  Verification code sent to your email. Please check your inbox.
-                </AlertDialog>
-              </div>
-            )}
-            <p className="text-3xl font-bold text-black-500 mb-2">
-              Verify Your Email
-            </p>
-            <p className="text-sm text-black-500 mb-8">
-              We've sent a 6-digit verification code to your email. Please enter
-              it below to complete your registration.
-            </p>
-            <div className="flex justify-center flex-col items-center space-y-4 h-32">
-              <InputOTP
-                id="verificationCode"
-                name="verificationCode"
-                maxLength={8}
-              >
-                <InputOTPGroup>
-                  <InputOTPSlot index={0} />
-                  <InputOTPSlot index={1} />
-                  <InputOTPSlot index={2} />
-                  <InputOTPSlot index={3} />
-                </InputOTPGroup>
-                <InputOTPSeparator />
-                <InputOTPGroup>
-                  <InputOTPSlot index={4} />
-                  <InputOTPSlot index={5} />
-                  <InputOTPSlot index={6} />
-                  <InputOTPSlot index={7} />
-                </InputOTPGroup>
-              </InputOTP>
-            </div>
-          </>
-        )
-      default:
-        return null
-    }
+    signInWithOtpMutation.mutate(email)
   }
 
   return (
-    <div className="w-full">
-      <div className="relative z-10 w-1/2 flex flex-col h-screen mx-auto">
-        <div className="flex flex-col items-center justify-center w-full pt-20">
-          <Stepper step={step} />
-        </div>
-
-        {isLoading ? (
-          <div className="flex justify-center items-center flex-1">
-            <div className="loader border-t-4 border-bluez rounded-full w-8 h-8 animate-spin"></div>
-            <p className="ml-4 text-lg text-gray-600">Processing...</p>
-          </div>
-        ) : (
-          <div className="flex flex-col flex-1 pb-20">
-            <Formik
-              initialValues={formValues}
-              enableReinitialize={true}
-              validationSchema={validationSchemas[step - 1]}
-              onSubmit={async (values, formikHelpers) => {
-                if (step === 3) {
-                  await handleVerifyCode(values)
-                  setStep(step + 1)
-                  formikHelpers.setSubmitting(false)
-                } else if (step === 4) {
-                  setIsLoading(true)
-                  setTimeout(async () => {
-                    try {
-                      await handleSubmit(values, formikHelpers)
-                    } catch (error) {
-                      console.error('Error during submission:', error)
-                    } finally {
-                      setIsLoading(false)
-                    }
-                    formikHelpers.setSubmitting(false)
-                  }, 2000)
-                } else {
-                  setStep(step + 1)
-                  formikHelpers.setSubmitting(false)
-                }
-              }}
+    <div className={cn('flex flex-col gap-6', className)} {...props}>
+      <form onSubmit={handleSignUp}>
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-col items-center gap-2">
+            <a
+              href="#"
+              className="flex flex-col items-center gap-2 font-medium"
             >
-              {({ values, setFieldValue, isSubmitting, isValid }) => (
-                <Form className="w-3/4 mx-auto flex flex-col flex-1">
-                  {/* Content area with fixed height and scroll if needed */}
-                  <div className="flex-1 space-y-4 overflow-y-auto min-h-0 px-1 mb-6">
-                    {renderStepFields(setFieldValue, values)}
-                  </div>
-
-                  {/* Fixed button area */}
-                  <div className="flex-shrink-0 space-y-4">
-                    <div className="flex justify-end space-x-5">
-                      {step > 1 && (
-                        <Button
-                          type="button"
-                          onClick={() => setStep(step - 1)}
-                          className="bg-gray-500 hover:bg-gray-600 btn-shadow addgrotesk"
-                        >
-                          Previous
-                        </Button>
-                      )}
-                      <Button
-                        type="submit"
-                        className="bg-bluez btn-shadow addgrotesk text-black hover:text-white"
-                        disabled={isSubmitting || !isValid}
-                      >
-                        {step === 4 ? 'Submit' : 'Next'}
-                      </Button>
-                    </div>
-                    <div className="flex justify-center">
-                      <Link
-                        to="/login"
-                        className="text-blue-500 hover:underline"
-                      >
-                        <Button variant={'link'}>
-                          Already have an account?
-                        </Button>
-                      </Link>
-                    </div>
-                  </div>
-                </Form>
-              )}
-            </Formik>
+              <div className="flex size-12 items-center justify-center rounded-md mb-4">
+                <img src={logoArrow} alt="bitwise logo" />
+              </div>
+              <span className="sr-only">Bitwise Inc,</span>
+            </a>
+            <p className="text-3xl font-bold">Welcome to bitwise!</p>
           </div>
-        )}
+          <div className="flex flex-col gap-6">
+            <div className="grid gap-3">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                name='email'
+                placeholder="m@example.com"
+                required
+              />
+            </div>
+            <div className="grid gap-3">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                required
+              />
+            </div>
+            <div className="grid gap-3">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                placeholder="••••••••"
+                required
+              />
+            </div>
+            <Button variant={'bluez'} size={'lg'} type="submit">
+              Sign Up
+            </Button>
+            <Button variant={'default'} size={'lg'}>
+              <FcGoogle className="mr-2 z-10" />
+              Continue with Google
+            </Button>
+          </div>
+        </div>
+      </form>
+
+      <div className="text-center text-sm">
+        Already have an account? {''}
+        <Link to="/login" className="underline underline-offset-4">
+          <Button variant={'link'} className="p-0">
+             Log In Instead
+          </Button>
+        </Link>
       </div>
     </div>
   )
 }
-
-export default SignupForm

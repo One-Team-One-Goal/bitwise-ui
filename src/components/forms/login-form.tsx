@@ -4,13 +4,15 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Link } from '@tanstack/react-router'
 import logoArrow from '@/assets/icons/outline-logo.svg'
-import { useSignInWithOtp } from '@/hooks/useAuthQueries'
+import { useSignInWithOtp, useSignInWithGoogle } from '@/hooks/useAuthQueries'
+import { FcGoogle } from 'react-icons/fc'
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<'div'>) {
   const signInWithOtpMutation = useSignInWithOtp()
+  const logInWithGoogleMutation = useSignInWithGoogle()
 
   // Handler for login
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -62,6 +64,14 @@ export function LoginForm({
             </div>
             <Button variant={'bluez'} size={'lg'} type="submit">
               Login
+            </Button>
+            <Button
+              variant={'default'} 
+              size={'lg'}
+              onClick={() => logInWithGoogleMutation.mutate()}
+            >
+              <FcGoogle className="mr-2 z-10" />
+              Sign up with Google
             </Button>
           </div>
         </div>

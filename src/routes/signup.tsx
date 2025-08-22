@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import RightLanding001 from '@/assets/bg-icon/right_landing001.svg'
 import LeftLanding001 from '@/assets/bg-icon/left_landing001.svg'
-import SignupForm from '@/components/forms/signup-form'
+import { SignUpForm } from '@/components/forms/signup-form'
 
 export const Route = createFileRoute('/signup')({
   component: RouteComponent,
@@ -9,7 +9,7 @@ export const Route = createFileRoute('/signup')({
 
 function RouteComponent() {
   return (
-    <div>
+    <div className='bg-background flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10'>
       <img
         style={{
           userSelect: 'none',
@@ -32,7 +32,9 @@ function RouteComponent() {
         alt="My Icon"
         className="flex absolute h-100 md:h-full left-0 z-0"
       />
-      <SignupForm />
+      <div className="w-full max-w-sm">
+        <SignUpForm />
+      </div>
     </div>
   )
 }

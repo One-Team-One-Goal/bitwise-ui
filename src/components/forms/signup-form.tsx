@@ -90,7 +90,7 @@ export function SignUpForm({
         Already have an account? {''}
         <Link to="/login" className="underline underline-offset-4">
           <Button variant={'link'} className="p-0">
-             Log In Instead
+             Log in Instead
           </Button>
         </Link>
       </div>

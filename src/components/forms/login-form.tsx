@@ -71,7 +71,7 @@ export function LoginForm({
               onClick={() => logInWithGoogleMutation.mutate()}
             >
               <FcGoogle className="mr-2 z-10" />
-              Sign up with Google
+              Log in with Google
             </Button>
           </div>
         </div>

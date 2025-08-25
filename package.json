@@ -21,6 +21,7 @@
     "@emotion/styled": "^11.14.0",
     "@headlessui/react": "^2.2.4",
     "@heroicons/react": "^2.2.0",
+    "@hookform/resolvers": "^5.2.1",
     "@mui/lab": "^7.0.0-beta.14",
     "@mui/material": "^7.1.2",
     "@radix-ui/react-accordion": "^1.2.11",
@@ -70,12 +71,12 @@
     "next-themes": "^0.4.6",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "react-hook-form": "^7.57.0",
+    "react-hook-form": "^7.62.0",
     "react-icons": "^5.5.0",
     "recharts": "^2.15.3",
     "sonner": "^2.0.5",
     "tailwind-merge": "^3.3.0",
-    "zod": "^3.25.55",
+    "zod": "^3.25.76",
     "zustand": "^5.0.5"
   },
   "devDependencies": {

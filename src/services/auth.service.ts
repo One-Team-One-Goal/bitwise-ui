@@ -3,6 +3,7 @@ import { apiService } from './api.service'
 
 export interface AuthCredentials {
   email: string
+  username?: string
   password?: string
 }
 
@@ -24,6 +25,10 @@ export const authService = {
     const { data, error } = await supabase.auth.signUp({
       email: credentials.email,
       password: credentials.password!,
+      options: {
+        data: { display_name: credentials.username },
+        emailRedirectTo: `${import.meta.env.VITE_PUBLIC_APP_URL}/login`
+      }
     })
 
     if (error) throw new Error(error.message)

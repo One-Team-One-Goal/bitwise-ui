@@ -74,6 +74,15 @@ export function useResetPassword() {
   })
 }
 
+export function useSignInWithGoogle() {
+  return useMutation({
+    mutationFn: async () => await authService.signInWithGoogle(),
+    onError: (error: Error) => {
+      toast.error(error.message || 'Google sign-in failed')
+    }
+  })
+}
+
 // Backend queries (through your NestJS API)
 export function useBackendProfile() {
   const { isAuthenticated } = useAuthContext()

@@ -58,6 +58,17 @@ export const authService = {
     apiService.setAuthToken(null)
   },
 
+  async signInWithGoogle(): Promise<void> {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin,
+      },
+    });
+
+    if (error) throw new Error(error.message);
+  },
+
   async resetPassword(email: string): Promise<void> {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,

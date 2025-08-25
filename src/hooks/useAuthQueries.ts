@@ -28,6 +28,7 @@ export function useSignIn() {
     onSuccess: () => {
       toast.success('Welcome back!')
       queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEYS.profile })
+      
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Login failed')

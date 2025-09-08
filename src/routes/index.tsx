@@ -402,7 +402,7 @@ function RouteComponent() {
           </div>
         </div>
 
-        <button class="w-full m-10 mt-5 px-6 py-2.5 text-sm tracking-wider text-white transition-colors duration-300 transform md:w-auto md:mx-4 focus:outline-none border-1 border-white hover:bg-white hover:text-black focus:ring focus:ring-gray-300 focus:ring-opacity-80">
+        <button className="w-full m-10 mt-5 px-6 py-2.5 text-sm tracking-wider text-white transition-colors duration-300 transform md:w-auto md:mx-4 focus:outline-none border-1 border-white hover:bg-white hover:text-black focus:ring focus:ring-gray-300 focus:ring-opacity-80">
           View all
         </button>
       </div>

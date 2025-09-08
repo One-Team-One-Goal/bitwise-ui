@@ -13,7 +13,6 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from '@/components/ui/navigation-menu'
-import { Cpu, CircleHelpIcon, Headset } from 'lucide-react'
 
 const HomeHeader = () => {
   const isVisible = useScrollDirection()
@@ -119,7 +118,7 @@ const HomeHeader = () => {
                         </Link>
                       </NavigationMenuLink>
                       <NavigationMenuLink asChild>
-                        <Link to="/digitalCircuit">
+                        <Link to="/karnaughMaps">
                           <div className="font-medium">Digital Circuit</div>
                           <div className="text-muted-foreground">
                             Learn to design and analyze digital circuits.
@@ -138,13 +137,13 @@ const HomeHeader = () => {
                   <ul className="grid w-[200px] gap-4">
                     <li>
                       <NavigationMenuLink asChild>
-                        <Link to="#" className="flex-row items-center gap-2">
+                        <Link to="/profile" className="flex-row items-center gap-2">
                           Profile
                         </Link>
                       </NavigationMenuLink>
                       <NavigationMenuLink asChild>
-                        <Link to="#" className="flex-row items-center gap-2">
-                          Contact u
+                        <Link to="/" className="flex-row items-center gap-2">
+                          Contact us
                         </Link>
                       </NavigationMenuLink>
                     </li>

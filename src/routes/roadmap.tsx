@@ -11,8 +11,24 @@ import {
 import AnimatedAssessmentButton from '@/components/buttons/AnimatedAssessmentButton'
 import { Card, CardContent } from '@/components/ui/card'
 
+// Define types for better TypeScript support
+interface Sublesson {
+  id: string
+  title: string
+  description: string
+}
+
+interface Lesson {
+  id: number
+  title: string
+  description: string
+  details: string
+  sublessons: Sublesson[]
+}
+
+
 // Lessons with sublessons
-const lessons = [
+const lessons: Lesson[] = [
   {
     id: 1,
     title: 'Intro to Boolean Algebra',
@@ -116,20 +132,35 @@ export const Route = createFileRoute('/roadmap')({
 })
 
 function RouteComponent() {
-  const [selected, setSelected] = useState(lessons[0])
+  const [selected, setSelected] = useState<Lesson>(lessons[0])
 
   // Flatten lessons and sublessons for the timeline
   const timelineItems = lessons.flatMap((lesson) => [
-    { ...lesson, isSublesson: false },
+    { ...lesson, isSublesson: false as const },
     ...(lesson.sublessons || []).map((sub, i) => ({
       ...sub,
       parentId: lesson.id,
-      isSublesson: true,
+      isSublesson: true as const,
       parentTitle: lesson.title,
       parentIdx: lesson.id,
       idx: i,
+      details: `Details for ${sub.title}`, // Add missing details
+      sublessons: [] as Sublesson[], // Add missing sublessons
     })),
   ])
+
+  const handleItemSelection = (item: typeof timelineItems[0]) => {
+    if (item.isSublesson) {
+      // For sublessons, find the parent lesson
+      const parentLesson = lessons.find(lesson => lesson.id === item.parentId)
+      if (parentLesson) {
+        setSelected(parentLesson)
+      }
+    } else {
+      // For main lessons, set directly
+      setSelected(item as Lesson)
+    }
+  }
 
   return (
     <div className="m-auto mt-30 flex flex-col md:flex-row w-2/3 min-h-[80vh] gap-4 p-4">
@@ -137,7 +168,7 @@ function RouteComponent() {
       <Card className="max-w-md w-full p-6 h-min">
         <CardContent className="p-0 space-y-2">
           <h2 className="text-2xl font-bold">
-            {selected.title || selected.parentTitle}
+            {selected.title}
           </h2>
           <p className="text-muted-foreground text-sm">
             {selected.description}
@@ -177,10 +208,10 @@ function RouteComponent() {
                 }}
               >
                 <AnimatedAssessmentButton
-                  onClick={() => setSelected(item)}
+                  onClick={() => handleItemSelection(item)}
                   isSelected={
                     selected.id === item.id ||
-                    (item.isSublesson && selected.title === item.title)
+                    (item.isSublesson && selected.title === item.parentTitle)
                   }
                   locked={false}
                   isCompleted={false}
@@ -200,12 +231,12 @@ function RouteComponent() {
                   justifyContent: 'center',
                   opacity: item.isSublesson ? 0.8 : 1,
                 }}
-                onClick={() => setSelected(item)}
+                onClick={() => handleItemSelection(item)}
               >
                 <p
                   className={`text-sm ${
                     selected.id === item.id ||
-                    (item.isSublesson && selected.title === item.title)
+                    (item.isSublesson && selected.title === item.parentTitle)
                       ? 'font-semibold'
                       : 'font-normal'
                   }`}

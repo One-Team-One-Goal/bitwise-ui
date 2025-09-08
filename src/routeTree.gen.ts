@@ -17,10 +17,10 @@ import { Route as ProfileImport } from './routes/profile'
 import { Route as LoginImport } from './routes/login'
 import { Route as LessonImport } from './routes/lesson'
 import { Route as KarnaughMapsImport } from './routes/karnaughMaps'
+import { Route as DigitalCircuitImport } from './routes/digitalCircuit'
 import { Route as ConverterImport } from './routes/converter'
 import { Route as CalculatorImport } from './routes/calculator'
 import { Route as IndexImport } from './routes/index'
-
 
 // Create/Update Routes
 
@@ -57,6 +57,12 @@ const LessonRoute = LessonImport.update({
 const KarnaughMapsRoute = KarnaughMapsImport.update({
   id: '/karnaughMaps',
   path: '/karnaughMaps',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const DigitalCircuitRoute = DigitalCircuitImport.update({
+  id: '/digitalCircuit',
+  path: '/digitalCircuit',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -101,6 +107,13 @@ declare module '@tanstack/react-router' {
       path: '/converter'
       fullPath: '/converter'
       preLoaderRoute: typeof ConverterImport
+      parentRoute: typeof rootRoute
+    }
+    '/digitalCircuit': {
+      id: '/digitalCircuit'
+      path: '/digitalCircuit'
+      fullPath: '/digitalCircuit'
+      preLoaderRoute: typeof DigitalCircuitImport
       parentRoute: typeof rootRoute
     }
     '/karnaughMaps': {
@@ -154,6 +167,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/calculator': typeof CalculatorRoute
   '/converter': typeof ConverterRoute
+  '/digitalCircuit': typeof DigitalCircuitRoute
   '/karnaughMaps': typeof KarnaughMapsRoute
   '/lesson': typeof LessonRoute
   '/login': typeof LoginRoute
@@ -166,6 +180,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/calculator': typeof CalculatorRoute
   '/converter': typeof ConverterRoute
+  '/digitalCircuit': typeof DigitalCircuitRoute
   '/karnaughMaps': typeof KarnaughMapsRoute
   '/lesson': typeof LessonRoute
   '/login': typeof LoginRoute
@@ -179,6 +194,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/calculator': typeof CalculatorRoute
   '/converter': typeof ConverterRoute
+  '/digitalCircuit': typeof DigitalCircuitRoute
   '/karnaughMaps': typeof KarnaughMapsRoute
   '/lesson': typeof LessonRoute
   '/login': typeof LoginRoute
@@ -193,6 +209,7 @@ export interface FileRouteTypes {
     | '/'
     | '/calculator'
     | '/converter'
+    | '/digitalCircuit'
     | '/karnaughMaps'
     | '/lesson'
     | '/login'
@@ -204,6 +221,7 @@ export interface FileRouteTypes {
     | '/'
     | '/calculator'
     | '/converter'
+    | '/digitalCircuit'
     | '/karnaughMaps'
     | '/lesson'
     | '/login'
@@ -215,6 +233,7 @@ export interface FileRouteTypes {
     | '/'
     | '/calculator'
     | '/converter'
+    | '/digitalCircuit'
     | '/karnaughMaps'
     | '/lesson'
     | '/login'
@@ -228,6 +247,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CalculatorRoute: typeof CalculatorRoute
   ConverterRoute: typeof ConverterRoute
+  DigitalCircuitRoute: typeof DigitalCircuitRoute
   KarnaughMapsRoute: typeof KarnaughMapsRoute
   LessonRoute: typeof LessonRoute
   LoginRoute: typeof LoginRoute
@@ -240,6 +260,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CalculatorRoute: CalculatorRoute,
   ConverterRoute: ConverterRoute,
+  DigitalCircuitRoute: DigitalCircuitRoute,
   KarnaughMapsRoute: KarnaughMapsRoute,
   LessonRoute: LessonRoute,
   LoginRoute: LoginRoute,
@@ -261,6 +282,7 @@ export const routeTree = rootRoute
         "/",
         "/calculator",
         "/converter",
+        "/digitalCircuit",
         "/karnaughMaps",
         "/lesson",
         "/login",
@@ -277,6 +299,9 @@ export const routeTree = rootRoute
     },
     "/converter": {
       "filePath": "converter.tsx"
+    },
+    "/digitalCircuit": {
+      "filePath": "digitalCircuit.tsx"
     },
     "/karnaughMaps": {
       "filePath": "karnaughMaps.tsx"

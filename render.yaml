@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: bitwise-ui
+    env: node
+    buildCommand: npm run render-build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NPM_CONFIG_PRODUCTION
+        value: false

@@ -16,4 +16,9 @@ export default defineConfig({
       '@assets': resolve(__dirname, 'src/assets'),
     },
   },
+  preview: {
+    host: '0.0.0.0',
+    port: process.env.PORT ? parseInt(process.env.PORT) : 4173,
+    allowedHosts: ['bitwise-ui.onrender.com', 'localhost']
+  }
 })

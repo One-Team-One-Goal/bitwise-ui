@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "render-build": "npm ci --production=false && npm run build",
+    "render-build": "npm ci --include=dev && npm run build",
     "lint": "eslint .",
     "preview": "vite preview",
     "start": "vite preview --host 0.0.0.0 --port $PORT",
@@ -79,20 +79,16 @@
     "sonner": "^2.0.5",
     "tailwind-merge": "^3.3.0",
     "zod": "^3.25.76",
-    "zustand": "^5.0.5",
-    "@vitejs/plugin-react": "^4.4.1",
-    "@tanstack/router-vite-plugin": "^1.120.16",
-    "vite": "^6.3.5",
-    "typescript": "~5.8.3",
-    "tailwindcss": "^4.1.8",
-    "autoprefixer": "^10.4.21",
-    "postcss": "^8.5.4"
+    "zustand": "^5.0.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",
+    "@tanstack/router-vite-plugin": "^1.120.16",
     "@types/node": "^22.17.1",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
+    "@vitejs/plugin-react": "^4.4.1",
+    "autoprefixer": "^10.4.21",
     "eslint": "^9.28.0",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-jsx-a11y": "^6.10.2",
@@ -104,8 +100,12 @@
     "husky": "^8.0.0",
     "kubb": "^3.0.77",
     "lint-staged": "^16.1.0",
+    "postcss": "^8.5.4",
     "prettier": "^3.5.3",
+    "tailwindcss": "^4.1.8",
     "tw-animate-css": "^1.3.4",
-    "typescript-eslint": "^8.30.1"
+    "typescript": "~5.8.3",
+    "typescript-eslint": "^8.30.1",
+    "vite": "^6.3.5"
   }
 }

@@ -2,7 +2,8 @@ import NavLogo from '@/assets/icons/nav-bar-logo.svg'
 import { useScrollDirection } from '@/hooks/useScrollDirection'
 import { Link, useLocation } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft, CircleUserIcon } from 'lucide-react'
+import { useAuthContext } from '@/contexts/AuthContext'
 
 import {
   NavigationMenu,
@@ -11,13 +12,13 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
   NavigationMenuTrigger,
-  navigationMenuTriggerStyle,
 } from '@/components/ui/navigation-menu'
 import { Cpu, CircleHelpIcon, Headset } from 'lucide-react'
 
 const HomeHeader = () => {
   const isVisible = useScrollDirection()
   const location = useLocation()
+  const { isAuthenticated, signOut, user } = useAuthContext()
 
   if (location.pathname === '/login' || location.pathname === '/signup') {
     return (
@@ -138,20 +139,12 @@ const HomeHeader = () => {
                     <li>
                       <NavigationMenuLink asChild>
                         <Link to="#" className="flex-row items-center gap-2">
-                          <Cpu />
-                          Tech Stack
+                          Profile
                         </Link>
                       </NavigationMenuLink>
                       <NavigationMenuLink asChild>
                         <Link to="#" className="flex-row items-center gap-2">
-                          <CircleHelpIcon />
-                          About us
-                        </Link>
-                      </NavigationMenuLink>
-                      <NavigationMenuLink asChild>
-                        <Link to="#" className="flex-row items-center gap-2">
-                          <Headset />
-                          Contact us
+                          Contact u
                         </Link>
                       </NavigationMenuLink>
                     </li>
@@ -161,17 +154,57 @@ const HomeHeader = () => {
             </NavigationMenuList>
           </NavigationMenu>
         </div>
-
-        {/* Right: Login Button */}
-        <Link to="/login">
-          <Button
-            variant={'bluezOutline'}
-            size={'lg'}
-            className="hover:bg-transparent hover:text-black"
-          >
-            Learn for free <span aria-hidden="true">&rarr;</span>
-          </Button>
-        </Link>
+        
+        {/* Right: Conditional User Menu or Login Button */}
+        {isAuthenticated ? (
+          <NavigationMenu>
+            <NavigationMenuList>
+              <NavigationMenuItem>
+                <NavigationMenuTrigger className="bg-transparent">
+                  <CircleUserIcon />
+                </NavigationMenuTrigger>
+                <NavigationMenuContent className="min-w-[150px] p-0">
+                  <div className="p-2 space-y-1">
+                    {/* User Info Header */}
+                    <div className="px-3 py-2 text-sm text-muted-foreground border-b">
+                      {user?.user_metadata?.display_name || user?.email || 'User'}
+                    </div>
+                    
+                    {/* Profile Link */}
+                    <NavigationMenuLink asChild>
+                      <Link 
+                        to="/profile" 
+                        className="flex items-start w-full px-3 py-2 text-sm text-left hover:bg-accent hover:text-accent-foreground rounded-md transition-colors"
+                      >
+                        Profile
+                      </Link>
+                    </NavigationMenuLink>
+                    
+                    {/* Sign Out Button */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start px-3 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 font-normal"
+                      onClick={signOut}
+                    >
+                      Sign Out
+                    </Button>
+                  </div>
+                </NavigationMenuContent>
+              </NavigationMenuItem>
+            </NavigationMenuList>
+          </NavigationMenu>
+        ) : (
+          <Link to="/login">
+            <Button
+              variant={'bluezOutline'}
+              size={'lg'}
+              className="hover:bg-transparent hover:text-black"
+            >
+              Learn for free <span aria-hidden="true">&rarr;</span>
+            </Button>
+          </Link>
+        )}
       </nav>
     </header>
   )

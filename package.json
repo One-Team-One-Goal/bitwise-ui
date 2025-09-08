@@ -9,7 +9,7 @@
     "render-build": "npm ci --include=dev && npm run build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start": "vite preview --host 0.0.0.0 --port $PORT",
+    "start": "serve -s dist -l $PORT",
     "postinstall": "test \"$NODE_ENV\" = \"production\" || (test -d .git && husky install || true)"
   },
   "lint-staged": {
@@ -76,6 +76,7 @@
     "react-hook-form": "^7.62.0",
     "react-icons": "^5.5.0",
     "recharts": "^2.15.3",
+    "serve": "^14.2.4",
     "sonner": "^2.0.5",
     "tailwind-merge": "^3.3.0",
     "zod": "^3.25.76",

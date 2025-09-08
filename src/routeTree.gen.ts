@@ -8,160 +8,68 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-// Import Routes
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as SignupRouteImport } from './routes/signup'
+import { Route as RoadmapRouteImport } from './routes/roadmap'
+import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as LessonRouteImport } from './routes/lesson'
+import { Route as KarnaughMapsRouteImport } from './routes/karnaughMaps'
+import { Route as DigitalCircuitRouteImport } from './routes/digitalCircuit'
+import { Route as ConverterRouteImport } from './routes/converter'
+import { Route as CalculatorRouteImport } from './routes/calculator'
+import { Route as IndexRouteImport } from './routes/index'
 
-import { Route as rootRoute } from './routes/__root'
-import { Route as SignupImport } from './routes/signup'
-import { Route as RoadmapImport } from './routes/roadmap'
-import { Route as ProfileImport } from './routes/profile'
-import { Route as LoginImport } from './routes/login'
-import { Route as LessonImport } from './routes/lesson'
-import { Route as KarnaughMapsImport } from './routes/karnaughMaps'
-import { Route as DigitalCircuitImport } from './routes/digitalCircuit'
-import { Route as ConverterImport } from './routes/converter'
-import { Route as CalculatorImport } from './routes/calculator'
-import { Route as IndexImport } from './routes/index'
-
-// Create/Update Routes
-
-const SignupRoute = SignupImport.update({
+const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const RoadmapRoute = RoadmapImport.update({
+const RoadmapRoute = RoadmapRouteImport.update({
   id: '/roadmap',
   path: '/roadmap',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const ProfileRoute = ProfileImport.update({
+const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const LoginRoute = LoginImport.update({
+const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const LessonRoute = LessonImport.update({
+const LessonRoute = LessonRouteImport.update({
   id: '/lesson',
   path: '/lesson',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const KarnaughMapsRoute = KarnaughMapsImport.update({
+const KarnaughMapsRoute = KarnaughMapsRouteImport.update({
   id: '/karnaughMaps',
   path: '/karnaughMaps',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const DigitalCircuitRoute = DigitalCircuitImport.update({
+const DigitalCircuitRoute = DigitalCircuitRouteImport.update({
   id: '/digitalCircuit',
   path: '/digitalCircuit',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const ConverterRoute = ConverterImport.update({
+const ConverterRoute = ConverterRouteImport.update({
   id: '/converter',
   path: '/converter',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const CalculatorRoute = CalculatorImport.update({
+const CalculatorRoute = CalculatorRouteImport.update({
   id: '/calculator',
   path: '/calculator',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-const IndexRoute = IndexImport.update({
+const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-
-// Populate the FileRoutesByPath interface
-
-declare module '@tanstack/react-router' {
-  interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexImport
-      parentRoute: typeof rootRoute
-    }
-    '/calculator': {
-      id: '/calculator'
-      path: '/calculator'
-      fullPath: '/calculator'
-      preLoaderRoute: typeof CalculatorImport
-      parentRoute: typeof rootRoute
-    }
-    '/converter': {
-      id: '/converter'
-      path: '/converter'
-      fullPath: '/converter'
-      preLoaderRoute: typeof ConverterImport
-      parentRoute: typeof rootRoute
-    }
-    '/digitalCircuit': {
-      id: '/digitalCircuit'
-      path: '/digitalCircuit'
-      fullPath: '/digitalCircuit'
-      preLoaderRoute: typeof DigitalCircuitImport
-      parentRoute: typeof rootRoute
-    }
-    '/karnaughMaps': {
-      id: '/karnaughMaps'
-      path: '/karnaughMaps'
-      fullPath: '/karnaughMaps'
-      preLoaderRoute: typeof KarnaughMapsImport
-      parentRoute: typeof rootRoute
-    }
-    '/lesson': {
-      id: '/lesson'
-      path: '/lesson'
-      fullPath: '/lesson'
-      preLoaderRoute: typeof LessonImport
-      parentRoute: typeof rootRoute
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginImport
-      parentRoute: typeof rootRoute
-    }
-    '/profile': {
-      id: '/profile'
-      path: '/profile'
-      fullPath: '/profile'
-      preLoaderRoute: typeof ProfileImport
-      parentRoute: typeof rootRoute
-    }
-    '/roadmap': {
-      id: '/roadmap'
-      path: '/roadmap'
-      fullPath: '/roadmap'
-      preLoaderRoute: typeof RoadmapImport
-      parentRoute: typeof rootRoute
-    }
-    '/signup': {
-      id: '/signup'
-      path: '/signup'
-      fullPath: '/signup'
-      preLoaderRoute: typeof SignupImport
-      parentRoute: typeof rootRoute
-    }
-  }
-}
-
-// Create and export the route tree
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -175,7 +83,6 @@ export interface FileRoutesByFullPath {
   '/roadmap': typeof RoadmapRoute
   '/signup': typeof SignupRoute
 }
-
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/calculator': typeof CalculatorRoute
@@ -188,9 +95,8 @@ export interface FileRoutesByTo {
   '/roadmap': typeof RoadmapRoute
   '/signup': typeof SignupRoute
 }
-
 export interface FileRoutesById {
-  __root__: typeof rootRoute
+  __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/calculator': typeof CalculatorRoute
   '/converter': typeof ConverterRoute
@@ -202,7 +108,6 @@ export interface FileRoutesById {
   '/roadmap': typeof RoadmapRoute
   '/signup': typeof SignupRoute
 }
-
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
@@ -242,7 +147,6 @@ export interface FileRouteTypes {
     | '/signup'
   fileRoutesById: FileRoutesById
 }
-
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CalculatorRoute: typeof CalculatorRoute
@@ -254,6 +158,81 @@ export interface RootRouteChildren {
   ProfileRoute: typeof ProfileRoute
   RoadmapRoute: typeof RoadmapRoute
   SignupRoute: typeof SignupRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/roadmap': {
+      id: '/roadmap'
+      path: '/roadmap'
+      fullPath: '/roadmap'
+      preLoaderRoute: typeof RoadmapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lesson': {
+      id: '/lesson'
+      path: '/lesson'
+      fullPath: '/lesson'
+      preLoaderRoute: typeof LessonRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/karnaughMaps': {
+      id: '/karnaughMaps'
+      path: '/karnaughMaps'
+      fullPath: '/karnaughMaps'
+      preLoaderRoute: typeof KarnaughMapsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/digitalCircuit': {
+      id: '/digitalCircuit'
+      path: '/digitalCircuit'
+      fullPath: '/digitalCircuit'
+      preLoaderRoute: typeof DigitalCircuitRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/converter': {
+      id: '/converter'
+      path: '/converter'
+      fullPath: '/converter'
+      preLoaderRoute: typeof ConverterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/calculator': {
+      id: '/calculator'
+      path: '/calculator'
+      fullPath: '/calculator'
+      preLoaderRoute: typeof CalculatorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+  }
 }
 
 const rootRouteChildren: RootRouteChildren = {
@@ -268,59 +247,6 @@ const rootRouteChildren: RootRouteChildren = {
   RoadmapRoute: RoadmapRoute,
   SignupRoute: SignupRoute,
 }
-
-export const routeTree = rootRoute
+export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-/* ROUTE_MANIFEST_START
-{
-  "routes": {
-    "__root__": {
-      "filePath": "__root.tsx",
-      "children": [
-        "/",
-        "/calculator",
-        "/converter",
-        "/digitalCircuit",
-        "/karnaughMaps",
-        "/lesson",
-        "/login",
-        "/profile",
-        "/roadmap",
-        "/signup"
-      ]
-    },
-    "/": {
-      "filePath": "index.tsx"
-    },
-    "/calculator": {
-      "filePath": "calculator.tsx"
-    },
-    "/converter": {
-      "filePath": "converter.tsx"
-    },
-    "/digitalCircuit": {
-      "filePath": "digitalCircuit.tsx"
-    },
-    "/karnaughMaps": {
-      "filePath": "karnaughMaps.tsx"
-    },
-    "/lesson": {
-      "filePath": "lesson.tsx"
-    },
-    "/login": {
-      "filePath": "login.tsx"
-    },
-    "/profile": {
-      "filePath": "profile.tsx"
-    },
-    "/roadmap": {
-      "filePath": "roadmap.tsx"
-    },
-    "/signup": {
-      "filePath": "signup.tsx"
-    }
-  }
-}
-ROUTE_MANIFEST_END */

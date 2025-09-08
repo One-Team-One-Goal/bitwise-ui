@@ -109,26 +109,25 @@ const HomeHeader = () => {
                         </Link>
                       </NavigationMenuLink>
                       <NavigationMenuLink asChild>
-                        <Link to="/converter">
-                          <div className="font-medium">Converter</div>
+                        <Link to="/karnaughMaps">
+                          <div className="font-medium">Karnaugh Maps</div>
                           <div className="text-muted-foreground">
-                            Convert between different Boolean expression forms.
+                            Learn to visualize how karnaugh maps simplify logic
+                            expressions.
+                          </div>
+                        </Link>
+                      </NavigationMenuLink>
+                      <NavigationMenuLink asChild>
+                        <Link to="/digitalCircuit">
+                          <div className="font-medium">Digital Circuit</div>
+                          <div className="text-muted-foreground">
+                            Learn to design and analyze digital circuits.
                           </div>
                         </Link>
                       </NavigationMenuLink>
                     </li>
                   </ul>
                 </NavigationMenuContent>
-              </NavigationMenuItem>
-              <NavigationMenuItem>
-                <NavigationMenuLink
-                  asChild
-                  className={navigationMenuTriggerStyle()}
-                >
-                  <Link to="/docs" className="bg-transparent">
-                    Bitbot
-                  </Link>
-                </NavigationMenuLink>
               </NavigationMenuItem>
               <NavigationMenuItem>
                 <NavigationMenuTrigger className="bg-transparent">

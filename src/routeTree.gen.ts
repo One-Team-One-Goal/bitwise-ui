@@ -16,9 +16,11 @@ import { Route as RoadmapImport } from './routes/roadmap'
 import { Route as ProfileImport } from './routes/profile'
 import { Route as LoginImport } from './routes/login'
 import { Route as LessonImport } from './routes/lesson'
+import { Route as KarnaughMapsImport } from './routes/karnaughMaps'
 import { Route as ConverterImport } from './routes/converter'
 import { Route as CalculatorImport } from './routes/calculator'
 import { Route as IndexImport } from './routes/index'
+
 
 // Create/Update Routes
 
@@ -49,6 +51,12 @@ const LoginRoute = LoginImport.update({
 const LessonRoute = LessonImport.update({
   id: '/lesson',
   path: '/lesson',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const KarnaughMapsRoute = KarnaughMapsImport.update({
+  id: '/karnaughMaps',
+  path: '/karnaughMaps',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -95,6 +103,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConverterImport
       parentRoute: typeof rootRoute
     }
+    '/karnaughMaps': {
+      id: '/karnaughMaps'
+      path: '/karnaughMaps'
+      fullPath: '/karnaughMaps'
+      preLoaderRoute: typeof KarnaughMapsImport
+      parentRoute: typeof rootRoute
+    }
     '/lesson': {
       id: '/lesson'
       path: '/lesson'
@@ -139,6 +154,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/calculator': typeof CalculatorRoute
   '/converter': typeof ConverterRoute
+  '/karnaughMaps': typeof KarnaughMapsRoute
   '/lesson': typeof LessonRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
@@ -150,6 +166,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/calculator': typeof CalculatorRoute
   '/converter': typeof ConverterRoute
+  '/karnaughMaps': typeof KarnaughMapsRoute
   '/lesson': typeof LessonRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
@@ -162,6 +179,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/calculator': typeof CalculatorRoute
   '/converter': typeof ConverterRoute
+  '/karnaughMaps': typeof KarnaughMapsRoute
   '/lesson': typeof LessonRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
@@ -175,6 +193,7 @@ export interface FileRouteTypes {
     | '/'
     | '/calculator'
     | '/converter'
+    | '/karnaughMaps'
     | '/lesson'
     | '/login'
     | '/profile'
@@ -185,6 +204,7 @@ export interface FileRouteTypes {
     | '/'
     | '/calculator'
     | '/converter'
+    | '/karnaughMaps'
     | '/lesson'
     | '/login'
     | '/profile'
@@ -195,6 +215,7 @@ export interface FileRouteTypes {
     | '/'
     | '/calculator'
     | '/converter'
+    | '/karnaughMaps'
     | '/lesson'
     | '/login'
     | '/profile'
@@ -207,6 +228,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CalculatorRoute: typeof CalculatorRoute
   ConverterRoute: typeof ConverterRoute
+  KarnaughMapsRoute: typeof KarnaughMapsRoute
   LessonRoute: typeof LessonRoute
   LoginRoute: typeof LoginRoute
   ProfileRoute: typeof ProfileRoute
@@ -218,6 +240,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CalculatorRoute: CalculatorRoute,
   ConverterRoute: ConverterRoute,
+  KarnaughMapsRoute: KarnaughMapsRoute,
   LessonRoute: LessonRoute,
   LoginRoute: LoginRoute,
   ProfileRoute: ProfileRoute,
@@ -238,6 +261,7 @@ export const routeTree = rootRoute
         "/",
         "/calculator",
         "/converter",
+        "/karnaughMaps",
         "/lesson",
         "/login",
         "/profile",
@@ -253,6 +277,9 @@ export const routeTree = rootRoute
     },
     "/converter": {
       "filePath": "converter.tsx"
+    },
+    "/karnaughMaps": {
+      "filePath": "karnaughMaps.tsx"
     },
     "/lesson": {
       "filePath": "lesson.tsx"

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import {
   Timeline,
   TimelineItem,
@@ -132,7 +132,8 @@ export const Route = createFileRoute('/roadmap')({
 })
 
 function RouteComponent() {
-  const [selected, setSelected] = useState<Lesson>(lessons[0])
+  const [selected, setSelected] = useState(lessons[0])
+  const navigate = useNavigate()
 
   // Flatten lessons and sublessons for the timeline
   const timelineItems = lessons.flatMap((lesson) => [
@@ -149,17 +150,16 @@ function RouteComponent() {
     })),
   ])
 
-  const handleItemSelection = (item: typeof timelineItems[0]) => {
-    if (item.isSublesson) {
-      // For sublessons, find the parent lesson
-      const parentLesson = lessons.find(lesson => lesson.id === item.parentId)
-      if (parentLesson) {
-        setSelected(parentLesson)
-      }
+  // Handle click: if lesson, go to /lesson/{id}
+  // If sublesson, go to parent lesson
+  const handleItemClick = (item: any) => {
+    if (!item.isSublesson) {
+      navigate({ to: `/lesson/${item.id}` })
     } else {
-      // For main lessons, set directly
-      setSelected(item as Lesson)
+      navigate({ to: `/lesson/${item.parentId}` })
     }
+    setSelected(item)
+
   }
 
   return (
@@ -208,7 +208,8 @@ function RouteComponent() {
                 }}
               >
                 <AnimatedAssessmentButton
-                  onClick={() => handleItemSelection(item)}
+                  onClick={() => handleItemClick(item)}
+
                   isSelected={
                     selected.id === item.id ||
                     (item.isSublesson && selected.title === item.parentTitle)
@@ -231,7 +232,7 @@ function RouteComponent() {
                   justifyContent: 'center',
                   opacity: item.isSublesson ? 0.8 : 1,
                 }}
-                onClick={() => handleItemSelection(item)}
+                onClick={() => handleItemClick(item)}
               >
                 <p
                   className={`text-sm ${

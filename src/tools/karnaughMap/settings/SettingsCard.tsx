@@ -89,6 +89,7 @@ const SettingsCard: React.FC<SettingsCardProps> = ({
           <p className="text-sm font-medium">Get the result:</p>
           <Button 
             onClick={onProcess}
+            variant="bluez"
             className="w-full"
             size="lg"
           >

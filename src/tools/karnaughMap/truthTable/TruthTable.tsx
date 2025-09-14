@@ -5,11 +5,25 @@ import {
     TableRow,
     TableHead,
     TableBody
-} from "../ui/table";
-import { generateTruthTables } from "./utils/permutations";
+} from "../../../components/ui/table";
 
 interface TruthTableProps {
     variables: string[];
+}
+
+function generateTruthTables(numVars: number): number[][] {
+    const rows = Math.pow(2, numVars);
+    const table: number[][] = [];
+
+    for (let i = 0; i < rows; i++) {
+        const row: number[] = [];
+        for (let j = numVars - 1; j >= 0; j--) {
+            row.push((i >> j) & 1);
+        }
+        table.push(row);
+    }
+
+    return table;
 }
 
 const TruthTable: React.FC<TruthTableProps> = ({ variables }) => {

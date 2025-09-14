@@ -1,11 +1,18 @@
 import React from 'react'
 
+interface UserRoleButtonProps {
+  children: React.ReactNode;
+  type?: 'button' | 'submit' | 'reset';
+  onClick?: () => void;
+  className?: string;
+}
+
 const UserRoleButton = ({
   children,
   type = 'button',
   onClick,
   className = '',
-}) => {
+}: UserRoleButtonProps) => {
   return (
     <button
       type={type}

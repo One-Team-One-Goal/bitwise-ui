@@ -2,7 +2,8 @@ import NavLogo from '@/assets/icons/nav-bar-logo.svg'
 import { useScrollDirection } from '@/hooks/useScrollDirection'
 import { Link, useLocation } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft, CircleUserIcon } from 'lucide-react'
+import { useAuthContext } from '@/contexts/AuthContext'
 
 import {
   NavigationMenu,
@@ -11,13 +12,12 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
   NavigationMenuTrigger,
-  navigationMenuTriggerStyle,
 } from '@/components/ui/navigation-menu'
-import { Cpu, CircleHelpIcon, Headset } from 'lucide-react'
 
 const HomeHeader = () => {
   const isVisible = useScrollDirection()
   const location = useLocation()
+  const { isAuthenticated, signOut, user } = useAuthContext()
 
   if (location.pathname === '/login' || location.pathname === '/signup') {
     return (
@@ -39,7 +39,7 @@ const HomeHeader = () => {
 
   return (
     <header
-      className={`z-50 fixed top-0 left-0 w-full h-24 transition-transform duration-300 ${
+      className={`z-50 w-full h-24 transition-transform duration-300 ${
         isVisible ? 'translate-y-0' : '-translate-y-full'
       }`}
     >
@@ -109,26 +109,25 @@ const HomeHeader = () => {
                         </Link>
                       </NavigationMenuLink>
                       <NavigationMenuLink asChild>
-                        <Link to="/converter">
-                          <div className="font-medium">Converter</div>
+                        <Link to="/karnaughMaps">
+                          <div className="font-medium">Karnaugh Maps</div>
                           <div className="text-muted-foreground">
-                            Convert between different Boolean expression forms.
+                            Learn to visualize how karnaugh maps simplify logic
+                            expressions.
+                          </div>
+                        </Link>
+                      </NavigationMenuLink>
+                      <NavigationMenuLink asChild>
+                        <Link to="/karnaughMaps">
+                          <div className="font-medium">Digital Circuit</div>
+                          <div className="text-muted-foreground">
+                            Learn to design and analyze digital circuits.
                           </div>
                         </Link>
                       </NavigationMenuLink>
                     </li>
                   </ul>
                 </NavigationMenuContent>
-              </NavigationMenuItem>
-              <NavigationMenuItem>
-                <NavigationMenuLink
-                  asChild
-                  className={navigationMenuTriggerStyle()}
-                >
-                  <Link to="/docs" className="bg-transparent">
-                    Bitbot
-                  </Link>
-                </NavigationMenuLink>
               </NavigationMenuItem>
               <NavigationMenuItem>
                 <NavigationMenuTrigger className="bg-transparent">
@@ -138,20 +137,12 @@ const HomeHeader = () => {
                   <ul className="grid w-[200px] gap-4">
                     <li>
                       <NavigationMenuLink asChild>
-                        <Link to="#" className="flex-row items-center gap-2">
-                          <Cpu />
-                          Tech Stack
+                        <Link to="/profile" className="flex-row items-center gap-2">
+                          Profile
                         </Link>
                       </NavigationMenuLink>
                       <NavigationMenuLink asChild>
-                        <Link to="#" className="flex-row items-center gap-2">
-                          <CircleHelpIcon />
-                          About us
-                        </Link>
-                      </NavigationMenuLink>
-                      <NavigationMenuLink asChild>
-                        <Link to="#" className="flex-row items-center gap-2">
-                          <Headset />
+                        <Link to="/" className="flex-row items-center gap-2">
                           Contact us
                         </Link>
                       </NavigationMenuLink>
@@ -162,17 +153,57 @@ const HomeHeader = () => {
             </NavigationMenuList>
           </NavigationMenu>
         </div>
-
-        {/* Right: Login Button */}
-        <Link to="/login">
-          <Button
-            variant={'bluezOutline'}
-            size={'lg'}
-            className="hover:bg-transparent hover:text-black"
-          >
-            Learn for free <span aria-hidden="true">&rarr;</span>
-          </Button>
-        </Link>
+        
+        {/* Right: Conditional User Menu or Login Button */}
+        {isAuthenticated ? (
+          <NavigationMenu>
+            <NavigationMenuList>
+              <NavigationMenuItem>
+                <NavigationMenuTrigger className="bg-transparent">
+                  <CircleUserIcon />
+                </NavigationMenuTrigger>
+                <NavigationMenuContent className="min-w-[150px] p-0">
+                  <div className="p-2 space-y-1">
+                    {/* User Info Header */}
+                    <div className="px-3 py-2 text-sm text-muted-foreground border-b">
+                      {user?.user_metadata?.display_name || user?.email || 'User'}
+                    </div>
+                    
+                    {/* Profile Link */}
+                    <NavigationMenuLink asChild>
+                      <Link 
+                        to="/profile" 
+                        className="flex items-start w-full px-3 py-2 text-sm text-left hover:bg-accent hover:text-accent-foreground rounded-md transition-colors"
+                      >
+                        Profile
+                      </Link>
+                    </NavigationMenuLink>
+                    
+                    {/* Sign Out Button */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start px-3 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 font-normal"
+                      onClick={signOut}
+                    >
+                      Sign Out
+                    </Button>
+                  </div>
+                </NavigationMenuContent>
+              </NavigationMenuItem>
+            </NavigationMenuList>
+          </NavigationMenu>
+        ) : (
+          <Link to="/login">
+            <Button
+              variant={'bluezOutline'}
+              size={'lg'}
+              className="hover:bg-transparent hover:text-black"
+            >
+              Learn for free <span aria-hidden="true">&rarr;</span>
+            </Button>
+          </Link>
+        )}
       </nav>
     </header>
   )

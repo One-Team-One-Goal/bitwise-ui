@@ -15,6 +15,8 @@ import { Route as SignupImport } from './routes/signup'
 import { Route as RoadmapImport } from './routes/roadmap'
 import { Route as ProfileImport } from './routes/profile'
 import { Route as LoginImport } from './routes/login'
+import { Route as KarnaughMapsImport } from './routes/karnaughMaps'
+import { Route as DigitalCircuitImport } from './routes/digitalCircuit'
 import { Route as ConverterImport } from './routes/converter'
 import { Route as CalculatorImport } from './routes/calculator'
 import { Route as IndexImport } from './routes/index'
@@ -43,6 +45,19 @@ const ProfileRoute = ProfileImport.update({
 const LoginRoute = LoginImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRoute,
+} as any)
+
+
+const KarnaughMapsRoute = KarnaughMapsImport.update({
+  id: '/karnaughMaps',
+  path: '/karnaughMaps',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const DigitalCircuitRoute = DigitalCircuitImport.update({
+  id: '/digitalCircuit',
+  path: '/digitalCircuit',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -95,6 +110,21 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConverterImport
       parentRoute: typeof rootRoute
     }
+
+    '/digitalCircuit': {
+      id: '/digitalCircuit'
+      path: '/digitalCircuit'
+      fullPath: '/digitalCircuit'
+      preLoaderRoute: typeof DigitalCircuitImport
+      parentRoute: typeof rootRoute
+    }
+    '/karnaughMaps': {
+      id: '/karnaughMaps'
+      path: '/karnaughMaps'
+      fullPath: '/karnaughMaps'
+      preLoaderRoute: typeof KarnaughMapsImport
+      parentRoute: typeof rootRoute
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -139,6 +169,8 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/calculator': typeof CalculatorRoute
   '/converter': typeof ConverterRoute
+  '/digitalCircuit': typeof DigitalCircuitRoute
+  '/karnaughMaps': typeof KarnaughMapsRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
   '/roadmap': typeof RoadmapRoute
@@ -150,6 +182,9 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/calculator': typeof CalculatorRoute
   '/converter': typeof ConverterRoute
+  '/digitalCircuit': typeof DigitalCircuitRoute
+  '/karnaughMaps': typeof KarnaughMapsRoute
+  '/lesson': typeof LessonRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
   '/roadmap': typeof RoadmapRoute
@@ -162,6 +197,8 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/calculator': typeof CalculatorRoute
   '/converter': typeof ConverterRoute
+  '/digitalCircuit': typeof DigitalCircuitRoute
+  '/karnaughMaps': typeof KarnaughMapsRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
   '/roadmap': typeof RoadmapRoute
@@ -175,6 +212,8 @@ export interface FileRouteTypes {
     | '/'
     | '/calculator'
     | '/converter'
+    | '/digitalCircuit'
+    | '/karnaughMaps'
     | '/login'
     | '/profile'
     | '/roadmap'
@@ -185,6 +224,8 @@ export interface FileRouteTypes {
     | '/'
     | '/calculator'
     | '/converter'
+    | '/digitalCircuit'
+    | '/karnaughMaps'
     | '/login'
     | '/profile'
     | '/roadmap'
@@ -195,6 +236,8 @@ export interface FileRouteTypes {
     | '/'
     | '/calculator'
     | '/converter'
+    | '/digitalCircuit'
+    | '/karnaughMaps'
     | '/login'
     | '/profile'
     | '/roadmap'
@@ -207,6 +250,8 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CalculatorRoute: typeof CalculatorRoute
   ConverterRoute: typeof ConverterRoute
+  DigitalCircuitRoute: typeof DigitalCircuitRoute
+  KarnaughMapsRoute: typeof KarnaughMapsRoute
   LoginRoute: typeof LoginRoute
   ProfileRoute: typeof ProfileRoute
   RoadmapRoute: typeof RoadmapRoute
@@ -218,6 +263,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CalculatorRoute: CalculatorRoute,
   ConverterRoute: ConverterRoute,
+  DigitalCircuitRoute: DigitalCircuitRoute,
+  KarnaughMapsRoute: KarnaughMapsRoute,
   LoginRoute: LoginRoute,
   ProfileRoute: ProfileRoute,
   RoadmapRoute: RoadmapRoute,
@@ -238,6 +285,8 @@ export const routeTree = rootRoute
         "/",
         "/calculator",
         "/converter",
+        "/digitalCircuit",
+        "/karnaughMaps",
         "/login",
         "/profile",
         "/roadmap",
@@ -253,6 +302,12 @@ export const routeTree = rootRoute
     },
     "/converter": {
       "filePath": "converter.tsx"
+    },
+    "/digitalCircuit": {
+      "filePath": "digitalCircuit.tsx"
+    },
+    "/karnaughMaps": {
+      "filePath": "karnaughMaps.tsx"
     },
     "/login": {
       "filePath": "login.tsx"

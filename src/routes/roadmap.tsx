@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import {
   Timeline,
   TimelineItem,
@@ -117,6 +117,7 @@ export const Route = createFileRoute('/roadmap')({
 
 function RouteComponent() {
   const [selected, setSelected] = useState(lessons[0])
+  const navigate = useNavigate()
 
   // Flatten lessons and sublessons for the timeline
   const timelineItems = lessons.flatMap((lesson) => [
@@ -130,6 +131,17 @@ function RouteComponent() {
       idx: i,
     })),
   ])
+
+  // Handle click: if lesson, go to /lesson/{id}
+  // If sublesson, go to parent lesson
+  const handleItemClick = (item: any) => {
+    if (!item.isSublesson) {
+      navigate({ to: `/lesson/${item.id}` })
+    } else {
+      navigate({ to: `/lesson/${item.parentId}` })
+    }
+    setSelected(item)
+  }
 
   return (
     <div className="m-auto mt-30 flex flex-col md:flex-row w-2/3 min-h-[80vh] gap-4 p-4">
@@ -177,7 +189,7 @@ function RouteComponent() {
                 }}
               >
                 <AnimatedAssessmentButton
-                  onClick={() => setSelected(item)}
+                  onClick={() => handleItemClick(item)}
                   isSelected={
                     selected.id === item.id ||
                     (item.isSublesson && selected.title === item.title)
@@ -200,7 +212,7 @@ function RouteComponent() {
                   justifyContent: 'center',
                   opacity: item.isSublesson ? 0.8 : 1,
                 }}
-                onClick={() => setSelected(item)}
+                onClick={() => handleItemClick(item)}
               >
                 <p
                   className={`text-sm ${

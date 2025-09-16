@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import TruthTable from "@/tools/karnaughMap/truthTable/TruthTable"
 import SettingsCard from "@/tools/karnaughMap/settings/SettingsCard"
 import { useKMaps } from "@/hooks/useKMaps"
-import { Map } from "@/tools/karnaughMap/kMap/Map"
+import Map from "@/components/kmap/Map"
 
 export const Route = createFileRoute("/karnaughMaps")({
   component: RouteComponent,
@@ -10,39 +10,24 @@ export const Route = createFileRoute("/karnaughMaps")({
 
 function RouteComponent() {
   const {
-    // Original state
+    // State
     variables,
     variableCount,
     formType,
-    // New K-Map state  
     squares,
+    truthTable,
     solution,
     isLoading,
-    error,
-    // Original handlers
+    // Handlers
     handleVariableCountChange,
     handleFormTypeChange,
-    // New handlers
     handleCellClick,
+    handleTruthTableChange,
     handleSetAllCells,
-    handleSolve,
-    clearError
   } = useKMaps();
 
   return (
     <div>
-      {/* Error Display */}
-      {error && (
-        <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
-          <div className="flex justify-between items-center">
-            <span>{error}</span>
-            <button onClick={clearError} className="ml-4 text-red-500 hover:text-red-700">
-              ×
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Loading Indicator */}
       {isLoading && (
         <div className="mb-4 p-4 bg-blue-100 border border-blue-400 text-blue-700 rounded">
@@ -66,6 +51,8 @@ function RouteComponent() {
           <h3 className="text-lg font-semibold mb-4 text-center">Truth Table</h3>
           <TruthTable 
             variables={variables}
+            truthTable={truthTable}
+            onTruthTableChange={handleTruthTableChange}
           />
         </div>
 
@@ -75,9 +62,10 @@ function RouteComponent() {
             Karnaugh Map
           </h3>
           <Map
-            squares={squares as any} // Temporary type assertion - we'll fix the Map component later
-            typeMap={variableCount}
-            onClick={handleCellClick}
+            squares={squares}
+            groups={solution?.groups || []}
+            variableCount={variableCount}
+            onCellClick={handleCellClick}
           />
           
           {/* Solution Display */}
@@ -90,6 +78,11 @@ function RouteComponent() {
               <div className="text-sm text-green-600">
                 Literal Cost: {solution.literalCost}
               </div>
+              {solution.groups.length > 0 && (
+                <div className="mt-2 text-sm text-green-600">
+                  Groups: {solution.groups.length}
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -106,10 +99,10 @@ function RouteComponent() {
               if (typeof value === 'string' && value !== 'X') {
                 handleSetAllCells(parseInt(value) as 0 | 1);
               } else {
-                handleSetAllCells(value as number | 'X');
+                handleSetAllCells(value as any);
               }
             }}
-            onProcess={() => handleSolve(false)}
+            onProcess={() => {}} // Auto-solving enabled, no manual process needed
           />
         </div>
 

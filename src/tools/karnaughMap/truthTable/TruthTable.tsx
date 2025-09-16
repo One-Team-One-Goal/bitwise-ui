@@ -6,9 +6,18 @@ import {
     TableHead,
     TableBody
 } from "../../../components/ui/table";
+import { type CellValue } from "@/utils/karnaugh.utils";
+
+interface TruthTableRow {
+    input: string;
+    output: CellValue;
+    index: number;
+}
 
 interface TruthTableProps {
     variables: string[];
+    truthTable?: TruthTableRow[];
+    onTruthTableChange?: (index: number, value: CellValue) => void;
 }
 
 function generateTruthTables(numVars: number): number[][] {
@@ -26,12 +35,22 @@ function generateTruthTables(numVars: number): number[][] {
     return table;
 }
 
-const TruthTable: React.FC<TruthTableProps> = ({ variables }) => {
+const cycleCellValue = (currentValue: CellValue): CellValue => {
+    if (currentValue === 'X') return 0;
+    if (currentValue === 0) return 1;
+    return 'X';
+};
+
+const TruthTable: React.FC<TruthTableProps> = ({ variables, truthTable, onTruthTableChange }) => {
     const table = generateTruthTables(variables.length);
 
-    const handleClick = (rowIdx: number, colIdx: number) => {
-        console.log(`Clicked on row ${rowIdx}, column ${colIdx}`);
-    }
+    const handleOutputClick = (index: number) => {
+        if (truthTable && onTruthTableChange) {
+            const currentValue = truthTable[index]?.output || 'X';
+            const newValue = cycleCellValue(currentValue);
+            onTruthTableChange(index, newValue);
+        }
+    };
 
     return (
         <div className="w-full max-w-md mx-auto">
@@ -54,27 +73,36 @@ const TruthTable: React.FC<TruthTableProps> = ({ variables }) => {
                     </TableHeader>
 
                     <TableBody className="bg-card">
-                        {table.map((row, rowIdx) => (
-                            <TableRow 
-                                key={rowIdx}
-                                className={`border-b border-border last:border-b-0 hover:bg-secondary/50 ${
-                                    rowIdx % 2 === 0 ? "bg-secondary/30" : "bg-card"
-                                }`}
-                            >
-                                {row.map((val, colIdx) => (
-                                    <TableCell
-                                        key={colIdx}
-                                        onClick={() => handleClick(rowIdx, colIdx)}
-                                        className="text-center border-r border-border last:border-r-0 font-mono cursor-pointer"
+                        {table.map((row, rowIdx) => {
+                            const truthRow = truthTable?.[rowIdx];
+                            return (
+                                <TableRow 
+                                    key={rowIdx}
+                                    className={`border-b border-border last:border-b-0 hover:bg-secondary/50 ${
+                                        rowIdx % 2 === 0 ? "bg-secondary/30" : "bg-card"
+                                    }`}
+                                >
+                                    {row.map((val, colIdx) => (
+                                        <TableCell
+                                            key={colIdx}
+                                            className="text-center border-r border-border last:border-r-0 font-mono"
+                                        >
+                                            {val}
+                                        </TableCell>
+                                    ))}
+                                    <TableCell 
+                                        className="text-center font-mono cursor-pointer hover:bg-blue-100 transition-colors"
+                                        onClick={() => handleOutputClick(rowIdx)}
+                                        style={{
+                                            color: truthRow?.output === 1 ? '#16a34a' : 
+                                                   truthRow?.output === 0 ? '#dc2626' : '#6b7280'
+                                        }}
                                     >
-                                        {val}
+                                        {truthRow?.output ?? 'X'}
                                     </TableCell>
-                                ))}
-                                <TableCell className="text-center font-mono text-muted-foreground">
-                                    0
-                                </TableCell>
-                            </TableRow>
-                        ))}
+                                </TableRow>
+                            );
+                        })}
                     </TableBody>
                 </Table>
             </div>

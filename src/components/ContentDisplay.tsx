@@ -1,7 +1,7 @@
 // ContentBlock.tsx - Improved content display component
 import React from 'react';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+// import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+// import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 interface ContentBlock {
   type: 'text' | 'inlineCode' | 'codeBlock' | 'image' | 'list' | 'table' | 'formula' | 'callout' | 'divider' | 'custom' | 'karnaughMap';
@@ -63,7 +63,7 @@ const ContentDisplay: React.FC<ContentDisplayProps> = ({ blocks, className = '' 
         return (
           <div key={key} className={`mb-6 ${block.className || ''}`}>
             <div className="rounded-lg overflow-hidden border border-gray-200">
-              <SyntaxHighlighter
+              {/* <SyntaxHighlighter
                 language={block.language || 'javascript'}
                 style={vscDarkPlus}
                 customStyle={{
@@ -73,7 +73,7 @@ const ContentDisplay: React.FC<ContentDisplayProps> = ({ blocks, className = '' 
                 }}
               >
                 {block.code || ''}
-              </SyntaxHighlighter>
+              </SyntaxHighlighter> */}
             </div>
           </div>
         );

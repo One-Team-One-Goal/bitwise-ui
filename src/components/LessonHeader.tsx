@@ -21,6 +21,7 @@ import { Progress } from '@/components/ui/progress'
 
 interface LessonHeaderProps {
   progress: number
+  title: string
 }
 
 const LessonHeader = ({ progress }: LessonHeaderProps) => {

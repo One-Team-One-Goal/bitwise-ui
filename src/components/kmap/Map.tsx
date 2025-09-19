@@ -18,19 +18,19 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick }
       return {
         colHeaders: ['B', "B'"],
         rowHeaders: ['A', "A'"],
-        cornerLabel: 'A\\B'
+        cornerLabel: 'A//B'
       };
     } else if (variableCount === 3) {
       return {
         colHeaders: ['BC', "BC'", "B'C'", "B'C"],
         rowHeaders: ['A', "A'"],
-        cornerLabel: 'A\\BC'
+        cornerLabel: 'A//BC'
       };
     } else if (variableCount === 4) {
       return {
         colHeaders: ['CD', "CD'", "C'D'", "C'D"],
         rowHeaders: ['AB', "AB'", "A'B'", "A'B"],
-        cornerLabel: 'AB\\CD'
+        cornerLabel: 'AB//CD'
       };
     }
     
@@ -325,32 +325,33 @@ interface CornerLabelProps {
 }
 
 const CornerLabel: React.FC<CornerLabelProps> = ({ label }) => {
-  const parts = label.split('\\');
+  const parts = label.split('//');
   if (parts.length !== 2) return <span>{label}</span>;
   
   return (
     <div className="relative w-full h-full flex items-center justify-center">
       {/* Diagonal line */}
       <div className="absolute inset-0">
-        <svg width="100%" height="100%" className="absolute inset-0">
+        <svg width="100%" height="100%" className="absolute inset-0" viewBox="0 0 100 100" preserveAspectRatio="none">
           <line 
-            x1="10%" 
-            y1="90%" 
-            x2="90%" 
-            y2="10%" 
+            x1="15" 
+            y1="15" 
+            x2="85" 
+            y2="85" 
             stroke="#6b7280" 
-            strokeWidth="1"
+            strokeWidth="2"
+            strokeLinecap="round"
           />
         </svg>
       </div>
       
-      {/* Top-right label */}
-      <div className="absolute top-1 right-1 text-xs font-medium">
+      {/* Top-right label (column variables) */}
+      <div className="absolute bottom-0.5 right-0.5 text-xs font-medium text-gray-700">
         {parts[1]}
       </div>
       
-      {/* Bottom-left label */}
-      <div className="absolute bottom-1 left-1 text-xs font-medium">
+      {/* Bottom-left label (row variables) */}
+      <div className="absolute top-0.5 left-0.5 text-xs font-medium text-gray-700">
         {parts[0]}
       </div>
     </div>

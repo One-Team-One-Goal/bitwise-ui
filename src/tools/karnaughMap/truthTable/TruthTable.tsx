@@ -35,22 +35,39 @@ function generateTruthTables(numVars: number): number[][] {
     return table;
 }
 
-const cycleCellValue = (currentValue: CellValue): CellValue => {
-    if (currentValue === 'X') return 0;
-    if (currentValue === 0) return 1;
-    return 'X';
-};
-
 const TruthTable: React.FC<TruthTableProps> = ({ variables, truthTable, onTruthTableChange }) => {
     const table = generateTruthTables(variables.length);
 
     const handleOutputClick = (index: number) => {
         if (truthTable && onTruthTableChange) {
-            const currentValue = truthTable[index]?.output || 'X';
-            const newValue = cycleCellValue(currentValue);
+            const currentValue = truthTable[index]?.output ?? 'X';
+            
+            let newValue: CellValue;
+            if (currentValue === 'X') {
+                newValue = 0;
+            } else if (currentValue === 0) {
+                newValue = 1;
+            } else {
+                newValue = 'X';
+            }
+            
             onTruthTableChange(index, newValue);
         }
     };
+
+    const getValueColor = (value: CellValue) => {
+        if (value === 1) return '#16a34a'; // Green for 1
+        if (value === 0) return '#dc2626'; // Red for 0
+        return '#6b7280'; // Gray for X
+    };
+
+    const getCellStyle = (value: CellValue) => ({
+        color: getValueColor(value),
+        fontWeight: 'bold' as const,
+        backgroundColor: value === 1 ? '#f0f9ff' : 
+                        value === 0 ? '#fef2f2' : 
+                        '#f9fafb'
+    });
 
     return (
         <div className="w-full max-w-md mx-auto">
@@ -75,6 +92,8 @@ const TruthTable: React.FC<TruthTableProps> = ({ variables, truthTable, onTruthT
                     <TableBody className="bg-card">
                         {table.map((row, rowIdx) => {
                             const truthRow = truthTable?.[rowIdx];
+                            const outputValue = truthRow?.output ?? 'X';
+                            
                             return (
                                 <TableRow 
                                     key={rowIdx}
@@ -85,26 +104,32 @@ const TruthTable: React.FC<TruthTableProps> = ({ variables, truthTable, onTruthT
                                     {row.map((val, colIdx) => (
                                         <TableCell
                                             key={colIdx}
-                                            className="text-center border-r border-border last:border-r-0 font-mono"
+                                            className="text-center border-r border-border last:border-r-0 font-mono p-3"
                                         >
-                                            {val}
+                                            <span className="font-semibold">{val}</span>
                                         </TableCell>
                                     ))}
                                     <TableCell 
-                                        className="text-center font-mono cursor-pointer hover:bg-blue-100 transition-colors"
+                                        className="text-center font-mono cursor-pointer hover:bg-blue-100 active:bg-blue-200 transition-all duration-150 p-3 select-none"
                                         onClick={() => handleOutputClick(rowIdx)}
-                                        style={{
-                                            color: truthRow?.output === 1 ? '#16a34a' : 
-                                                   truthRow?.output === 0 ? '#dc2626' : '#6b7280'
-                                        }}
+                                        style={getCellStyle(outputValue)}
+                                        title={`Click to cycle: ${outputValue} → ${
+                                            outputValue === 'X' ? '0' : 
+                                            outputValue === 0 ? '1' : 'X'
+                                        }`}
                                     >
-                                        {truthRow?.output ?? 'X'}
+                                        {outputValue}
                                     </TableCell>
                                 </TableRow>
                             );
                         })}
                     </TableBody>
                 </Table>
+            </div>
+            
+            {/* Instructions */}
+            <div className="mt-2 text-xs text-gray-600 text-center">
+                Click on R values to cycle: X → 0 → 1 → X
             </div>
         </div>
     )

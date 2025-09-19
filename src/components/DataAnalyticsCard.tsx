@@ -11,7 +11,7 @@ const mockAnalytics = {
   ],
 }
 
-export default function DataAnalyticsCard({ lesson, user }: { lesson: any; user: any }) {
+export default function DataAnalyticsCard({ /*lesson,*/ user }: { lesson: any; user: any }) {
   return (
     <Card className="p-6">
       <CardContent className="p-0 space-y-2">

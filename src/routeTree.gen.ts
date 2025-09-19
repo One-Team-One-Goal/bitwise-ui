@@ -13,6 +13,7 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as RoadmapRouteImport } from './routes/roadmap'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as LessonRouteImport } from './routes/lesson'
 import { Route as KarnaughMapsRouteImport } from './routes/karnaughMaps'
 import { Route as DigitalCircuitRouteImport } from './routes/digitalCircuit'
 import { Route as ConverterRouteImport } from './routes/converter'
@@ -39,6 +40,11 @@ const ProfileRoute = ProfileRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LessonRoute = LessonRouteImport.update({
+  id: '/lesson',
+  path: '/lesson',
   getParentRoute: () => rootRouteImport,
 } as any)
 const KarnaughMapsRoute = KarnaughMapsRouteImport.update({
@@ -250,6 +256,81 @@ declare module '@tanstack/react-router' {
       path: '/assessment/$assessmentId'
       fullPath: '/assessment/$assessmentId'
       preLoaderRoute: typeof AssessmentAssessmentIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+  }
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/roadmap': {
+      id: '/roadmap'
+      path: '/roadmap'
+      fullPath: '/roadmap'
+      preLoaderRoute: typeof RoadmapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lesson': {
+      id: '/lesson'
+      path: '/lesson'
+      fullPath: '/lesson'
+      preLoaderRoute: typeof LessonRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/karnaughMaps': {
+      id: '/karnaughMaps'
+      path: '/karnaughMaps'
+      fullPath: '/karnaughMaps'
+      preLoaderRoute: typeof KarnaughMapsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/digitalCircuit': {
+      id: '/digitalCircuit'
+      path: '/digitalCircuit'
+      fullPath: '/digitalCircuit'
+      preLoaderRoute: typeof DigitalCircuitRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/converter': {
+      id: '/converter'
+      path: '/converter'
+      fullPath: '/converter'
+      preLoaderRoute: typeof ConverterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/calculator': {
+      id: '/calculator'
+      path: '/calculator'
+      fullPath: '/calculator'
+      preLoaderRoute: typeof CalculatorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
   }

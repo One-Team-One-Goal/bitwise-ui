@@ -1,4 +1,3 @@
-import CalculatorOutput from '@/components/CalculatorOutput'
 import CalculatorPanel from '@/components/CalculatorPanel'
 import FactoringDemo from '@/components/FactoringDemo'
 import { createFileRoute } from '@tanstack/react-router'

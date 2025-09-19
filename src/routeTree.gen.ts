@@ -19,6 +19,8 @@ import { Route as DigitalCircuitRouteImport } from './routes/digitalCircuit'
 import { Route as ConverterRouteImport } from './routes/converter'
 import { Route as CalculatorRouteImport } from './routes/calculator'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LessonLessonIdRouteImport } from './routes/lesson/$lessonId'
+import { Route as AssessmentAssessmentIdRouteImport } from './routes/assessment/$assessmentId'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -70,6 +72,16 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LessonLessonIdRoute = LessonLessonIdRouteImport.update({
+  id: '/lesson/$lessonId',
+  path: '/lesson/$lessonId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AssessmentAssessmentIdRoute = AssessmentAssessmentIdRouteImport.update({
+  id: '/assessment/$assessmentId',
+  path: '/assessment/$assessmentId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -77,11 +89,12 @@ export interface FileRoutesByFullPath {
   '/converter': typeof ConverterRoute
   '/digitalCircuit': typeof DigitalCircuitRoute
   '/karnaughMaps': typeof KarnaughMapsRoute
-  '/lesson': typeof LessonRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
   '/roadmap': typeof RoadmapRoute
   '/signup': typeof SignupRoute
+  '/assessment/$assessmentId': typeof AssessmentAssessmentIdRoute
+  '/lesson/$lessonId': typeof LessonLessonIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -89,11 +102,12 @@ export interface FileRoutesByTo {
   '/converter': typeof ConverterRoute
   '/digitalCircuit': typeof DigitalCircuitRoute
   '/karnaughMaps': typeof KarnaughMapsRoute
-  '/lesson': typeof LessonRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
   '/roadmap': typeof RoadmapRoute
   '/signup': typeof SignupRoute
+  '/assessment/$assessmentId': typeof AssessmentAssessmentIdRoute
+  '/lesson/$lessonId': typeof LessonLessonIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -102,11 +116,12 @@ export interface FileRoutesById {
   '/converter': typeof ConverterRoute
   '/digitalCircuit': typeof DigitalCircuitRoute
   '/karnaughMaps': typeof KarnaughMapsRoute
-  '/lesson': typeof LessonRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
   '/roadmap': typeof RoadmapRoute
   '/signup': typeof SignupRoute
+  '/assessment/$assessmentId': typeof AssessmentAssessmentIdRoute
+  '/lesson/$lessonId': typeof LessonLessonIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -116,11 +131,12 @@ export interface FileRouteTypes {
     | '/converter'
     | '/digitalCircuit'
     | '/karnaughMaps'
-    | '/lesson'
     | '/login'
     | '/profile'
     | '/roadmap'
     | '/signup'
+    | '/assessment/$assessmentId'
+    | '/lesson/$lessonId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -128,11 +144,12 @@ export interface FileRouteTypes {
     | '/converter'
     | '/digitalCircuit'
     | '/karnaughMaps'
-    | '/lesson'
     | '/login'
     | '/profile'
     | '/roadmap'
     | '/signup'
+    | '/assessment/$assessmentId'
+    | '/lesson/$lessonId'
   id:
     | '__root__'
     | '/'
@@ -140,11 +157,12 @@ export interface FileRouteTypes {
     | '/converter'
     | '/digitalCircuit'
     | '/karnaughMaps'
-    | '/lesson'
     | '/login'
     | '/profile'
     | '/roadmap'
     | '/signup'
+    | '/assessment/$assessmentId'
+    | '/lesson/$lessonId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -153,11 +171,94 @@ export interface RootRouteChildren {
   ConverterRoute: typeof ConverterRoute
   DigitalCircuitRoute: typeof DigitalCircuitRoute
   KarnaughMapsRoute: typeof KarnaughMapsRoute
-  LessonRoute: typeof LessonRoute
   LoginRoute: typeof LoginRoute
   ProfileRoute: typeof ProfileRoute
   RoadmapRoute: typeof RoadmapRoute
   SignupRoute: typeof SignupRoute
+  AssessmentAssessmentIdRoute: typeof AssessmentAssessmentIdRoute
+  LessonLessonIdRoute: typeof LessonLessonIdRoute
+}
+
+declare module '@tanstack/react-router' {
+  interface FileRoutesByPath {
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/roadmap': {
+      id: '/roadmap'
+      path: '/roadmap'
+      fullPath: '/roadmap'
+      preLoaderRoute: typeof RoadmapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/karnaughMaps': {
+      id: '/karnaughMaps'
+      path: '/karnaughMaps'
+      fullPath: '/karnaughMaps'
+      preLoaderRoute: typeof KarnaughMapsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/digitalCircuit': {
+      id: '/digitalCircuit'
+      path: '/digitalCircuit'
+      fullPath: '/digitalCircuit'
+      preLoaderRoute: typeof DigitalCircuitRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/converter': {
+      id: '/converter'
+      path: '/converter'
+      fullPath: '/converter'
+      preLoaderRoute: typeof ConverterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/calculator': {
+      id: '/calculator'
+      path: '/calculator'
+      fullPath: '/calculator'
+      preLoaderRoute: typeof CalculatorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lesson/$lessonId': {
+      id: '/lesson/$lessonId'
+      path: '/lesson/$lessonId'
+      fullPath: '/lesson/$lessonId'
+      preLoaderRoute: typeof LessonLessonIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/assessment/$assessmentId': {
+      id: '/assessment/$assessmentId'
+      path: '/assessment/$assessmentId'
+      fullPath: '/assessment/$assessmentId'
+      preLoaderRoute: typeof AssessmentAssessmentIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+  }
 }
 
 declare module '@tanstack/react-router' {
@@ -241,11 +342,12 @@ const rootRouteChildren: RootRouteChildren = {
   ConverterRoute: ConverterRoute,
   DigitalCircuitRoute: DigitalCircuitRoute,
   KarnaughMapsRoute: KarnaughMapsRoute,
-  LessonRoute: LessonRoute,
   LoginRoute: LoginRoute,
   ProfileRoute: ProfileRoute,
   RoadmapRoute: RoadmapRoute,
   SignupRoute: SignupRoute,
+  AssessmentAssessmentIdRoute: AssessmentAssessmentIdRoute,
+  LessonLessonIdRoute: LessonLessonIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

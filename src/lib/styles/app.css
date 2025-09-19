@@ -176,6 +176,10 @@ h6 {
   object-fit: cover;
 }
 
+.hide-scrollbar::-webkit-scrollbar {
+              display: none;
+            }
+
 @media (min-width: 640px) {
   /* Small screens (sm) */
   .profile-img {

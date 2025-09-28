@@ -42,15 +42,16 @@ class CalculatorService {
   /**
    * Simplify a boolean expression and get step-by-step explanation
    */
-  async simplify(expression: string): Promise<CalculationResponse<SimplificationResult>> {
+  async simplify(expression: string): Promise<CalculationResponse<any>> {
     try {
-      const response = await apiService.post('/calculator/simplify', { expression }) as any;
-      return response.data;
+      // apiService.post returns the parsed response body (response.data)
+      const data = await apiService.post<CalculationResponse<any>>('/calculator/simplify', { expression });
+      return data;
     } catch (error: any) {
       return {
         success: false,
-        result: null as any,
-        error: error.response?.data?.message || error.message || 'Failed to simplify expression',
+        result: null,
+        error: error?.message || 'Failed to simplify expression',
       };
     }
   }
@@ -63,16 +64,16 @@ class CalculatorService {
     variables: Record<string, boolean>
   ): Promise<CalculationResponse<boolean>> {
     try {
-      const response = await apiService.post('/calculator/evaluate', {
+      const data = await apiService.post<CalculationResponse<boolean>>('/calculator/evaluate', {
         expression,
         variables,
-      }) as any;
-      return response.data;
+      });
+      return data;
     } catch (error: any) {
       return {
         success: false,
         result: null as any,
-        error: error.response?.data?.message || error.message || 'Failed to evaluate expression',
+        error: error?.message || 'Failed to evaluate expression',
       };
     }
   }
@@ -82,13 +83,13 @@ class CalculatorService {
    */
   async generateTruthTable(expression: string): Promise<CalculationResponse<TruthTableResult>> {
     try {
-      const response = await apiService.post('/calculator/truth-table', { expression }) as any;
-      return response.data;
+      const data = await apiService.post<CalculationResponse<TruthTableResult>>('/calculator/truth-table', { expression });
+      return data;
     } catch (error: any) {
       return {
         success: false,
         result: null as any,
-        error: error.response?.data?.message || error.message || 'Failed to generate truth table',
+        error: error?.message || 'Failed to generate truth table',
       };
     }
   }
@@ -102,17 +103,17 @@ class CalculatorService {
     variables?: Record<string, boolean>
   ): Promise<CalculationResponse> {
     try {
-      const response = await apiService.post('/calculator/calculate', {
+      const data = await apiService.post<CalculationResponse>('/calculator/calculate', {
         expression,
         operation,
         variables,
-      }) as any;
-      return response.data;
+      });
+      return data;
     } catch (error: any) {
       return {
         success: false,
         result: null,
-        error: error.response?.data?.message || error.message || 'Calculation failed',
+        error: error?.message || 'Calculation failed',
       };
     }
   }

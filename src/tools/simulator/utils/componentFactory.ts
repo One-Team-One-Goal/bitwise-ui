@@ -10,7 +10,7 @@ export const COMPONENT_DEFINITIONS: Record<ComponentType, ComponentDefinition> =
     inputs: 2,
     outputs: 1,
     defaultSize: { width: 80, height: 50 },
-    description: 'AND logic gate - outputs true only when all inputs are true'
+    description: 'AND logic gate'
   },
   OR: {
     type: 'OR',
@@ -20,7 +20,7 @@ export const COMPONENT_DEFINITIONS: Record<ComponentType, ComponentDefinition> =
     inputs: 2,
     outputs: 1,
     defaultSize: { width: 80, height: 50 },
-    description: 'OR logic gate - outputs true when any input is true'
+    description: 'OR logic gate'
   },
   NOT: {
     type: 'NOT',
@@ -30,7 +30,7 @@ export const COMPONENT_DEFINITIONS: Record<ComponentType, ComponentDefinition> =
     inputs: 1,
     outputs: 1,
     defaultSize: { width: 60, height: 40 },
-    description: 'NOT gate (inverter) - outputs the opposite of input'
+    description: 'NOT gate'
   },
   NAND: {
     type: 'NAND',
@@ -40,7 +40,7 @@ export const COMPONENT_DEFINITIONS: Record<ComponentType, ComponentDefinition> =
     inputs: 2,
     outputs: 1,
     defaultSize: { width: 80, height: 50 },
-    description: 'NAND gate - outputs false only when all inputs are true'
+    description: 'NAND gate'
   },
   NOR: {
     type: 'NOR',
@@ -50,7 +50,7 @@ export const COMPONENT_DEFINITIONS: Record<ComponentType, ComponentDefinition> =
     inputs: 2,
     outputs: 1,
     defaultSize: { width: 80, height: 50 },
-    description: 'NOR gate - outputs true only when all inputs are false'
+    description: 'NOR gate'
   },
   XOR: {
     type: 'XOR',
@@ -60,7 +60,7 @@ export const COMPONENT_DEFINITIONS: Record<ComponentType, ComponentDefinition> =
     inputs: 2,
     outputs: 1,
     defaultSize: { width: 80, height: 50 },
-    description: 'XOR gate - outputs true when inputs are different'
+    description: 'XOR gate'
   },
   XNOR: {
     type: 'XNOR',
@@ -70,17 +70,17 @@ export const COMPONENT_DEFINITIONS: Record<ComponentType, ComponentDefinition> =
     inputs: 2,
     outputs: 1,
     defaultSize: { width: 80, height: 50 },
-    description: 'XNOR gate - outputs true when inputs are the same'
+    description: 'XNOR gate'
   },
   BUFFER: {
     type: 'BUFFER',
     name: 'Buffer',
     category: 'gates',
-    icon: '→',
+    icon: '▷',
     inputs: 1,
     outputs: 1,
     defaultSize: { width: 60, height: 40 },
-    description: 'Buffer gate - outputs the same as input'
+    description: 'Buffer gate'
   },
 
   // Flip-Flops
@@ -89,10 +89,10 @@ export const COMPONENT_DEFINITIONS: Record<ComponentType, ComponentDefinition> =
     name: 'SR Flip-Flop',
     category: 'flipflops',
     icon: 'SR',
-    inputs: 2,
+    inputs: 3,
     outputs: 2,
-    defaultSize: { width: 80, height: 80 },
-    description: 'Set-Reset flip-flop'
+    defaultSize: { width: 80, height: 60 },
+    description: 'SR flip-flop with clock'
   },
   D_FLIPFLOP: {
     type: 'D_FLIPFLOP',
@@ -101,8 +101,8 @@ export const COMPONENT_DEFINITIONS: Record<ComponentType, ComponentDefinition> =
     icon: 'D',
     inputs: 2,
     outputs: 2,
-    defaultSize: { width: 80, height: 80 },
-    description: 'Data flip-flop'
+    defaultSize: { width: 80, height: 60 },
+    description: 'D flip-flop with clock'
   },
   JK_FLIPFLOP: {
     type: 'JK_FLIPFLOP',
@@ -111,8 +111,8 @@ export const COMPONENT_DEFINITIONS: Record<ComponentType, ComponentDefinition> =
     icon: 'JK',
     inputs: 3,
     outputs: 2,
-    defaultSize: { width: 80, height: 80 },
-    description: 'JK flip-flop'
+    defaultSize: { width: 80, height: 60 },
+    description: 'JK flip-flop with clock'
   },
   T_FLIPFLOP: {
     type: 'T_FLIPFLOP',
@@ -121,8 +121,8 @@ export const COMPONENT_DEFINITIONS: Record<ComponentType, ComponentDefinition> =
     icon: 'T',
     inputs: 2,
     outputs: 2,
-    defaultSize: { width: 80, height: 80 },
-    description: 'Toggle flip-flop'
+    defaultSize: { width: 80, height: 60 },
+    description: 'T flip-flop with clock'
   },
 
   // Input Controls
@@ -130,69 +130,69 @@ export const COMPONENT_DEFINITIONS: Record<ComponentType, ComponentDefinition> =
     type: 'SWITCH',
     name: 'Switch',
     category: 'inputs',
-    icon: '⎘',
+    icon: '🔘',
     inputs: 0,
     outputs: 1,
-    defaultSize: { width: 60, height: 40 },
-    description: 'Toggle switch input'
+    defaultSize: { width: 40, height: 40 },
+    description: 'Toggle switch'
   },
   PUSH_BUTTON: {
     type: 'PUSH_BUTTON',
     name: 'Push Button',
     category: 'inputs',
-    icon: '●',
+    icon: '🔲',
     inputs: 0,
     outputs: 1,
-    defaultSize: { width: 50, height: 50 },
-    description: 'Push button input'
+    defaultSize: { width: 40, height: 40 },
+    description: 'Momentary push button'
   },
   CLOCK: {
     type: 'CLOCK',
     name: 'Clock',
     category: 'inputs',
-    icon: '⏱',
+    icon: '⏰',
     inputs: 0,
     outputs: 1,
-    defaultSize: { width: 60, height: 40 },
+    defaultSize: { width: 50, height: 40 },
     description: 'Clock signal generator'
   },
   HIGH_CONSTANT: {
     type: 'HIGH_CONSTANT',
-    name: 'High (1)',
+    name: 'HIGH (1)',
     category: 'inputs',
     icon: '1',
     inputs: 0,
     outputs: 1,
-    defaultSize: { width: 40, height: 40 },
-    description: 'Constant high signal'
+    defaultSize: { width: 30, height: 30 },
+    description: 'Constant HIGH signal'
   },
   LOW_CONSTANT: {
     type: 'LOW_CONSTANT',
-    name: 'Low (0)',
+    name: 'LOW (0)',
     category: 'inputs',
     icon: '0',
     inputs: 0,
     outputs: 1,
-    defaultSize: { width: 40, height: 40 },
-    description: 'Constant low signal'
+    defaultSize: { width: 30, height: 30 },
+    description: 'Constant LOW signal'
   },
 
   // Output Controls
   LED: {
     type: 'LED',
-    name: 'Light Bulb',
+    name: 'LED',
     category: 'outputs',
     icon: '💡',
     inputs: 1,
     outputs: 0,
     defaultSize: { width: 40, height: 40 },
-    description: 'Light bulb that glows when input is HIGH'
+    description: 'Light emitting diode'
   },
   SEVEN_SEGMENT: {
     type: 'SEVEN_SEGMENT',
     name: '7-Segment Display',
     category: 'outputs',
-    icon: '8',
+    icon: '🔸',
     inputs: 7,
     outputs: 0,
     defaultSize: { width: 60, height: 80 },
@@ -207,6 +207,63 @@ export const COMPONENT_DEFINITIONS: Record<ComponentType, ComponentDefinition> =
     outputs: 0,
     defaultSize: { width: 80, height: 40 },
     description: '4-bit digital display'
+  },
+
+  // Premade Circuits
+  HALF_ADDER: {
+    type: 'HALF_ADDER',
+    name: 'Half Adder',
+    category: 'circuits',
+    icon: '½+',
+    inputs: 2,
+    outputs: 2,
+    defaultSize: { width: 120, height: 80 },
+    description: 'Adds two 1-bit numbers (A + B = Sum, Carry)',
+    isTemplate: true
+  },
+  FULL_ADDER: {
+    type: 'FULL_ADDER',
+    name: 'Full Adder',
+    category: 'circuits',
+    icon: '1+',
+    inputs: 3,
+    outputs: 2,
+    defaultSize: { width: 120, height: 80 },
+    description: 'Adds two 1-bit numbers with carry input (A + B + Cin = Sum, Cout)',
+    isTemplate: true
+  },
+  FOUR_BIT_ADDER: {
+    type: 'FOUR_BIT_ADDER',
+    name: '4-Bit Adder',
+    category: 'circuits',
+    icon: '4+',
+    inputs: 9, // 4 + 4 + carry in
+    outputs: 5, // 4 + carry out
+    defaultSize: { width: 200, height: 120 },
+    description: 'Adds two 4-bit numbers with carry',
+    isTemplate: true
+  },
+  MULTIPLEXER_2TO1: {
+    type: 'MULTIPLEXER_2TO1',
+    name: '2:1 Multiplexer',
+    category: 'circuits',
+    icon: 'MUX',
+    inputs: 3, // 2 data + 1 select
+    outputs: 1,
+    defaultSize: { width: 100, height: 80 },
+    description: 'Selects one of two inputs based on select signal',
+    isTemplate: true
+  },
+  DECODER_2TO4: {
+    type: 'DECODER_2TO4',
+    name: '2:4 Decoder',
+    category: 'circuits',
+    icon: 'DEC',
+    inputs: 2,
+    outputs: 4,
+    defaultSize: { width: 100, height: 100 },
+    description: 'Decodes 2-bit input to 4 output lines',
+    isTemplate: true
   },
 
   // Other
@@ -225,10 +282,10 @@ export const COMPONENT_DEFINITIONS: Record<ComponentType, ComponentDefinition> =
     name: 'Bus',
     category: 'other',
     icon: '═',
-    inputs: 1,
-    outputs: 1,
-    defaultSize: { width: 80, height: 20 },
-    description: 'Bus connector'
+    inputs: 8,
+    outputs: 8,
+    defaultSize: { width: 100, height: 20 },
+    description: 'Multi-bit bus'
   },
   PULL_UP: {
     type: 'PULL_UP',
@@ -237,8 +294,8 @@ export const COMPONENT_DEFINITIONS: Record<ComponentType, ComponentDefinition> =
     icon: '↑',
     inputs: 1,
     outputs: 1,
-    defaultSize: { width: 40, height: 60 },
-    description: 'Pull-up resistor'
+    defaultSize: { width: 40, height: 30 },
+    description: 'Pull up resistor'
   },
   PULL_DOWN: {
     type: 'PULL_DOWN',
@@ -247,41 +304,34 @@ export const COMPONENT_DEFINITIONS: Record<ComponentType, ComponentDefinition> =
     icon: '↓',
     inputs: 1,
     outputs: 1,
-    defaultSize: { width: 40, height: 60 },
-    description: 'Pull-down resistor'
+    defaultSize: { width: 40, height: 30 },
+    description: 'Pull down resistor'
   }
 };
 
 export class ComponentFactory {
-  private static idCounter = 0;
-
-  static createComponent(type: ComponentType, position: Position): Component {
+  static createComponent(type: ComponentType, position: Position, id?: string): Component {
     const definition = COMPONENT_DEFINITIONS[type];
-    const id = `${type}_${++ComponentFactory.idCounter}`;
+    const componentId = id || `${type}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-    // Create input connection points
     const inputs = Array.from({ length: definition.inputs }, (_, index) => ({
-      id: `${id}_input_${index}`,
-      position: { x: 0, y: (index + 1) * (definition.defaultSize.height / (definition.inputs + 1)) },
+      id: `${componentId}_input_${index}`,
+      position: { x: 0, y: 0 }, // Will be calculated based on component position
       type: 'input' as const,
       value: false,
       connected: false
     }));
 
-    // Create output connection points
     const outputs = Array.from({ length: definition.outputs }, (_, index) => ({
-      id: `${id}_output_${index}`,
-      position: { 
-        x: definition.defaultSize.width, 
-        y: (index + 1) * (definition.defaultSize.height / (definition.outputs + 1)) 
-      },
+      id: `${componentId}_output_${index}`,
+      position: { x: 0, y: 0 }, // Will be calculated based on component position
       type: 'output' as const,
       value: false,
       connected: false
     }));
 
     return {
-      id,
+      id: componentId,
       type,
       position,
       size: definition.defaultSize,

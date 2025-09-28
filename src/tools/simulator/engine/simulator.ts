@@ -5,7 +5,7 @@ export class CircuitSimulator {
   private connections: Map<string, Connection> = new Map();
   private simulationEvents: SimulationEvent[] = [];
   private isRunning: boolean = false;
-  private simulationSpeed: number = 100; // ms between updates
+  private simulationSpeed: number = 100;
 
   constructor() {}
 

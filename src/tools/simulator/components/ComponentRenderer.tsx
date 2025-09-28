@@ -55,9 +55,8 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
             <path
               d={`M15,10 L${width-25},10 A${(width-40)/2},${(height-20)/2} 0 0,1 ${width-25},${height-10} L15,${height-10} Z`}
               fill="white"
-              stroke="black"
-              strokeWidth="2"
-              style={{ borderColor: isSelected ? '#3b82f6' : 'black' }}
+              stroke={isSelected ? '#3b82f6' : 'black'}
+              strokeWidth={isSelected ? "3" : "2"}
             />
             {/* Input connection points visual guide */}
             <line x1="15" y1={height/3} x2="8" y2={height/3} stroke="black" strokeWidth="1"/>
@@ -74,8 +73,8 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
             <path
               d={`M15,10 Q20,10 25,${height/2} Q20,${height-10} 15,${height-10} Q35,${height/2} ${width-15},${height/2} Q35,${height/2} 15,10`}
               fill="white"
-              stroke="black"
-              strokeWidth="2"
+              stroke={isSelected ? '#3b82f6' : 'black'}
+              strokeWidth={isSelected ? "3" : "2"}
             />
             {/* Input connection points visual guide */}
             <line x1="18" y1={height/3 + 2} x2="8" y2={height/3} stroke="black" strokeWidth="1"/>
@@ -92,8 +91,8 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
             <polygon
               points={`15,10 ${width-20},${height/2} 15,${height-10}`}
               fill="white"
-              stroke="black"
-              strokeWidth="2"
+              stroke={isSelected ? '#3b82f6' : 'black'}
+              strokeWidth={isSelected ? "3" : "2"}
             />
             {/* Inversion bubble */}
             <circle
@@ -101,8 +100,8 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
               cy={height/2}
               r="6"
               fill="white"
-              stroke="black"
-              strokeWidth="2"
+              stroke={isSelected ? '#3b82f6' : 'black'}
+              strokeWidth={isSelected ? "3" : "2"}
             />
             {/* Input connection point visual guide */}
             <line x1="15" y1={height/2} x2="8" y2={height/2} stroke="black" strokeWidth="1"/>
@@ -118,8 +117,8 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
             <path
               d={`M15,10 L${width-30},10 A${(width-45)/2},${(height-20)/2} 0 0,1 ${width-30},${height-10} L15,${height-10} Z`}
               fill="white"
-              stroke="black"
-              strokeWidth="2"
+              stroke={isSelected ? '#3b82f6' : 'black'}
+              strokeWidth={isSelected ? "3" : "2"}
             />
             {/* Inversion bubble */}
             <circle
@@ -127,8 +126,8 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
               cy={height/2}
               r="6"
               fill="white"
-              stroke="black"
-              strokeWidth="2"
+              stroke={isSelected ? '#3b82f6' : 'black'}
+              strokeWidth={isSelected ? "3" : "2"}
             />
             {/* Input connection points visual guide */}
             <line x1="15" y1={height/3} x2="8" y2={height/3} stroke="black" strokeWidth="1"/>
@@ -245,10 +244,9 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
         // Generic rectangular component
         return (
           <div
-            className="w-full h-full bg-white border-2 border-gray-400 rounded flex items-center justify-center text-sm font-semibold"
+            className="w-full h-full bg-white border-2 border-gray-400 rounded"
             style={{ borderColor: isSelected ? '#3b82f6' : '#9ca3af' }}
           >
-            {definition.icon}
           </div>
         );
     }
@@ -259,11 +257,9 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
     return (
       <div className="relative w-full h-full">
         <div
-          className="w-full h-full bg-white border-2 border-gray-600 rounded flex flex-col items-center justify-center text-sm font-bold"
+          className="w-full h-full bg-white border-2 border-gray-600 rounded"
           style={{ borderColor: isSelected ? '#3b82f6' : '#4b5563' }}
         >
-          <div className="text-lg">{definition.icon}</div>
-          <div className="text-xs mt-1">{component.type.replace('_FLIPFLOP', '')}</div>
         </div>
         
         {/* Clock triangle indicator for flip-flops */}
@@ -358,14 +354,42 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
         );
       
       case 'CLOCK':
+        const isClockHigh = component.outputs[0]?.value;
         return (
           <div className="relative w-full h-full">
-            <div
-              className="w-full h-full bg-yellow-100 border-2 border-yellow-400 rounded flex items-center justify-center"
-              style={{ borderColor: isSelected ? '#3b82f6' : '#fbbf24' }}
-            >
-              <div className="text-lg">⏱</div>
-            </div>
+            <svg width="100%" height="100%" viewBox="0 0 60 40" className="absolute inset-0">
+              {/* Clock body */}
+              <rect
+                x="5"
+                y="8"
+                width="50"
+                height="24"
+                rx="6"
+                fill={isClockHigh ? '#FEF08A' : '#E5E7EB'}
+                stroke={isSelected ? '#3B82F6' : (isClockHigh ? '#F59E0B' : '#9CA3AF')}
+                strokeWidth={isSelected ? "3" : "2"}
+              />
+              {/* Clock wave pattern */}
+              <g stroke={isClockHigh ? '#DC2626' : '#6B7280'} strokeWidth="2" fill="none">
+                <path d="M10 25 L15 25 L15 15 L20 15 L20 25 L25 25 L25 15 L30 15 L30 25 L35 25 L35 15 L40 15 L40 25 L45 25" />
+              </g>
+              {/* Clock label */}
+              <text 
+                x="30" 
+                y="7" 
+                textAnchor="middle" 
+                fontSize="8" 
+                fontWeight="bold" 
+                fill={isSelected ? '#3B82F6' : '#374151'}
+              >
+                CLK
+              </text>
+            </svg>
+            
+            {/* Pulsing effect when active */}
+            {isClockHigh && (
+              <div className="absolute inset-1 rounded bg-yellow-300 opacity-30 animate-pulse pointer-events-none" />
+            )}
           </div>
         );
       
@@ -405,11 +429,28 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
       
       default:
         return (
-          <div
-            className="w-full h-full bg-blue-100 border-2 border-blue-400 rounded flex items-center justify-center text-sm font-bold"
-            style={{ borderColor: isSelected ? '#3b82f6' : '#60a5fa' }}
-          >
-            {definition.icon}
+          <div className="relative w-full h-full">
+            <svg width="100%" height="100%" viewBox="0 0 60 40" className="absolute inset-0">
+              {/* Input device body */}
+              <rect
+                x="5"
+                y="5"
+                width="50"
+                height="30"
+                rx="8"
+                fill="#E0F2FE"
+                stroke={isSelected ? '#3B82F6' : '#0EA5E9'}
+                strokeWidth={isSelected ? "3" : "2"}
+              />
+              {/* Input indicator LED */}
+              <circle
+                cx="15"
+                cy="20"
+                r="3"
+                fill={component.outputs?.[0]?.value ? '#10B981' : '#6B7280'}
+              />
+              {/* Input control shape speaks for itself */}
+            </svg>
           </div>
         );
     }
@@ -422,65 +463,185 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
         return (
           <div className="relative w-full h-full">
             <svg width="100%" height="100%" viewBox="0 0 40 40" className="absolute inset-0">
+              {/* Glowing aura - rendered first so it's behind */}
+              {isLit && (
+                <defs>
+                  <radialGradient id={`ledGlow-${component.id}`} cx="50%" cy="40%" r="70%">
+                    <stop offset="0%" stopColor="#FEF08A" stopOpacity="0.8"/>
+                    <stop offset="50%" stopColor="#FCD34D" stopOpacity="0.4"/>
+                    <stop offset="100%" stopColor="#F59E0B" stopOpacity="0"/>
+                  </radialGradient>
+                  <filter id={`blur-${component.id}`}>
+                    <feGaussianBlur stdDeviation="2"/>
+                  </filter>
+                </defs>
+              )}
+              
+              {/* Outer glow when lit */}
+              {isLit && (
+                <circle
+                  cx="20"
+                  cy="16"
+                  r="18"
+                  fill={`url(#ledGlow-${component.id})`}
+                  filter={`url(#blur-${component.id})`}
+                />
+              )}
+              
               {/* Light bulb SVG */}
               <g transform="translate(8, 4)">
                 {/* Bulb body */}
                 <path
                   d="M12 2 C7 2 3 6 3 11 C3 14 4 16 6 18 L6 22 L18 22 L18 18 C20 16 21 14 21 11 C21 6 17 2 12 2 Z"
-                  fill={isLit ? '#FEF08A' : '#E5E7EB'}
+                  fill={isLit ? '#FBBF24' : '#E5E7EB'}
                   stroke={isLit ? '#F59E0B' : '#9CA3AF'}
                   strokeWidth="1.5"
                 />
+                
+                {/* Glass highlight */}
+                <ellipse
+                  cx="10"
+                  cy="8"
+                  rx="3"
+                  ry="4"
+                  fill="white"
+                  opacity={isLit ? "0.7" : "0.3"}
+                />
+                
                 {/* Filament */}
                 <path
                   d="M8 10 Q12 8 16 10 M8 12 Q12 10 16 12"
-                  stroke={isLit ? '#F59E0B' : '#9CA3AF'}
+                  stroke={isLit ? '#DC2626' : '#9CA3AF'}
                   strokeWidth="1"
                   fill="none"
+                  opacity={isLit ? "1" : "0.5"}
                 />
+                
                 {/* Base/screw threads */}
                 <rect
                   x="6"
                   y="22"
                   width="12"
                   height="8"
-                  fill={isLit ? '#FCD34D' : '#D1D5DB'}
-                  stroke={isLit ? '#F59E0B' : '#9CA3AF'}
+                  fill={isLit ? '#A3A3A3' : '#D1D5DB'}
+                  stroke={isLit ? '#737373' : '#9CA3AF'}
                   strokeWidth="1"
                 />
-                <line x1="6" y1="24" x2="18" y2="24" stroke={isLit ? '#F59E0B' : '#9CA3AF'} strokeWidth="0.5"/>
-                <line x1="6" y1="26" x2="18" y2="26" stroke={isLit ? '#F59E0B' : '#9CA3AF'} strokeWidth="0.5"/>
-                <line x1="6" y1="28" x2="18" y2="28" stroke={isLit ? '#F59E0B' : '#9CA3AF'} strokeWidth="0.5"/>
+                <line x1="6" y1="24" x2="18" y2="24" stroke={isLit ? '#525252' : '#9CA3AF'} strokeWidth="0.5"/>
+                <line x1="6" y1="26" x2="18" y2="26" stroke={isLit ? '#525252' : '#9CA3AF'} strokeWidth="0.5"/>
+                <line x1="6" y1="28" x2="18" y2="28" stroke={isLit ? '#525252' : '#9CA3AF'} strokeWidth="0.5"/>
               </g>
-              
-              {/* Glow effect when lit */}
-              {isLit && (
-                <g>
-                  <circle cx="20" cy="16" r="15" fill="yellow" opacity="0.2"/>
-                  <circle cx="20" cy="16" r="12" fill="yellow" opacity="0.1"/>
-                </g>
-              )}
             </svg>
             
-            {/* Additional glow animation when lit */}
+            {/* Additional pulsing glow animation when lit */}
             {isLit && (
-              <div className="absolute inset-0 rounded-full bg-yellow-300 opacity-20 animate-pulse pointer-events-none" />
+              <div className="absolute inset-1 rounded-full bg-yellow-300 opacity-30 animate-pulse pointer-events-none" />
             )}
             
             {/* Selection border */}
-            <div 
-              className={`absolute inset-0 rounded-full border-2 ${isSelected ? 'border-blue-500' : 'border-transparent'}`}
-            />
+            {isSelected && (
+              <div className="absolute inset-[-2px] rounded-lg border-2 border-blue-500 pointer-events-none" />
+            )}
           </div>
         );
       
+      case 'SEVEN_SEGMENT':
+        // Simple 7-segment display representation
+        return (
+          <div className="relative w-full h-full">
+            <svg width="100%" height="100%" viewBox="0 0 60 80" className="absolute inset-0">
+              {/* Display background */}
+              <rect
+                x="10"
+                y="10"
+                width="40"
+                height="60"
+                rx="4"
+                fill="#1F2937"
+                stroke={isSelected ? '#3B82F6' : '#374151'}
+                strokeWidth={isSelected ? "3" : "2"}
+              />
+              {/* 7-segment pattern (showing "8") */}
+              <g stroke={component.inputs?.some(input => input.value) ? '#EF4444' : '#4B5563'} strokeWidth="2" fill="none">
+                <line x1="20" y1="20" x2="40" y2="20" /> {/* top */}
+                <line x1="20" y1="35" x2="40" y2="35" /> {/* middle */}
+                <line x1="20" y1="50" x2="40" y2="50" /> {/* bottom */}
+                <line x1="18" y1="22" x2="18" y2="33" /> {/* top left */}
+                <line x1="42" y1="22" x2="42" y2="33" /> {/* top right */}
+                <line x1="18" y1="37" x2="18" y2="48" /> {/* bottom left */}
+                <line x1="42" y1="37" x2="42" y2="48" /> {/* bottom right */}
+              </g>
+            </svg>
+          </div>
+        );
+
+      case 'DIGITAL_DISPLAY':
+        return (
+          <div className="relative w-full h-full">
+            <svg width="100%" height="100%" viewBox="0 0 80 40" className="absolute inset-0">
+              {/* Display screen */}
+              <rect
+                x="5"
+                y="8"
+                width="70"
+                height="24"
+                rx="4"
+                fill="#1F2937"
+                stroke={isSelected ? '#3B82F6' : '#374151'}
+                strokeWidth={isSelected ? "3" : "2"}
+              />
+              {/* Display text */}
+              <text
+                x="40"
+                y="24"
+                textAnchor="middle"
+                fontSize="12"
+                fontWeight="bold"
+                fill={component.inputs?.some(input => input.value) ? '#10B981' : '#6B7280'}
+              >
+                {component.inputs ? 
+                  component.inputs.reduce((acc, input, i) => 
+                    acc + (input.value ? Math.pow(2, component.inputs.length - 1 - i) : 0), 0) 
+                  : '0'}
+              </text>
+            </svg>
+          </div>
+        );
+
       default:
         return (
-          <div
-            className="w-full h-full bg-green-100 border-2 border-green-400 rounded flex items-center justify-center text-sm font-bold"
-            style={{ borderColor: isSelected ? '#3b82f6' : '#4ade80' }}
-          >
-            {definition.icon}
+          <div className="relative w-full h-full">
+            <svg width="100%" height="100%" viewBox="0 0 60 40" className="absolute inset-0">
+              {/* Output device body */}
+              <rect
+                x="5"
+                y="5"
+                width="50"
+                height="30"
+                rx="8"
+                fill="#F0FDF4"
+                stroke={isSelected ? '#3B82F6' : '#16A34A'}
+                strokeWidth={isSelected ? "3" : "2"}
+              />
+              {/* Output indicator */}
+              <circle
+                cx="45"
+                cy="20"
+                r="3"
+                fill={component.inputs?.[0]?.value ? '#EF4444' : '#6B7280'}
+              />
+              {/* Icon display */}
+              <text 
+                x="25" 
+                y="25" 
+                textAnchor="middle" 
+                fontSize="12" 
+                fontWeight="bold" 
+                fill={isSelected ? '#3B82F6' : '#0F172A'}
+              >
+                {definition.icon}
+              </text>
+            </svg>
           </div>
         );
     }
@@ -499,10 +660,9 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
       default:
         return (
           <div
-            className="w-full h-full bg-gray-100 border-2 border-gray-400 rounded flex items-center justify-center text-sm"
+            className="w-full h-full bg-gray-100 border-2 border-gray-400 rounded"
             style={{ borderColor: isSelected ? '#3b82f6' : '#9ca3af' }}
           >
-            {definition.icon}
           </div>
         );
     }

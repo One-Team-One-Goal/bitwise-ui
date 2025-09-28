@@ -1,10 +1,10 @@
 // ContentBlock.tsx - Improved content display component
 import React from 'react';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+// import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+// import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 interface ContentBlock {
-  type: 'text' | 'inlineCode' | 'codeBlock' | 'image' | 'list' | 'table' | 'formula' | 'callout' | 'divider' | 'custom';
+  type: 'text' | 'inlineCode' | 'codeBlock' | 'image' | 'list' | 'table' | 'formula' | 'callout' | 'divider' | 'custom' | 'karnaughMap';
   text?: string;
   code?: string;
   language?: string; // for code blocks
@@ -12,6 +12,11 @@ interface ContentBlock {
   alt?: string; // for images
   list?: string[] | { text: string; subItems?: string[] }[]; // support nested lists
   table?: {
+    headers: string[];
+    rows: string[][];
+    caption?: string;
+  };
+  karnaughMap?: {
     headers: string[];
     rows: string[][];
     caption?: string;
@@ -58,7 +63,7 @@ const ContentDisplay: React.FC<ContentDisplayProps> = ({ blocks, className = '' 
         return (
           <div key={key} className={`mb-6 ${block.className || ''}`}>
             <div className="rounded-lg overflow-hidden border border-gray-200">
-              <SyntaxHighlighter
+              {/* <SyntaxHighlighter
                 language={block.language || 'javascript'}
                 style={vscDarkPlus}
                 customStyle={{
@@ -68,7 +73,7 @@ const ContentDisplay: React.FC<ContentDisplayProps> = ({ blocks, className = '' 
                 }}
               >
                 {block.code || ''}
-              </SyntaxHighlighter>
+              </SyntaxHighlighter> */}
             </div>
           </div>
         );
@@ -124,6 +129,7 @@ const ContentDisplay: React.FC<ContentDisplayProps> = ({ blocks, className = '' 
             </ul>
           </div>
         );
+        
 
       case 'table':
     return (
@@ -165,7 +171,51 @@ const ContentDisplay: React.FC<ContentDisplayProps> = ({ blocks, className = '' 
         </div>
       </div>
     );
-
+    
+case 'karnaughMap':
+  return (
+    <div key={key} className={`mb-6 ${block.className || ''}`}>
+      <div className="overflow-x-auto rounded-lg border border-gray-300">
+        {block.karnaughMap?.caption && (
+              <caption className="text-base font-semibold text-gray-900 mb-2 m-2">
+                {block.karnaughMap.caption}
+              </caption>
+            )}
+        <table className="min-w-full text-center bg-white border-collapse">
+          <thead>
+            <tr className="bg-gray-900">
+              <th className="px-6 py-3 text-sm font-semibold text-white"></th>
+              {block.karnaughMap?.headers.map((header, i) => (
+                <th
+                  key={i}
+                  className="px-6 py-3 text-sm font-semibold text-white"
+                >
+                  {header}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+             {block.karnaughMap?.rows.map((row, rIdx) => (
+              <tr key={rIdx} className="even:bg-gray-50">
+                <th className="px-6 py-3 text-sm font-semibold text-gray-900 bg-gray-100">
+                  {`Row ${rIdx + 1}`}
+                </th>
+                {row.map((cell, cIdx) => (
+                  <td
+                    key={cIdx}
+                    className="px-6 py-3 text-sm font-mono text-gray-900"
+                  >
+                    {cell}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
 
 
       case 'formula':

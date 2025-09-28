@@ -133,7 +133,8 @@ function RouteComponent() {
             <img
               src={bitbotRightPoint}
               alt="Bitbot Right Point"
-              className="absolute left-[-120px] bottom-[-20px] w-30 z-50 opacity-90 pointer-events-none select-none"
+              className="fixed left-[calc(50%-600px)] top-32 w-28 z-50 opacity-90 pointer-events-none select-none animate-float"
+              style={{ transition: 'top 0.3s, left 0.3s' }}
               draggable="false"
             />
             
@@ -164,7 +165,7 @@ function RouteComponent() {
             )}
           </div>
         ) : (
-          <div className="w-full p-6 pt-36 flex flex-col items-center justify-between min-h-[600px] relative">
+          <div className="w-full p-6 pt-16 flex flex-col items-center justify-between min-h-[600px] relative">
             <Confetti
               ref={confettiRef}
               className="absolute left-0 top-0 z-0 w-full h-full"

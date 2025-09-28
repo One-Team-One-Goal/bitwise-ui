@@ -10,6 +10,10 @@ import {
 } from '@mui/lab'
 import AnimatedAssessmentButton from '@/components/buttons/AnimatedAssessmentButton'
 import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import DataAnalyticsCard from '@/components/DataAnalyticsCard'
+import { useAuthContext } from '@/contexts/AuthContext'
+import { Loader2 } from 'lucide-react'
 
 // Define types for better TypeScript support
 interface Sublesson {
@@ -133,8 +137,10 @@ export const Route = createFileRoute('/roadmap')({
 
 function RouteComponent() {
   const [selected, setSelected] = useState(lessons[0])
+  const [loadingAssessment, setLoadingAssessment] = useState(false)
   const navigate = useNavigate()
-
+  const { user } = useAuthContext()
+  const [hovered, setHovered] = useState<typeof timelineItems[0] | null>(null)
   // Flatten lessons and sublessons for the timeline
   const timelineItems = lessons.flatMap((lesson) => [
     { ...lesson, isSublesson: false as const },
@@ -159,29 +165,87 @@ function RouteComponent() {
       navigate({ to: `/lesson/${item.parentId}` })
     }
     setSelected(item)
-
   }
+  
 
+   const displayItem = hovered || selected
   return (
-    <div className="m-auto mt-30 flex flex-col md:flex-row w-2/3 min-h-[80vh] gap-4 p-4">
+    <div className="m-auto mt-12 flex flex-col md:flex-row w-2/3 min-h-[80vh] gap-4 p-4">
       {/* Left: Lesson Details */}
-      <Card className="max-w-md w-full p-6 h-min">
-        <CardContent className="p-0 space-y-2">
-          <h2 className="text-2xl font-bold">
-            {selected.title}
-          </h2>
-          <p className="text-muted-foreground text-sm">
-            {selected.description}
-          </p>
-          <p className="text-sm text-muted-foreground">{selected.details}</p>
-        </CardContent>
-      </Card>
+      <div className='flex flex-col gap-4 mr-4 flex-shrink-0'>
+        {/* ...existing cards... */}
+        <Card className="max-w-md w-full p-6 h-min">
+          <CardContent className="p-0 space-y-2">
+            <h2 className="text-2xl font-bold">
+              {displayItem.title}
+            </h2>
+            <p className="text-muted-foreground text-sm">
+              {displayItem.description}
+            </p>
+            <p className="text-sm text-muted-foreground">{displayItem.details}</p>
+          </CardContent>
+        </Card>
+        {/* ...Practice Assessment Card... */}
+        <Card className="max-w-md w-full p-6 h-min">
+          <CardContent className="p-0 space-y-2">
+            <h3 className="text-lg font-semibold mb-2">Practice Assessment</h3>
+            <p className="text-sm text-muted-foreground mb-2">
+              You can take this Practice Assessment to test your skills for this lesson.
+            </p>
+            {!user && (
+              <div className="text-xs text-red-500 mb-2">You need to login before taking the assessment.</div>
+            )}
+            <Button
+              disabled={!user || loadingAssessment}
+              className="w-full flex items-center justify-center"
+              onClick={async () => {
+                if (!user) return;
+                setLoadingAssessment(true); // Start loading
+                try {
+                  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/assessment/start-practice`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ uid: user.id }),
+                  });
+                  const data = await response.json();
+                  const { attemptId } = data;
+                  sessionStorage.setItem('currentAttempt', JSON.stringify(data));
+                  navigate({ to: `/assessment/${attemptId}` });
+                } finally {
+                  setLoadingAssessment(false); // Stop loading (even if error)
+                }
+              }}
+            >
+              {loadingAssessment ? (
+                <>
+                  <Loader2 className="animate-spin mr-2 h-4 w-4" />
+                  Loading...
+                </>
+              ) : (
+                'Take Practice Assessment'
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+        {/* ...Data Analytics Card... */}
+        <DataAnalyticsCard lesson={displayItem} user={user} />
+      </div>
 
-      {/* Right: Timeline with sublessons */}
-      <div className="flex-1 flex justify-center items-start">
+      {/* Right: Timeline with sublessons (scrollable only) */}
+      <div
+        className="hide-scrollbar flex-1 flex justify-center items-start overflow-y-auto"
+        style={{ maxHeight: '80vh', minHeight: '400px' }}
+      >
         <Timeline position="alternate" sx={{ m: 0, p: 0 }}>
           {timelineItems.map((item, idx) => (
-            <TimelineItem key={item.id} sx={{ minHeight: 100, mb: 4 }}>
+            <TimelineItem
+              key={item.id}
+              sx={{ minHeight: 100, mb: 4 }}
+              onMouseEnter={() => setHovered(item)}
+              onMouseLeave={() => setHovered(null)}
+            >
+              {/* ...TimelineOppositeContent, TimelineSeparator, TimelineContent... */}
+              {/* ...existing code... */}
               <TimelineOppositeContent
                 sx={{
                   display: 'flex',
@@ -209,7 +273,6 @@ function RouteComponent() {
               >
                 <AnimatedAssessmentButton
                   onClick={() => handleItemClick(item)}
-
                   isSelected={
                     selected.id === item.id ||
                     (item.isSublesson && selected.title === item.parentTitle)
@@ -233,6 +296,8 @@ function RouteComponent() {
                   opacity: item.isSublesson ? 0.8 : 1,
                 }}
                 onClick={() => handleItemClick(item)}
+                onMouseEnter={() => setHovered(item)}
+                onMouseLeave={() => setHovered(null)}
               >
                 <p
                   className={`text-sm ${

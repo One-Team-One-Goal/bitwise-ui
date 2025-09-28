@@ -84,7 +84,7 @@ interface TimelineState {
 
 const FactoringDemo: React.FC<FactoringDemoProps> = () => {
   // UI and remote script state
-  const [expressionInput, setExpressionInput] = React.useState<string>('¬((A v B) ^ (¬C v D)) v (E ^ (A v ¬D))')
+  const [expressionInput, setExpressionInput] = React.useState<string>('(A ∨ B) ∧ (A ∨ ¬B)')
   const [loadingRemote, setLoadingRemote] = React.useState<boolean>(false)
   const [errorRemote, setErrorRemote] = React.useState<string | null>(null)
   const [remoteScript, setRemoteScript] = React.useState<FactoringDirectionScript | null>(null)

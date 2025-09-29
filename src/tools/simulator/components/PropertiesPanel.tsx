@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { BooleanExpressionInput } from '@/components/BooleanExpressionInput';
 import { InteractiveExplanation } from '@/components/InteractiveExplanation';
 import type { Component, Connection } from '../types';
 import { COMPONENT_DEFINITIONS } from '../utils/componentFactory';
@@ -112,23 +111,104 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ circuitHook })
   };
 
   const renderConnectionProperties = (connection: Connection) => {
+    // Find source and destination components
+    const fromComponent = circuitState.components.find((c: Component) => c.id === connection.from.componentId);
+    const toComponent = circuitState.components.find((c: Component) => c.id === connection.to.componentId);
+    
     return (
       <div className="space-y-4">
+        {/* Wire Header */}
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <Info className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium">Connection</span>
+            <div className={`w-3 h-3 rounded-full ${connection.value ? 'bg-green-500' : 'bg-gray-400'}`} />
+            <span className="text-sm font-medium">Wire Connection</span>
           </div>
           <div className="text-xs text-muted-foreground">ID: {connection.id}</div>
-          <div className={`text-sm font-medium mt-2 ${
-            connection.value ? 'text-green-600' : 'text-muted-foreground'
-          }`}>
-            Signal: {connection.value ? 'HIGH (1)' : 'LOW (0)'}
+        </div>
+
+        {/* Signal Status */}
+        <div className="bg-muted/50 rounded-lg p-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">Signal State</span>
+            <div className={`px-2 py-1 rounded-full text-xs font-bold ${
+              connection.value 
+                ? 'bg-green-100 text-green-800 border border-green-300' 
+                : 'bg-gray-100 text-gray-600 border border-gray-300'
+            }`}>
+              {connection.value ? 'HIGH (1)' : 'LOW (0)'}
+            </div>
+          </div>
+          
+          {/* Visual signal indicator */}
+          <div className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div 
+              className={`h-full transition-all duration-300 ${
+                connection.value ? 'bg-green-500' : 'bg-gray-400'
+              }`}
+              style={{ width: connection.value ? '100%' : '20%' }}
+            />
           </div>
         </div>
 
-        <div className="pt-2">
-          <Separator className="mb-3" />
+        {/* Connection Details */}
+        <div className="space-y-3">
+          <h4 className="text-sm font-medium">Connection Details</h4>
+          
+          {/* From Component */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <div className="text-xs font-medium text-blue-800 mb-1">FROM (Output)</div>
+            <div className="text-sm">
+              {fromComponent ? (COMPONENT_DEFINITIONS[fromComponent.type as keyof typeof COMPONENT_DEFINITIONS]?.name || 'Unknown') : 'Unknown'}
+            </div>
+            <div className="text-xs text-blue-600">Component ID: {connection.from.componentId}</div>
+            <div className="text-xs text-blue-600">Pin: {connection.from.connectionPointId}</div>
+          </div>
+          
+          {/* To Component */}
+          <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+            <div className="text-xs font-medium text-purple-800 mb-1">TO (Input)</div>
+            <div className="text-sm">
+              {toComponent ? (COMPONENT_DEFINITIONS[toComponent.type as keyof typeof COMPONENT_DEFINITIONS]?.name || 'Unknown') : 'Unknown'}
+            </div>
+            <div className="text-xs text-purple-600">Component ID: {connection.to.componentId}</div>
+            <div className="text-xs text-purple-600">Pin: {connection.to.connectionPointId}</div>
+          </div>
+        </div>
+
+        {/* Wire Path Info */}
+        <div className="space-y-2">
+          <h4 className="text-sm font-medium">Path Information</h4>
+          <div className="text-xs text-muted-foreground">
+            Path Points: {connection.path.length}
+          </div>
+          <div className="text-xs text-muted-foreground">
+            Length: ~{Math.round(
+              connection.path.reduce((total, point, index) => {
+                if (index === 0) return 0;
+                const prev = connection.path[index - 1];
+                return total + Math.sqrt(Math.pow(point.x - prev.x, 2) + Math.pow(point.y - prev.y, 2));
+              }, 0)
+            )}px
+          </div>
+        </div>
+
+        {/* Wire Actions */}
+        <div className="space-y-2">
+          <Separator />
+          
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full"
+            onClick={() => {
+              // TODO: Implement wire highlighting/tracing
+              console.log('Trace wire:', connection.id);
+            }}
+          >
+            <Info className="h-4 w-4 mr-2" />
+            Trace Wire Path
+          </Button>
+          
           <Button
             variant="destructive"
             size="sm"
@@ -136,7 +216,7 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ circuitHook })
             onClick={() => circuitHook.removeConnection(connection.id)}
           >
             <Trash2 className="h-4 w-4 mr-2" />
-            Delete Connection
+            Delete Wire
           </Button>
         </div>
       </div>
@@ -155,18 +235,6 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ circuitHook })
       
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-6">
-          {/* Boolean Expression Input */}
-          <BooleanExpressionInput
-            onExpressionValidated={(expression, isSimplified) => {
-              console.log('Expression validated:', expression, 'Simplified:', isSimplified);
-            }}
-            onGenerateCircuit={(expression) => {
-              console.log('Generate circuit for:', expression);
-              // TODO: Implement circuit generation from expression
-            }}
-          />
-          
-          <Separator />
           
           {selectedComponent ? (
             <div className="space-y-6">

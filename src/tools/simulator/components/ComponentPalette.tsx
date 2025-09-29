@@ -7,10 +7,17 @@ import {
   Settings,
   ChevronDown,
   ChevronRight,
-  Cpu
+  Cpu,
+  Info
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import type { ComponentType } from '../types';
 import { ComponentFactory } from '../utils/componentFactory';
 
@@ -52,24 +59,29 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
     const isSelected = selectedComponentType === definition.type;
     
     return (
-      <Button
-        key={definition.type}
-        variant={isSelected ? "outline" : "ghost"}
-        size="sm"
-        className="w-full justify-start h-12 p-2 flex-shrink-0"
-        onClick={() => onComponentSelect(definition.type)}
-        title={definition.description}
-      >
-        <div className="flex items-center gap-2 w-full min-w-0">
-          <div className="text-sm font-mono bg-muted rounded px-1.5 py-1 min-w-[1.5rem] text-center flex-shrink-0">
-            {definition.icon}
-          </div>
-          <div className="flex-1 min-w-0 text-left">
-            <div className="text-xs font-medium truncate">{definition.name}</div>
-            <div className="text-xs text-muted-foreground truncate leading-tight">{definition.description}</div>
-          </div>
-        </div>
-      </Button>
+      <TooltipProvider key={definition.type}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant={isSelected ? "outline" : "ghost"}
+              size="sm"
+              className="w-full justify-between h-10 p-2 flex-shrink-0"
+              onClick={() => onComponentSelect(definition.type)}
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="text-sm font-mono bg-muted rounded px-1.5 py-0.5 min-w-[1.5rem] text-center flex-shrink-0">
+                  {definition.icon}
+                </div>
+                <div className="text-xs font-medium truncate">{definition.name}</div>
+              </div>
+              <Info className="h-3 w-3 text-muted-foreground flex-shrink-0 ml-1" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="right" className="max-w-xs">
+            <p className="text-xs">{definition.description}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     );
   };
 

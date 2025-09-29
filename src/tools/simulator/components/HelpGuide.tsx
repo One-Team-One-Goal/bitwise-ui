@@ -3,7 +3,8 @@ import { HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import introJs from 'intro.js';
 import 'intro.js/introjs.css';
-import './help-guide.css';
+import './introjs.css'
+
 
 interface HelpGuideProps {
   onStartTour?: () => void;
@@ -16,27 +17,27 @@ export const HelpGuide: React.FC<HelpGuideProps> = ({ onStartTour }) => {
     intro.setOptions({
       steps: [
         {
-          title: '🎯 Welcome to Circuit Simulator!',
+          title: 'Welcome to Circuit Simulator!',
           intro: 'Let me guide you through creating digital circuits step by step.',
         },
         {
           element: '[data-tour="toolbar"]',
-          title: '🔧 Toolbar',
+          title: 'Toolbar',
           intro: 'Use these tools to interact with your circuit. Select components, move them, or connect wires.',
         },
         {
           element: '[data-tour="component-palette"]',
-          title: '🧩 Component Palette',
+          title: 'Component Palette',
           intro: 'Choose from logic gates, inputs, outputs, and more. Click a category to expand it.',
         },
         {
           element: '[data-tour="canvas"]',
-          title: '🎨 Canvas',
+          title: 'Canvas',
           intro: 'This is where you build your circuit. Click to place components and drag to connect them.',
         },
         {
           element: '[data-tour="properties"]',
-          title: '⚙️ Properties Panel',
+          title: 'Properties Panel',
           intro: 'Adjust component settings and view information about selected components here.',
         },
         {
@@ -48,10 +49,10 @@ export const HelpGuide: React.FC<HelpGuideProps> = ({ onStartTour }) => {
       showBullets: false,
       exitOnOverlayClick: false,
       exitOnEsc: true,
-      nextLabel: 'Next →',
-      prevLabel: '← Back',
+      nextLabel: 'Next ->',
+      prevLabel: '<- Back',
       doneLabel: 'Start Building! 🎉',
-      skipLabel: 'Skip Tour',
+      skipLabel: 'Skip',
     });
 
     intro.onbeforechange(() => {

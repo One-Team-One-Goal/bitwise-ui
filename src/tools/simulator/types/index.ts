@@ -100,7 +100,7 @@ export interface SimulationEvent {
 }
 
 export interface ToolbarState {
-  selectedTool: 'select' | 'pan' | 'wire' | 'component';
+  selectedTool: 'select' | 'pan' | 'wire' | 'wire-edit' | 'component';
   selectedComponentType: ComponentType | null;
 }
 

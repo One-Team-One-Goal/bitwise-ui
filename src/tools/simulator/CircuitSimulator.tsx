@@ -3,7 +3,9 @@ import { CircuitCanvas } from './components/CircuitCanvas';
 import { ComponentPalette } from './components/ComponentPalette';
 import { SimulatorToolbar } from './components/SimulatorToolbar';
 import { PropertiesPanel } from './components/PropertiesPanel';
+import { BooleanExpressionInput } from './components/BooleanExpressionInput';
 import { useCircuitSimulator } from './hooks/useCircuitSimulator';
+import { Card, CardContent } from '@/components/ui/card';
 import type { ComponentType, ToolbarState } from './types';
 
 export const CircuitSimulator: React.FC = () => {
@@ -12,6 +14,7 @@ export const CircuitSimulator: React.FC = () => {
     selectedTool: 'select',
     selectedComponentType: null
   });
+  const [showBooleanExpression, setShowBooleanExpression] = useState(false);
 
   const handleToolSelect = (tool: ToolbarState['selectedTool']) => {
     setToolbarState(prev => ({
@@ -37,36 +40,39 @@ export const CircuitSimulator: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-background">
+    <div className="h-full flex flex-col bg-background relative">
       {/* Toolbar */}
       <div data-tour="toolbar">
         <SimulatorToolbar
           toolbarState={toolbarState}
           onToolSelect={handleToolSelect}
           circuitHook={circuitHook}
+          showBooleanExpression={showBooleanExpression}
+          onToggleBooleanExpression={() => setShowBooleanExpression(!showBooleanExpression)}
         />
       </div>
 
-      <div className="flex flex-1 overflow-hidden lg:overflow-visible min-h-0">
-        {/* Component Palette - Hidden on mobile, slide-out panel */}
-        <div className="hidden lg:flex w-64 xl:w-72 flex-shrink-0" data-tour="component-palette">
+      <div className="flex flex-1 overflow-hidden min-h-0">
+        {/* Component Palette - Responsive visibility */}
+        <div className="hidden md:flex w-64 lg:w-72 flex-shrink-0" data-tour="component-palette">
           <ComponentPalette
             onComponentSelect={handleComponentTypeSelect}
             selectedComponentType={toolbarState.selectedComponentType}
           />
         </div>
 
-        {/* Main Circuit Canvas - Full width on mobile */}
+        {/* Main Circuit Canvas */}
         <div className="flex-1 relative min-w-0" data-tour="canvas">
           <CircuitCanvas
             circuitHook={circuitHook}
             toolbarState={toolbarState}
             onCanvasClick={handleCanvasClick}
+            onToolSelect={handleToolSelect}
           />
         </div>
 
-        {/* Properties Panel - Hidden on tablets and below */}
-        <div className="hidden xl:flex w-64 flex-shrink-0" data-tour="properties">
+        {/* Properties Panel - Responsive visibility */}
+        <div className="hidden lg:flex w-64 xl:w-72 flex-shrink-0" data-tour="properties">
           <PropertiesPanel
             circuitHook={circuitHook}
           />
@@ -74,9 +80,9 @@ export const CircuitSimulator: React.FC = () => {
       </div>
 
       {/* Mobile Component Palette - Bottom sheet */}
-      <div className="lg:hidden">
+      <div className="md:hidden">
         {toolbarState.selectedTool === 'component' && (
-          <div className="flex-shrink-0 bg-background border-t border-border max-h-60 overflow-hidden">
+          <div className="flex-shrink-0 bg-background border-t border-border max-h-48 overflow-hidden">
             <ComponentPalette
               onComponentSelect={handleComponentTypeSelect}
               selectedComponentType={toolbarState.selectedComponentType}
@@ -84,6 +90,36 @@ export const CircuitSimulator: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Mobile Properties Panel - Overlay */}
+      <div className="lg:hidden">
+        {(circuitHook.circuitState.selectedComponent || circuitHook.circuitState.selectedConnection) && (
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border shadow-lg max-h-64 md:max-h-72">
+            <PropertiesPanel
+              circuitHook={circuitHook}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Boolean Expression Input Overlay */}
+      {showBooleanExpression && (
+        <div className="absolute top-16 left-4 right-4 z-40 md:left-1/2 md:transform md:-translate-x-1/2 md:max-w-2xl">
+          <Card className="shadow-lg border-border bg-background/95 backdrop-blur-sm">
+            <CardContent className="p-4">
+              <BooleanExpressionInput
+                onExpressionValidated={(expression, isSimplified) => {
+                  console.log('Expression validated:', expression, 'Simplified:', isSimplified);
+                }}
+                onGenerateCircuit={(expression) => {
+                  console.log('Generate circuit for:', expression);
+                  // TODO: Implement circuit generation from expression
+                }}
+              />
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,16 +1,19 @@
-import React, { useRef, useCallback, useState } from 'react';
+import React, { useRef, useCallback, useState, useEffect } from 'react';
 import type { Component, Connection, Position, ToolbarState } from '../types';
+import { ConnectionRenderer } from './ConnectionRenderer';
 
 interface CircuitCanvasProps {
   circuitHook: any;
   toolbarState: ToolbarState;
   onCanvasClick: (position: Position) => void;
+  onToolSelect?: (tool: ToolbarState['selectedTool']) => void;
 }
 
 export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
   circuitHook,
   toolbarState,
-  onCanvasClick
+  onCanvasClick,
+  onToolSelect
 }) => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [pan, setPan] = useState<Position>({ x: 0, y: 0 });
@@ -26,6 +29,50 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
     startPosition: { x: 0, y: 0 },
     offset: { x: 0, y: 0 }
   });
+
+  // Keyboard event handling for deleting selected items
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Only handle deletion if the user isn't typing in an input field
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      if (event.key === 'Delete' || event.key === 'Backspace') {
+        event.preventDefault();
+        
+        // Prioritize wire deletion when wire-edit tool is selected
+        if (toolbarState.selectedTool === 'wire-edit' && circuitHook.circuitState.selectedConnection) {
+          circuitHook.removeConnection(circuitHook.circuitState.selectedConnection);
+        }
+        // Handle wire deletion in any mode if a wire is selected
+        else if (circuitHook.circuitState.selectedConnection) {
+          circuitHook.removeConnection(circuitHook.circuitState.selectedConnection);
+        }
+        // Only delete components if no wire is selected
+        else if (circuitHook.circuitState.selectedComponent) {
+          circuitHook.removeComponent(circuitHook.circuitState.selectedComponent);
+        }
+      }
+      
+      // 'W' key to quickly switch to wire edit mode
+      if (event.key === 'w' || event.key === 'W') {
+        if (!event.ctrlKey && !event.metaKey && onToolSelect) {
+          event.preventDefault();
+          onToolSelect('wire-edit');
+        }
+      }
+      
+      // 'Escape' key to deselect everything
+      if (event.key === 'Escape') {
+        circuitHook.selectComponent(null);
+        circuitHook.selectConnection(null);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [circuitHook.circuitState.selectedConnection, circuitHook.circuitState.selectedComponent, circuitHook, toolbarState.selectedTool]);
 
   const [panState, setPanState] = useState<{
     isPanning: boolean;
@@ -217,6 +264,51 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
     }
   }, [toolbarState.selectedTool, connectionState, circuitHook]);
 
+  // Utility function to update wire paths when components move
+  const updateWirePathsForComponent = useCallback((componentId: string) => {
+    const component = circuitHook.circuitState.components.find((c: Component) => c.id === componentId);
+    if (!component) return;
+
+    // Find all connections that involve this component
+    const connectionsToUpdate = circuitHook.circuitState.connections.filter((conn: Connection) => 
+      conn.from.componentId === componentId || conn.to.componentId === componentId
+    );
+
+    // Update each connection's path
+    connectionsToUpdate.forEach((connection: Connection) => {
+      const fromComponent = circuitHook.circuitState.components.find((c: Component) => c.id === connection.from.componentId);
+      const toComponent = circuitHook.circuitState.components.find((c: Component) => c.id === connection.to.componentId);
+
+      if (fromComponent && toComponent) {
+        // Calculate new start and end positions based on component positions
+        const fromPoint = fromComponent.outputs.find(o => o.id === connection.from.connectionPointId);
+        const toPoint = toComponent.inputs.find(i => i.id === connection.to.connectionPointId);
+
+        if (fromPoint && toPoint) {
+          // Calculate connection point positions relative to component position
+          const startX = fromComponent.position.x + fromComponent.size.width;
+          const startY = fromComponent.position.y + (fromComponent.outputs.indexOf(fromPoint) + 1) * 
+                          fromComponent.size.height / (fromComponent.outputs.length + 1);
+
+          const endX = toComponent.position.x;
+          const endY = toComponent.position.y + (toComponent.inputs.indexOf(toPoint) + 1) * 
+                        toComponent.size.height / (toComponent.inputs.length + 1);
+
+          // Create a simple two-point path (can be enhanced for better routing)
+          const newPath = [
+            { x: startX, y: startY },
+            { x: endX, y: endY }
+          ];
+
+          // Update the connection path
+          if (circuitHook.updateConnection) {
+            circuitHook.updateConnection(connection.id, { path: newPath });
+          }
+        }
+      }
+    });
+  }, [circuitHook]);
+
   // Handle mouse move
   const handleMouseMove = useCallback((event: React.MouseEvent) => {
     const rect = canvasRef.current?.getBoundingClientRect();
@@ -236,6 +328,8 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
       };
       
       circuitHook.moveComponent(dragState.componentId, newPosition);
+      // Update wire paths for the moved component
+      updateWirePathsForComponent(dragState.componentId);
     }
 
     // Handle panning
@@ -382,45 +476,27 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
     );
   };
 
-  // Simple connection renderer
+  // Enhanced connection renderer with removal and editing support
   const renderConnection = (connection: Connection) => {
-    if (connection.path.length < 2) return null;
-
-    const start = connection.path[0];
-    const end = connection.path[connection.path.length - 1];
-
     return (
-      <svg
+      <div
         key={connection.id}
-        className="absolute pointer-events-none"
-        style={{ 
-          left: 0, 
-          top: 0, 
-          width: '100%', 
-          height: '100%',
-          zIndex: connection.value ? 10 : 5
+        style={{
+          transform: `scale(${zoom}) translate(${pan.x}px, ${pan.y}px)`,
+          transformOrigin: '0 0'
         }}
       >
-        <line
-          x1={start.x * zoom + pan.x}
-          y1={start.y * zoom + pan.y}
-          x2={end.x * zoom + pan.x}
-          y2={end.y * zoom + pan.y}
-          stroke={connection.value ? '#ef4444' : '#6b7280'}
-          strokeWidth={connection.value ? 3 : 2}
-          style={{
-            filter: connection.value ? 'drop-shadow(0 0 4px rgba(239, 68, 68, 0.5))' : undefined
+        <ConnectionRenderer
+          connection={connection}
+          isSelected={circuitHook.circuitState.selectedConnection === connection.id}
+          onSelect={() => circuitHook.selectConnection(connection.id)}
+          onRemove={() => circuitHook.removeConnection(connection.id)}
+          onPathUpdate={(newPath) => {
+            // TODO: Implement path update functionality
+            console.log('Path update requested:', newPath);
           }}
         />
-        
-        {/* Signal direction indicator */}
-        <circle
-          cx={(start.x + end.x) / 2 * zoom + pan.x}
-          cy={(start.y + end.y) / 2 * zoom + pan.y}
-          r={connection.value ? 4 : 2}
-          fill={connection.value ? '#ef4444' : '#6b7280'}
-        />
-      </svg>
+      </div>
     );
   };
 

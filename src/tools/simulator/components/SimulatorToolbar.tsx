@@ -7,23 +7,33 @@ import {
   Grid3X3, 
   RotateCcw, 
   Trash2,
-  Zap
+  Zap,
+  Calculator,
+  ChevronDown,
+  ChevronUp,
+  Scissors,
+  Settings
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { HelpGuide } from '@/components/HelpGuide';
+import { HelpGuide } from '@/tools/simulator/components/HelpGuide';
 import type { ToolbarState } from '../types';
 
 interface SimulatorToolbarProps {
   toolbarState: ToolbarState;
   onToolSelect: (tool: ToolbarState['selectedTool']) => void;
   circuitHook: any; // We'll type this properly later
+  showBooleanExpression: boolean;
+  onToggleBooleanExpression: () => void;
 }
 
 export const SimulatorToolbar: React.FC<SimulatorToolbarProps> = ({
   toolbarState,
   onToolSelect,
-  circuitHook
+  circuitHook,
+  showBooleanExpression,
+  onToggleBooleanExpression
 }) => {
+  
   const tools = [
     {
       id: 'select' as const,
@@ -42,6 +52,12 @@ export const SimulatorToolbar: React.FC<SimulatorToolbarProps> = ({
       name: 'Wire',
       icon: Cable,
       description: 'Connect components'
+    },
+    {
+      id: 'wire-edit' as const,
+      name: 'Wire Edit',
+      icon: Scissors,
+      description: 'Select and manage wires'
     },
     {
       id: 'component' as const,
@@ -90,6 +106,22 @@ export const SimulatorToolbar: React.FC<SimulatorToolbarProps> = ({
 
           {/* Controls */}
           <div className="flex items-center gap-2 flex-wrap">
+            {/* Boolean Expression Toggle */}
+            <Button
+              variant={showBooleanExpression ? "default" : "outline"}
+              size="sm"
+              onClick={onToggleBooleanExpression}
+              title="Toggle Boolean Expression Input"
+            >
+              <Calculator className="h-4 w-4" />
+              {showBooleanExpression ? (
+                <ChevronUp className="h-4 w-4 ml-1" />
+              ) : (
+                <ChevronDown className="h-4 w-4 ml-1" />
+              )}
+              <span className="hidden sm:inline ml-1">Boolean</span>
+            </Button>
+            
             {/* Grid Toggle */}
             <Button
               variant={circuitHook.circuitState.snapToGrid ? "default" : "outline"}

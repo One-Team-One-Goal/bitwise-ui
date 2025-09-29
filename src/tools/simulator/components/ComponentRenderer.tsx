@@ -1,6 +1,7 @@
 import React from 'react';
-import type { Component, ConnectionPoint } from '../types';
+import type { Component, ConnectionPoint } from '../types/index';
 import { COMPONENT_DEFINITIONS } from '../utils/componentFactory';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ComponentRendererProps {
   component: Component;
@@ -23,24 +24,64 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
     return (
       <div
         key={point.id}
-        className={`absolute w-3 h-3 rounded-full border-2 cursor-pointer z-10 transition-all duration-200 ${
-          point.connected 
-            ? 'bg-green-500 border-green-600 shadow-lg' 
-            : point.value 
-              ? 'bg-red-500 border-red-600 shadow-md' 
-              : 'bg-gray-300 border-gray-400 hover:bg-blue-200 hover:border-blue-400'
-        } hover:scale-125`}
+        className={`absolute cursor-pointer z-20 transition-all duration-200 group`}
         style={{
-          left: isInput ? -6 : component.size.width - 6,
-          top: ((index + 1) * component.size.height / (isInput ? component.inputs.length + 1 : component.outputs.length + 1)) - 6,
-          boxShadow: point.connected ? '0 0 8px rgba(34, 197, 94, 0.5)' : point.value ? '0 0 6px rgba(239, 68, 68, 0.5)' : undefined
+          left: isInput ? -8 : component.size.width - 8,
+          top: ((index + 1) * component.size.height / (isInput ? component.inputs.length + 1 : component.outputs.length + 1)) - 8,
         }}
         onClick={(e) => {
           e.stopPropagation();
           onConnectionPointClick(point.id);
         }}
-        title={`${point.type} ${index + 1} - ${point.value ? 'HIGH' : 'LOW'}${point.connected ? ' (Connected)' : ' (Available)'}`}
-      />
+        title={`${point.type} ${index + 1} - ${point.value ? 'HIGH (1)' : 'LOW (0)'}${point.connected ? ' (Connected)' : ' (Available)'}`}
+      >
+        {/* Hover ring */}
+        <div
+          className={`absolute inset-0 w-4 h-4 rounded-full border-2 transition-all duration-200 opacity-0 group-hover:opacity-100 scale-150 group-hover:scale-200 ${
+            point.connected 
+              ? 'border-green-400' 
+              : point.value 
+                ? 'border-red-400' 
+                : 'border-blue-400'
+          }`}
+        />
+        
+        {/* Main connection point */}
+        <div
+          className={`relative w-4 h-4 rounded-full border-2 transition-all duration-200 group-hover:scale-125 ${
+            point.connected 
+              ? 'bg-green-500 border-green-600 shadow-lg shadow-green-500/50' 
+              : point.value 
+                ? 'bg-red-500 border-red-600 shadow-md shadow-red-500/50' 
+                : 'bg-gray-200 border-gray-400 group-hover:bg-blue-200 group-hover:border-blue-500 group-hover:shadow-md group-hover:shadow-blue-500/30'
+          }`}
+        >
+          {/* Inner glow for active states */}
+          {(point.connected || point.value) && (
+            <div
+              className={`absolute inset-1 rounded-full animate-pulse ${
+                point.connected ? 'bg-green-300' : 'bg-red-300'
+              } opacity-60`}
+            />
+          )}
+          
+          {/* Value indicator */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className={`text-xs font-bold transition-opacity duration-200 ${
+              point.connected || point.value 
+                ? 'text-white opacity-100' 
+                : 'text-gray-600 opacity-0 group-hover:opacity-100'
+            }`}>
+              {point.value ? '1' : '0'}
+            </span>
+          </div>
+        </div>
+
+        {/* Connection status indicator */}
+        {point.connected && (
+          <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full border border-white animate-pulse" />
+        )}
+      </div>
     );
   };
 
@@ -241,35 +282,142 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
         );
       
       default:
-        // Generic rectangular component
+        // Generic complex component with proper styling
         return (
-          <div
-            className="w-full h-full bg-white border-2 border-gray-400 rounded"
-            style={{ borderColor: isSelected ? '#3b82f6' : '#9ca3af' }}
-          >
+          <div className="relative w-full h-full">
+            <svg width="100%" height="100%" viewBox="0 0 80 60" className="absolute inset-0">
+              {/* Component body */}
+              <rect
+                x="5"
+                y="5"
+                width="70"
+                height="50"
+                rx="8"
+                fill="white"
+                stroke={isSelected ? '#3B82F6' : '#374151'}
+                strokeWidth={isSelected ? "3" : "2"}
+                className="transition-all duration-200"
+              />
+              
+              {/* Component type label */}
+              <text
+                x="40"
+                y="25"
+                textAnchor="middle"
+                fontSize="10"
+                fontWeight="bold"
+                fill={isSelected ? '#3B82F6' : '#374151'}
+                className="transition-all duration-200"
+              >
+                {component.type.replace('_', ' ')}
+              </text>
+              
+              {/* Circuit pattern decoration */}
+              <g stroke={isSelected ? '#93C5FD' : '#9CA3AF'} strokeWidth="1" fill="none" opacity="0.5">
+                <path d="M15 35 L25 35 L25 40 L35 40 L35 35 L45 35" />
+                <circle cx="20" cy="35" r="1" fill={isSelected ? '#93C5FD' : '#9CA3AF'} />
+                <circle cx="30" cy="40" r="1" fill={isSelected ? '#93C5FD' : '#9CA3AF'} />
+                <circle cx="40" cy="35" r="1" fill={isSelected ? '#93C5FD' : '#9CA3AF'} />
+              </g>
+              
+              {/* Selection indicator */}
+              {isSelected && (
+                <rect
+                  x="3"
+                  y="3"
+                  width="74"
+                  height="54"
+                  rx="10"
+                  fill="none"
+                  stroke="#3B82F6"
+                  strokeWidth="2"
+                  strokeDasharray="4 2"
+                  opacity="0.6"
+                />
+              )}
+            </svg>
           </div>
         );
     }
   };
 
   const renderFlipFlop = () => {
-    
     return (
       <div className="relative w-full h-full">
-        <div
-          className="w-full h-full bg-white border-2 border-gray-600 rounded"
-          style={{ borderColor: isSelected ? '#3b82f6' : '#4b5563' }}
-        >
-        </div>
-        
-        {/* Clock triangle indicator for flip-flops */}
-        {component.inputs.length > 2 && (
-          <div className="absolute left-0 bottom-2">
-            <svg width="8" height="8" viewBox="0 0 8 8">
-              <polygon points="0,0 8,4 0,8" fill="black" />
-            </svg>
-          </div>
-        )}
+        <svg width="100%" height="100%" viewBox="0 0 80 60" className="absolute inset-0">
+          {/* Flip-flop body */}
+          <rect
+            x="5"
+            y="5"
+            width="70"
+            height="50"
+            rx="6"
+            fill="white"
+            stroke={isSelected ? '#3B82F6' : '#4B5563'}
+            strokeWidth={isSelected ? "3" : "2"}
+            className="transition-all duration-200"
+          />
+          
+          {/* Flip-flop type label */}
+          <text
+            x="40"
+            y="22"
+            textAnchor="middle"
+            fontSize="12"
+            fontWeight="bold"
+            fill={isSelected ? '#3B82F6' : '#1F2937'}
+          >
+            {component.type.replace('_FLIPFLOP', '')}
+          </text>
+          
+          {/* FF label */}
+          <text
+            x="40"
+            y="38"
+            textAnchor="middle"
+            fontSize="10"
+            fill={isSelected ? '#3B82F6' : '#6B7280'}
+          >
+            FF
+          </text>
+          
+          {/* Clock triangle indicator */}
+          {component.inputs.length > 2 && (
+            <polygon
+              points="5,48 13,44 5,40"
+              fill={isSelected ? '#3B82F6' : '#374151'}
+              className="transition-all duration-200"
+            />
+          )}
+          
+          {/* Input/Output pin indicators */}
+          <g stroke={isSelected ? '#3B82F6' : '#6B7280'} strokeWidth="1" fill="none">
+            {/* Input side indicators */}
+            <line x1="5" y1="15" x2="15" y2="15" />
+            <line x1="5" y1="30" x2="15" y2="30" />
+            {component.inputs.length > 2 && <line x1="5" y1="45" x2="15" y2="45" />}
+            
+            {/* Output side indicators */}
+            <line x1="65" y1="20" x2="75" y2="20" />
+            <line x1="65" y1="40" x2="75" y2="40" />
+          </g>
+          
+          {/* Selection indicator */}
+          {isSelected && (
+            <rect
+              x="3"
+              y="3"
+              width="74"
+              height="54"
+              rx="8"
+              fill="none"
+              stroke="#3B82F6"
+              strokeWidth="2"
+              strokeDasharray="4 2"
+              opacity="0.6"
+            />
+          )}
+        </svg>
       </div>
     );
   };
@@ -668,33 +816,80 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
     }
   };
 
+  const getComponentDescription = () => {
+    const descriptions: Record<string, string> = {
+      'AND': 'AND Gate - Output is HIGH only when all inputs are HIGH',
+      'OR': 'OR Gate - Output is HIGH when any input is HIGH',
+      'NOT': 'NOT Gate - Inverts the input signal',
+      'NAND': 'NAND Gate - Output is LOW only when all inputs are HIGH',
+      'NOR': 'NOR Gate - Output is LOW when any input is HIGH',
+      'XOR': 'XOR Gate - Output is HIGH when inputs are different',
+      'XNOR': 'XNOR Gate - Output is HIGH when inputs are the same',
+      'BUFFER': 'Buffer Gate - Amplifies the input signal without changing logic',
+      'SWITCH': 'Toggle Switch - Click to toggle between HIGH and LOW',
+      'PUSH_BUTTON': 'Push Button - Momentary HIGH signal when pressed',
+      'CLOCK': 'Clock Generator - Generates periodic square wave signal',
+      'HIGH_CONSTANT': 'Logic HIGH - Always outputs 1',
+      'LOW_CONSTANT': 'Logic LOW - Always outputs 0',
+      'LED': 'Light Emitting Diode - Visual indicator for HIGH signals',
+      'SEVEN_SEGMENT': '7-Segment Display - Shows digits 0-9 based on input pattern',
+      'DIGITAL_DISPLAY': 'Digital Display - Shows binary number as decimal value',
+      'SR_FLIPFLOP': 'SR Flip-Flop - Set-Reset memory element',
+      'D_FLIPFLOP': 'D Flip-Flop - Data memory element with clock',
+      'JK_FLIPFLOP': 'JK Flip-Flop - Universal flip-flop with no invalid state',
+      'T_FLIPFLOP': 'T Flip-Flop - Toggle flip-flop changes state on clock',
+      'HALF_ADDER': 'Half Adder - Adds two single bits producing sum and carry',
+      'FULL_ADDER': 'Full Adder - Adds two bits and carry input producing sum and carry',
+      'FOUR_BIT_ADDER': '4-Bit Adder - Adds two 4-bit binary numbers',
+      'MULTIPLEXER_2TO1': '2-to-1 Multiplexer - Selects one of two inputs based on control signal',
+      'DECODER_2TO4': '2-to-4 Decoder - Converts 2-bit input to 4-line output'
+    };
+    
+    return descriptions[component.type] || `${component.type} - Digital circuit component`;
+  };
+
   return (
-    <div
-      className={`absolute cursor-move select-none ${isSelected ? 'z-20' : 'z-10'}`}
-      style={{
-        left: component.position.x,
-        top: component.position.y,
-        width: component.size.width,
-        height: component.size.height,
-        transform: `rotate(${component.rotation}deg)`
-      }}
-      onMouseDown={onMouseDown}
-    >
-      {/* Component body */}
-      {renderComponent()}
-      
-      {/* Input connection points */}
-      {component.inputs.map((input, index) => renderConnectionPoint(input, index))}
-      
-      {/* Output connection points */}
-      {component.outputs.map((output, index) => renderConnectionPoint(output, index))}
-      
-      {/* Component label */}
-      {component.label && (
-        <div className="absolute -bottom-6 left-0 text-xs text-gray-600 whitespace-nowrap">
-          {component.label}
-        </div>
-      )}
-    </div>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div
+            className={`absolute cursor-move select-none ${isSelected ? 'z-20' : 'z-10'} transition-all duration-200 hover:z-30`}
+            style={{
+              left: component.position.x,
+              top: component.position.y,
+              width: component.size.width,
+              height: component.size.height,
+              transform: `rotate(${component.rotation}deg)`
+            }}
+            onMouseDown={onMouseDown}
+          >
+            {/* Component body */}
+            {renderComponent()}
+            
+            {/* Input connection points */}
+            {component.inputs.map((input, index) => renderConnectionPoint(input, index))}
+            
+            {/* Output connection points */}
+            {component.outputs.map((output, index) => renderConnectionPoint(output, index))}
+            
+            {/* Component label */}
+            {component.label && (
+              <div className="absolute -bottom-6 left-0 text-xs text-gray-600 whitespace-nowrap">
+                {component.label}
+              </div>
+            )}
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-sm">
+          <div className="space-y-1">
+            <p className="font-semibold">{definition.name}</p>
+            <p className="text-sm text-muted-foreground">{getComponentDescription()}</p>
+            {component.label && (
+              <p className="text-xs text-muted-foreground">Label: {component.label}</p>
+            )}
+          </div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 };

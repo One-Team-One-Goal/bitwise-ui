@@ -12,12 +12,12 @@ interface BooleanExpressionInputProps {
 }
 
 export const BooleanExpressionInput: React.FC<BooleanExpressionInputProps> = ({
-  onExpressionValidated,
+  //onExpressionValidated,
   onGenerateCircuit
 }) => {
   const [expression, setExpression] = useState('');
   const [showExamples, setShowExamples] = useState(false);
-  const [validationState, setValidationState] = useState<{
+  const [validationState, /* setValidationState */] = useState<{
     status: 'idle' | 'checking' | 'valid' | 'invalid' | 'simplified' | 'not-simplified';
     message: string;
     isSimplified?: boolean;
@@ -26,63 +26,63 @@ export const BooleanExpressionInput: React.FC<BooleanExpressionInputProps> = ({
     message: ''
   });
 
-  const validateExpression = async (expr: string) => {
-    setValidationState({ status: 'checking', message: 'Validating expression...' });
+  // const validateExpression = async (expr: string) => {
+  //   setValidationState({ status: 'checking', message: 'Validating expression...' });
     
-    try {
-      //const result = await booleanExpressionService.validateExpression(expr);
-      const result = null;
-      if (!result.isValid) {
-        setValidationState({
-          status: 'invalid',
-          message: result.message,
-        });
-        return;
-      }
+  //   try {
+  //     //const result = await booleanExpressionService.validateExpression(expr);
+  //     // const result = null;
+  //     // if (!result.isValid) {
+  //     //   setValidationState({
+  //     //     status: 'invalid',
+  //     //     message: result.message,
+  //     //   });
+  //     //   return;
+  //     // }
       
-      if (result.isSimplified) {
-        setValidationState({
-          status: 'simplified',
-          message: result.message,
-          isSimplified: true
-        });
-      } else {
-        setValidationState({
-          status: 'not-simplified',
-          message: result.message,
-          isSimplified: false
-        });
-      }
+  //     // if (result.isSimplified) {
+  //     //   setValidationState({
+  //     //     status: 'simplified',
+  //     //     message: result.message,
+  //     //     isSimplified: true
+  //     //   });
+  //     // } else {
+  //     //   setValidationState({
+  //     //     status: 'not-simplified',
+  //     //     message: result.message,
+  //     //     isSimplified: false
+  //     //   });
+  //     // }
       
-      onExpressionValidated(expr, result.isSimplified);
-    } catch (error) {
-      setValidationState({
-        status: 'invalid',
-        message: 'Failed to validate expression. Please try again.'
-      });
-    }
-  };
+  //     //onExpressionValidated(expr, result.isSimplified);
+  //   } catch (error) {
+  //     setValidationState({
+  //       status: 'invalid',
+  //       message: 'Failed to validate expression. Please try again.'
+  //     });
+  //   }
+  // };
   
-  const handleRandomExpression = async (difficulty: 'easy' | 'medium' | 'hard') => {
-    setValidationState({ status: 'checking', message: 'Generating random expression...' });
+  // const handleRandomExpression = async (/*difficulty: 'easy' | 'medium' | 'hard'*/) => {
+  //   setValidationState({ status: 'checking', message: 'Generating random expression...' });
     
-    try {
-      //const result = await booleanExpressionService.generateRandomExpression(difficulty);
-       const result = null
-      setExpression(result.expression);
-      setValidationState({ status: 'idle', message: '' });
-    } catch (error) {
-      setValidationState({
-        status: 'invalid',
-        message: 'Failed to generate random expression. Please try again.'
-      });
-    }
-  };
+  //   try {
+  //     //const result = await booleanExpressionService.generateRandomExpression(difficulty);
+  //     //  const result = null
+  //     // setExpression(result.expression);
+  //     setValidationState({ status: 'idle', message: '' });
+  //   } catch (error) {
+  //     setValidationState({
+  //       status: 'invalid',
+  //       message: 'Failed to generate random expression. Please try again.'
+  //     });
+  //   }
+  // };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (expression.trim()) {
-      validateExpression(expression);
+      //validateExpression(expression);
     }
   };
 
@@ -200,7 +200,7 @@ export const BooleanExpressionInput: React.FC<BooleanExpressionInputProps> = ({
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => handleRandomExpression('easy')}
+              //onClick={() => handleRandomExpression('easy')}
               disabled={validationState.status === 'checking'}
               className="flex items-center gap-2"
             >
@@ -212,7 +212,7 @@ export const BooleanExpressionInput: React.FC<BooleanExpressionInputProps> = ({
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => handleRandomExpression('medium')}
+              //onClick={() => handleRandomExpression('medium')}
               disabled={validationState.status === 'checking'}
               className="flex items-center gap-2"
             >
@@ -224,7 +224,7 @@ export const BooleanExpressionInput: React.FC<BooleanExpressionInputProps> = ({
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => handleRandomExpression('hard')}
+              //onClick={() => handleRandomExpression('hard')}
               disabled={validationState.status === 'checking'}
               className="flex items-center gap-2"
             >

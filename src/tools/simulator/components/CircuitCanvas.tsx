@@ -281,8 +281,8 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
 
       if (fromComponent && toComponent) {
         // Calculate new start and end positions based on component positions
-        const fromPoint = fromComponent.outputs.find(o => o.id === connection.from.connectionPointId);
-        const toPoint = toComponent.inputs.find(i => i.id === connection.to.connectionPointId);
+        const fromPoint = fromComponent.outputs.find((o: any) => o.id === connection.from.connectionPointId);
+        const toPoint = toComponent.inputs.find((i: any) => i.id === connection.to.connectionPointId);
 
         if (fromPoint && toPoint) {
           // Calculate connection point positions relative to component position

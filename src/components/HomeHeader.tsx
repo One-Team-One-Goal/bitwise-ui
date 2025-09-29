@@ -124,7 +124,7 @@ const HomeHeader = () => {
                         </Link>
                       </NavigationMenuLink>
                       <NavigationMenuLink asChild>
-                        <Link to="/karnaughMaps">
+                        <Link to="/digitalCircuit">
                           <div className="font-medium">Digital Circuit</div>
                           <div className="text-muted-foreground">
                             Learn to design and analyze digital circuits.

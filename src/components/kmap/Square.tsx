@@ -93,8 +93,7 @@ const Square: React.FC<SquareProps> = ({
     <div
       className={`
         flex items-center justify-center 
-        cursor-pointer transition-all duration-200 
-        hover:scale-105 hover:shadow-md
+        cursor-pointer transition-all duration-200
         text-lg font-mono
         ${className}
       `}

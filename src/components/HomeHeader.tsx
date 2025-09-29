@@ -2,7 +2,7 @@ import NavLogo from '@/assets/icons/std-logo-black.svg'
 import { useScrollDirection } from '@/hooks/useScrollDirection'
 import { Link, useLocation } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
-import { ChevronLeft, CircleUserIcon } from 'lucide-react'
+import { ChevronLeft, UserRound } from 'lucide-react'
 import { useAuthContext } from '@/contexts/AuthContext'
 
 import {
@@ -13,11 +13,17 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from '@/components/ui/navigation-menu'
+import { useBackendProfile } from '@/hooks/useAuthQueries'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 
 const HomeHeader = () => {
   const isVisible = useScrollDirection()
   const location = useLocation()
   const { isAuthenticated, signOut, user } = useAuthContext()
+  const { data: backendProfile } = useBackendProfile()
+  const md = backendProfile?.metadata ?? {}
+  const displayName = md.full_name ?? md.name ?? user?.user_metadata?.full_name ?? user?.email ?? 'Unknown'
+  const avatar = md?.avatar_url ?? md?.picture ?? user?.user_metadata?.picture ?? undefined
 
   if (location.pathname === '/login' || location.pathname === '/signup') {
     return (
@@ -159,14 +165,23 @@ const HomeHeader = () => {
           <NavigationMenu>
             <NavigationMenuList>
               <NavigationMenuItem>
-                <NavigationMenuTrigger className="bg-transparent">
-                  <CircleUserIcon />
+                <NavigationMenuTrigger className="bg-transparent h-12">
+                  <Avatar className="h-8 w-8 mr-1">
+                    {avatar ? (
+                      <AvatarImage src={avatar} alt={displayName} className="h-full w-full object-cover" />
+                    ) : (
+                      <AvatarFallback className="text-xl text-gray-500">{(displayName || '?').charAt(0)}</AvatarFallback>
+                    )}
+                  </Avatar>
                 </NavigationMenuTrigger>
                 <NavigationMenuContent className="min-w-[150px] p-0">
                   <div className="p-2 space-y-1">
                     {/* User Info Header */}
-                    <div className="px-3 py-2 text-sm text-muted-foreground border-b">
-                      {user?.user_metadata?.display_name || user?.email || 'User'}
+                    <div className="px-3 pb-0 pt-2 text-sm text-primary">
+                      {displayName || 'User'}
+                    </div>
+                    <div className="px-3 pt-0 pb-2 text-xs text-muted-foreground border-b">
+                      {user?.email || 'User'}
                     </div>
                     
                     {/* Profile Link */}

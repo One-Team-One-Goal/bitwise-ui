@@ -300,7 +300,7 @@ const GroupOverlay: React.FC<GroupOverlayProps> = ({ group, cellSize, headerOffs
       rectangles.push(
         <div
           key={group.id}
-          className="absolute pointer-events-none rounded-lg"
+          className="absolute pointer-events-none"
           style={{
             left: headerOffset.x + minCol * cellSize,
             top: headerOffset.y + minRow * cellSize,

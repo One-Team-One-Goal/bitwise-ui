@@ -94,16 +94,16 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick }
   return (
     <div className="relative">
       {/* K-Map Table */}
-      <div className="inline-block rounded-lg overflow-hidden bg-white shadow-lg">
+      <div className="inline-block overflow-hidden">
         {/* Column Headers */}
         <div className="flex">
-          <div className="w-16 h-12 bg-gray-100 flex items-center justify-center relative text-xs text-gray-600">
+          <div className="w-16 h-12 flex items-center justify-center relative text-xs text-gray-600">
             <CornerLabel label={cornerLabel} />
           </div>
           {colHeaders.map((header, index) => (
             <div
               key={index}
-              className="w-16 h-12 bg-gray-100 flex items-center justify-center font-semibold text-sm text-gray-700"
+              className="w-16 h-12 flex items-center justify-center font-semibold text-sm text-gray-700"
             >
               {header}
             </div>
@@ -114,7 +114,7 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick }
         {Array.from({ length: rows }).map((_, rowIndex) => (
           <div key={rowIndex} className="flex">
             {/* Row Header */}
-            <div className="w-16 h-16 bg-gray-100 flex items-center justify-center font-semibold text-sm text-gray-700">
+            <div className="w-16 h-16 flex items-center justify-center font-semibold text-sm text-gray-700">
               {rowHeaders[rowIndex]}
             </div>
             
@@ -218,7 +218,7 @@ const GroupOverlay: React.FC<GroupOverlayProps> = ({ group, cellSize, headerOffs
           rectangles.push(
             <div
               key={`${group.id}-${key}`}
-              className="absolute pointer-events-none rounded-lg"
+              className="absolute pointer-events-none"
               style={{
                 left: headerOffset.x + minCol * cellSize,
                 top: headerOffset.y + minRow * cellSize,
@@ -247,7 +247,7 @@ const GroupOverlay: React.FC<GroupOverlayProps> = ({ group, cellSize, headerOffs
           rectangles.push(
             <div
               key={`${group.id}-h${index}`}
-              className="absolute pointer-events-none rounded-lg"
+              className="absolute pointer-events-none"
               style={{
                 left: headerOffset.x + minCol * cellSize,
                 top: headerOffset.y + minRow * cellSize,
@@ -276,7 +276,7 @@ const GroupOverlay: React.FC<GroupOverlayProps> = ({ group, cellSize, headerOffs
           rectangles.push(
             <div
               key={`${group.id}-v${index}`}
-              className="absolute pointer-events-none rounded-lg"
+              className="absolute pointer-events-none"
               style={{
                 left: headerOffset.x + minCol * cellSize,
                 top: headerOffset.y + minRow * cellSize,
@@ -336,9 +336,9 @@ const CornerLabel: React.FC<CornerLabelProps> = ({ label }) => {
           <line 
             x1="15" 
             y1="15" 
-            x2="85" 
-            y2="85" 
-            stroke="#6b7280" 
+            x2="100" 
+            y2="100" 
+            stroke="#E2E8F0" 
             strokeWidth="2"
             strokeLinecap="round"
           />
@@ -346,12 +346,12 @@ const CornerLabel: React.FC<CornerLabelProps> = ({ label }) => {
       </div>
       
       {/* Top-right label (column variables) */}
-      <div className="absolute bottom-0.5 right-0.5 text-xs font-medium text-gray-700">
+      <div className="absolute bottom-2 left-2 text-xs font-medium text-gray-700">
         {parts[1]}
       </div>
       
       {/* Bottom-left label (row variables) */}
-      <div className="absolute top-0.5 left-0.5 text-xs font-medium text-gray-700">
+      <div className="absolute top-2 right-2 text-xs font-medium text-gray-700">
         {parts[0]}
       </div>
     </div>

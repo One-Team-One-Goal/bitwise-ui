@@ -22,6 +22,8 @@ const buttonVariants = cva(
         link: 'text-[var(--color-bluez)] underline-offset-4 hover:underline',
         bluezOutline:
           'text-white bg-[var(--color-bluez)] btn-shadow addgrotesk px-5 py-2 font-semibold text-sm/6 hover:bg-[var(--color-bluez)]/90',
+        outlinez:
+          'text-primary btn-shadow addgrotesk px-5 py-2 font-semibold text-sm/6 hover:bg-[var(--color-bluez)]/90',
         bluez:
           'text-white bg-[var(--color-bluez)] px-5 py-2 font-semibold text-sm/6 hover:bg-[var(--color-bluez)]/90',
       },

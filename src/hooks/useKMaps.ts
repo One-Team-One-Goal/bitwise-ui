@@ -47,7 +47,7 @@ export const useKMaps = () => {
         // Generate truth table
         const newTruthTable: TruthTableRow[] = perm.map((row, index) => ({
           input: row.join(''),
-          output: 'X' as CellValue,
+          output: 0 as CellValue,
           index
         }));
         

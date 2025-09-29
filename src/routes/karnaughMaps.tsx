@@ -39,16 +39,15 @@ function RouteComponent() {
       )}
 
       {/* Title Section */}
-      <div className="mb-4">
-        <h1 className="text-3xl font-bold text-center">Karnaugh Map Solver</h1>
+      <div className="mb-4 mt-8">
+        <p className="font-semibold text-center text-3xl">Karnaugh Map Solver</p>
       </div>
       
       {/* Content Section - Horizontal layout */}
       <div className="flex justify-center items-start gap-42 flex-wrap">
 
         {/* Truth Table Section */}
-        <div className="flex-1 max-w-sm">
-          <h3 className="text-lg font-semibold mb-4 text-center">Truth Table</h3>
+        <div className="flex-1 max-w-sm mt-4">
           <TruthTable 
             variables={variables}
             truthTable={truthTable}
@@ -58,9 +57,6 @@ function RouteComponent() {
 
         {/* Karnaugh Map Section */}
         <div className="space-y-4 mt-20 p-4">
-          <h3 className="text-xl font-semibold mb-6 text-center flex items-center justify-center gap-2">
-            Karnaugh Map
-          </h3>
           <Map
             squares={squares}
             groups={solution?.groups || []}
@@ -70,26 +66,27 @@ function RouteComponent() {
           
           {/* Solution Display */}
           {solution && (
-            <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-              <h4 className="font-semibold text-green-800 mb-2">
+            <div className="mt-6 p-4 min-w-[320px] w-full ">
+              <p className="font-semibold mb-2 text-sm text-muted-foreground">
                 {formType} Solution:
-              </h4>
-              <div className="font-mono text-lg mb-2">{solution.expression}</div>
-              <div className="text-sm text-green-600">
-                Literal Cost: {solution.literalCost}
-              </div>
-              {solution.groups.length > 0 && (
-                <div className="mt-2 text-sm text-green-600">
-                  Groups: {solution.groups.length}
+              </p>
+              <div className="font-mono text-lg mb-2 border rounded-sm pl-2 p-1">{solution.expression}</div>
+              <div className="flex mt-2 gap-12">
+                <div className="text-sm text-muted-foreground">
+                  Literal Cost: {solution.literalCost}
                 </div>
-              )}
+                {solution.groups.length > 0 && (
+                  <div className="text-sm text-muted-foreground">
+                    Groups: {solution.groups.length}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
 
         {/* Settings Section */}
         <div className="flex-1 max-w-sm">
-          <div className="h-[1.5rem] mb-5"></div>
           <SettingsCard
             variableCount={variableCount}
             formType={formType}

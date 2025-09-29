@@ -57,33 +57,33 @@ const TruthTable: React.FC<TruthTableProps> = ({ variables, truthTable, onTruthT
 
     const getValueColor = (value: CellValue) => {
         if (value === 1) return '#16a34a'; // Green for 1
-        if (value === 0) return '#dc2626'; // Red for 0
-        return '#6b7280'; // Gray for X
+        if (value === 0) return '#6b7280'; // Gray for 0
+        return '#dc2626'; // Red for X
     };
 
     const getCellStyle = (value: CellValue) => ({
         color: getValueColor(value),
-        fontWeight: 'bold' as const,
+        fontWeight: 600,
         backgroundColor: value === 1 ? '#f0f9ff' : 
-                        value === 0 ? '#fef2f2' : 
-                        '#f9fafb'
+                        value === 0 ? '#f9fafb' : '#fef2f2' 
+                        
     });
 
     return (
         <div className="w-full max-w-md mx-auto">
-            <div className="border-2 border-primary rounded-lg overflow-hidden shadow-lg">
+            <div className="border lg overflow-hidden">
                 <Table className="w-full">
                     <TableHeader>
-                        <TableRow className="bg-primary hover:bg-primary">
+                        <TableRow className="bg-muted hover:bg-muted/80 transition-colors">
                             {variables.map((variable) => (
                                 <TableHead 
                                     key={variable}
-                                    className="p-2 text-center font-semibold text-primary-foreground border-r border-primary-foreground/20 last:border-r-0"
+                                    className="p-2 text-center font-semibold text-primary border-r last:border-r-0"
                                 >
                                     {variable}
                                 </TableHead>
                             ))}
-                            <TableHead className="p-2 text-center font-semibold text-primary-foreground">
+                            <TableHead className="p-2 text-center font-semibold text-primary">
                                 R
                             </TableHead>
                         </TableRow>

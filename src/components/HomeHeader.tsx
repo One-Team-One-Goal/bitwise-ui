@@ -1,4 +1,4 @@
-import NavLogo from '@/assets/icons/nav-bar-logo.svg'
+import NavLogo from '@/assets/icons/std-logo-black.svg'
 import { useScrollDirection } from '@/hooks/useScrollDirection'
 import { Link, useLocation } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
@@ -196,7 +196,7 @@ const HomeHeader = () => {
         ) : (
           <Link to="/login">
             <Button
-              variant={'bluezOutline'}
+              variant={'outlinez'}
               size={'lg'}
               className="hover:bg-transparent hover:text-black"
             >

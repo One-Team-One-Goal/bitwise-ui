@@ -30,14 +30,14 @@ const Square: React.FC<SquareProps> = ({
       fontWeight: 'bold'
     };
     if (value === 0) return {
-      color: '#dc2626', 
-      backgroundColor: groupColor ? `${groupColor}40` : '#fef2f2',
-      fontWeight: 'bold'
-    };
-    return {
       color: '#6b7280',
       backgroundColor: groupColor ? `${groupColor}40` : '#f9fafb',
       fontWeight: 'normal'
+    };
+    return {
+      color: '#dc2626', 
+      backgroundColor: groupColor ? `${groupColor}40` : '#fef2f2',
+      fontWeight: 'bold'
     };
   };
 

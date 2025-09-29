@@ -2,7 +2,7 @@ import NavLogo from '@/assets/icons/std-logo-black.svg'
 import { useScrollDirection } from '@/hooks/useScrollDirection'
 import { Link, useLocation } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
-import { ChevronLeft, UserRound } from 'lucide-react'
+import { ChevronLeft } from 'lucide-react'
 import { useAuthContext } from '@/contexts/AuthContext'
 
 import {

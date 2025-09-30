@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { ProtectedRoute } from '../components/ProtectedRoute'
 import { useAuthContext } from '../contexts/AuthContext'
-import { useBackendProfile, useSignOut } from '../hooks/useAuthQueries'
+import { useBackendProfile } from '../hooks/useAuthQueries'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 
 export const Route = createFileRoute('/profile')({
@@ -19,11 +19,11 @@ function RouteComponent() {
 function ProfilePage() {
   const { user } = useAuthContext()
   const { data: backendProfile, isLoading } = useBackendProfile()
-  const signOutMutation = useSignOut()
+  //const signOutMutation = useSignOut()
 
-  const handleSignOut = () => {
-    signOutMutation.mutate()
-  }
+  // const handleSignOut = () => {
+  //   signOutMutation.mutate()
+  // }
 
   if (isLoading) {
     return (

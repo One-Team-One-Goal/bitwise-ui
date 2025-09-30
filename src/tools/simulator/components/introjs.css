@@ -1,0 +1,69 @@
+
+.introjs-tooltip {
+  min-width: 380px !important;
+  font-family: system-ui, -apple-system, sans-serif !important;
+}
+.introjs-tooltip-header {
+  align-items: center;
+  display: flex;
+  padding: 15px;
+}
+
+.introjs-skipbutton {
+  text-decoration: underline;
+  color: var(--color-bluez);
+  padding: 2px 2px;
+  font-size: medium;
+  margin-right: 5px;
+}
+
+.introjs-skipbutton:hover {
+  color: var(--color-cyanz);
+  text-decoration: underline;
+}
+
+.introjs-nextbutton {
+  background-color: var(--color-bluez) !important;
+  color: white !important;
+  padding: 10px 10px !important;
+  border-radius: 4px !important;
+  font-size: small !important;
+  text-shadow: none !important;
+  border-color: none !important;
+  border-width: 0 !important;
+}
+
+.introjs-nextbutton:hover {
+  opacity: 90%;
+  background-color: var(--color-bluez);
+  padding: 10px 10px;
+  border-radius: 4px;
+  font-size: small;
+  text-shadow: none;
+}
+
+.introjs-prevbutton {
+  background-color: var(--color-bluez);
+  color: white;
+  padding: 10px 10px;
+  border-radius: 4px;
+  font-size: small;
+  text-shadow: none;
+}
+
+.introjs-prevbutton:hover {
+  opacity: 90%;
+  background-color: var(--color-bluez);
+  padding: 10px 10px;
+  border-radius: 4px;
+  font-size: small;
+  text-shadow: none;
+}
+
+.introjs-progressbar {
+  background-color: var(--color-bluez) !important;
+}
+
+.introjs-donebutton {
+  background-color: var(--color-greenz) !important;
+}

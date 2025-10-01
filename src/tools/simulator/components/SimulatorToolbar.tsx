@@ -11,7 +11,8 @@ import {
   Calculator,
   ChevronDown,
   ChevronUp,
-  Scissors,
+  Lightbulb,
+  Keyboard,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { HelpGuide } from '@/tools/simulator/components/HelpGuide';
@@ -23,6 +24,8 @@ interface SimulatorToolbarProps {
   circuitHook: any; // We'll type this properly later
   showBooleanExpression: boolean;
   onToggleBooleanExpression: () => void;
+  onShowQuickActions?: () => void;
+  onShowKeyboardShortcuts?: () => void;
 }
 
 export const SimulatorToolbar: React.FC<SimulatorToolbarProps> = ({
@@ -30,7 +33,9 @@ export const SimulatorToolbar: React.FC<SimulatorToolbarProps> = ({
   onToolSelect,
   circuitHook,
   showBooleanExpression,
-  onToggleBooleanExpression
+  onToggleBooleanExpression,
+  onShowQuickActions,
+  onShowKeyboardShortcuts
 }) => {
   
   const tools = [
@@ -38,31 +43,25 @@ export const SimulatorToolbar: React.FC<SimulatorToolbarProps> = ({
       id: 'select' as const,
       name: 'Select',
       icon: MousePointer,
-      description: 'Select and move components'
+      description: 'Select and move components (click wires to edit)'
     },
     {
       id: 'pan' as const,
       name: 'Pan',
       icon: Hand,
-      description: 'Pan the canvas'
+      description: 'Pan and navigate the canvas'
     },
     {
       id: 'wire' as const,
       name: 'Wire',
       icon: Cable,
-      description: 'Connect components'
-    },
-    {
-      id: 'wire-edit' as const,
-      name: 'Wire Edit',
-      icon: Scissors,
-      description: 'Select and manage wires'
+      description: 'Connect components with wires'
     },
     {
       id: 'component' as const,
       name: 'Component',
       icon: Cpu,
-      description: 'Place components'
+      description: 'Place components on canvas'
     }
   ];
 
@@ -106,6 +105,29 @@ export const SimulatorToolbar: React.FC<SimulatorToolbarProps> = ({
 
           {/* Controls */}
           <div className="flex items-center gap-2 flex-wrap">
+            {/* Quick Start - Lessons & Examples */}
+            <Button
+              variant="default"
+              size="sm"
+              onClick={onShowQuickActions}
+              title="Open Quick Start (Ctrl+K)"
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+            >
+              <Lightbulb className="h-4 w-4" />
+              <span className="hidden md:inline ml-1.5">Quick Start</span>
+            </Button>
+
+            {/* Keyboard Shortcuts */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onShowKeyboardShortcuts}
+              title="View Keyboard Shortcuts (?)"
+            >
+              <Keyboard className="h-4 w-4" />
+              <span className="hidden lg:inline ml-1.5">Shortcuts</span>
+            </Button>
+
             {/* Boolean Expression Toggle */}
             <Button
               variant={showBooleanExpression ? "default" : "outline"}
@@ -115,9 +137,9 @@ export const SimulatorToolbar: React.FC<SimulatorToolbarProps> = ({
             >
               <Calculator className="h-4 w-4" />
               {showBooleanExpression ? (
-                <ChevronUp className="h-4 w-4 ml-1" />
+                <ChevronUp className="h-4 w-4 ml-1 hidden sm:block" />
               ) : (
-                <ChevronDown className="h-4 w-4 ml-1" />
+                <ChevronDown className="h-4 w-4 ml-1 hidden sm:block" />
               )}
               <span className="hidden sm:inline ml-1">Boolean</span>
             </Button>

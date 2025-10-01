@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CircuitCanvas } from './components/CircuitCanvas';
 import { ComponentPalette } from './components/ComponentPalette';
 import { SimulatorToolbar } from './components/SimulatorToolbar';
 import { PropertiesPanel } from './components/PropertiesPanel';
 import { BooleanExpressionInput } from './components/BooleanExpressionInput';
+import { QuickActionsMenu } from './components/QuickActionsMenu';
+import { KeyboardShortcutsModal } from './components/KeyboardShortcutsModal';
 import { useCircuitSimulator } from './hooks/useCircuitSimulator';
 import { Card, CardContent } from '@/components/ui/card';
 import type { ComponentType, ToolbarState } from './types';
@@ -15,6 +17,33 @@ export const CircuitSimulator: React.FC = () => {
     selectedComponentType: null
   });
   const [showBooleanExpression, setShowBooleanExpression] = useState(false);
+  const [showQuickActions, setShowQuickActions] = useState(false);
+  const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
+
+  // Global keyboard shortcuts for modals
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Skip if typing in input
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      // ? key - Show keyboard shortcuts
+      if (event.key === '?' && !event.ctrlKey && !event.metaKey) {
+        event.preventDefault();
+        setShowKeyboardShortcuts(true);
+      }
+
+      // Ctrl/Cmd+K - Quick actions menu
+      if (event.key === 'k' && (event.ctrlKey || event.metaKey)) {
+        event.preventDefault();
+        setShowQuickActions(true);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const handleToolSelect = (tool: ToolbarState['selectedTool']) => {
     setToolbarState(prev => ({
@@ -39,6 +68,18 @@ export const CircuitSimulator: React.FC = () => {
     }
   };
 
+  const handleLoadLesson = (lessonId: string) => {
+    console.log('Loading lesson:', lessonId);
+    // TODO: Implement lesson loading system
+    // This will load the lesson structure, clear canvas, set up initial state
+  };
+
+  const handleLoadExample = (exampleId: string) => {
+    console.log('Loading example circuit:', exampleId);
+    // TODO: Implement example circuit loading
+    // Load from circuitTemplates or a new examples data structure
+  };
+
   return (
     <div className="h-full flex flex-col bg-background relative">
       {/* Toolbar */}
@@ -49,6 +90,8 @@ export const CircuitSimulator: React.FC = () => {
           circuitHook={circuitHook}
           showBooleanExpression={showBooleanExpression}
           onToggleBooleanExpression={() => setShowBooleanExpression(!showBooleanExpression)}
+          onShowQuickActions={() => setShowQuickActions(true)}
+          onShowKeyboardShortcuts={() => setShowKeyboardShortcuts(true)}
         />
       </div>
 
@@ -123,6 +166,22 @@ export const CircuitSimulator: React.FC = () => {
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {/* Quick Actions Menu (Ctrl+K or on first load) */}
+      {showQuickActions && (
+        <QuickActionsMenu
+          onLoadLesson={handleLoadLesson}
+          onLoadExample={handleLoadExample}
+          onClose={() => setShowQuickActions(false)}
+        />
+      )}
+
+      {/* Keyboard Shortcuts Help (? key) */}
+      {showKeyboardShortcuts && (
+        <KeyboardShortcutsModal
+          onClose={() => setShowKeyboardShortcuts(false)}
+        />
       )}
     </div>
   );

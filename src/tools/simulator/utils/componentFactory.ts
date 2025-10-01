@@ -89,10 +89,10 @@ export const COMPONENT_DEFINITIONS: Record<ComponentType, ComponentDefinition> =
     name: 'SR Flip-Flop',
     category: 'flipflops',
     icon: 'SR',
-    inputs: 3,
-    outputs: 2,
+    inputs: 3, // S, R, CLK
+    outputs: 2, // Q, Q'
     defaultSize: { width: 80, height: 60 },
-    description: 'SR flip-flop with clock'
+    description: 'SR flip-flop - Set (S), Reset (R), Clock (CLK) inputs; Q and Q\' outputs'
   },
   D_FLIPFLOP: {
     type: 'D_FLIPFLOP',
@@ -193,20 +193,20 @@ export const COMPONENT_DEFINITIONS: Record<ComponentType, ComponentDefinition> =
     name: '7-Segment Display',
     category: 'outputs',
     icon: '🔸',
-    inputs: 7,
+    inputs: 7, // Can also work with 4 for BCD mode
     outputs: 0,
-    defaultSize: { width: 60, height: 80 },
-    description: '7-segment display'
+    defaultSize: { width: 60, height: 90 },
+    description: '7-segment display - accepts 7 individual segment inputs or 4-bit BCD'
   },
   DIGITAL_DISPLAY: {
     type: 'DIGITAL_DISPLAY',
     name: 'Digital Display',
     category: 'outputs',
     icon: '🔢',
-    inputs: 4,
+    inputs: 4, // Can be 4, 8, or 16 bits
     outputs: 0,
-    defaultSize: { width: 80, height: 40 },
-    description: '4-bit digital display'
+    defaultSize: { width: 100, height: 50 },
+    description: 'Binary to decimal display - shows binary input as decimal number'
   },
 
   // Premade Circuits
@@ -316,7 +316,10 @@ export class ComponentFactory {
 
     const inputs = Array.from({ length: definition.inputs }, (_, index) => ({
       id: `${componentId}_input_${index}`,
-      position: { x: 0, y: 0 }, // Will be calculated based on component position
+      position: { 
+        x: 0,
+        y: ((index + 1) * definition.defaultSize.height / (definition.inputs + 1))
+      },
       type: 'input' as const,
       value: false,
       connected: false
@@ -324,7 +327,10 @@ export class ComponentFactory {
 
     const outputs = Array.from({ length: definition.outputs }, (_, index) => ({
       id: `${componentId}_output_${index}`,
-      position: { x: 0, y: 0 }, // Will be calculated based on component position
+      position: { 
+        x: definition.defaultSize.width,
+        y: ((index + 1) * definition.defaultSize.height / (definition.outputs + 1))
+      },
       type: 'output' as const,
       value: false,
       connected: false

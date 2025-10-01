@@ -53,8 +53,8 @@ export const CircuitSimulator: React.FC = () => {
       </div>
 
       <div className="flex flex-1 overflow-hidden min-h-0">
-        {/* Component Palette - Responsive visibility */}
-        <div className="hidden md:flex w-64 lg:w-72 flex-shrink-0" data-tour="component-palette">
+        {/* Component Palette - Desktop sidebar */}
+        <div className="hidden lg:flex w-64 xl:w-80 flex-shrink-0" data-tour="component-palette">
           <ComponentPalette
             onComponentSelect={handleComponentTypeSelect}
             selectedComponentType={toolbarState.selectedComponentType}
@@ -71,33 +71,37 @@ export const CircuitSimulator: React.FC = () => {
           />
         </div>
 
-        {/* Properties Panel - Responsive visibility */}
-        <div className="hidden lg:flex w-64 xl:w-72 flex-shrink-0" data-tour="properties">
+        {/* Properties Panel - Desktop sidebar */}
+        <div className="hidden xl:flex w-72 2xl:w-80 flex-shrink-0" data-tour="properties">
           <PropertiesPanel
             circuitHook={circuitHook}
           />
         </div>
       </div>
 
-      {/* Mobile Component Palette - Bottom sheet */}
-      <div className="md:hidden">
+      {/* Mobile & Tablet Component Palette - Horizontal scrollable strip at bottom */}
+      <div className="lg:hidden">
         {toolbarState.selectedTool === 'component' && (
-          <div className="flex-shrink-0 bg-background border-t border-border max-h-48 overflow-hidden">
+          <div className="flex-shrink-0 bg-background border-t border-border">
             <ComponentPalette
               onComponentSelect={handleComponentTypeSelect}
               selectedComponentType={toolbarState.selectedComponentType}
+              isMobile={true}
             />
           </div>
         )}
       </div>
 
-      {/* Mobile Properties Panel - Overlay */}
-      <div className="lg:hidden">
+      {/* Mobile & Tablet Properties Panel - Slide-up overlay */}
+      <div className="xl:hidden">
         {(circuitHook.circuitState.selectedComponent || circuitHook.circuitState.selectedConnection) && (
-          <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border shadow-lg max-h-64 md:max-h-72">
-            <PropertiesPanel
-              circuitHook={circuitHook}
-            />
+          <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t-2 border-border shadow-2xl rounded-t-2xl animate-slide-up">
+            <div className="flex justify-center py-2">
+              <div className="w-12 h-1 bg-muted-foreground/30 rounded-full" />
+            </div>
+            <div className="max-h-[50vh] overflow-hidden">
+              <PropertiesPanel circuitHook={circuitHook} />
+            </div>
           </div>
         )}
       </div>

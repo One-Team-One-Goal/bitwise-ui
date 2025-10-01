@@ -28,21 +28,36 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ circuitHook })
     const definition = COMPONENT_DEFINITIONS[component.type];
 
     return (
-      <div className="space-y-4">
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Info className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium">{definition.name}</span>
+      <div className="space-y-3 sm:space-y-4">
+        <div className="space-y-1.5 sm:space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <Info className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
+              <span className="text-xs sm:text-sm font-semibold truncate">{definition.name}</span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 sm:h-7 sm:w-7 p-0 flex-shrink-0"
+              onClick={() => circuitHook.removeComponent(component.id)}
+              title="Delete component"
+            >
+              <Trash2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-destructive" />
+            </Button>
           </div>
-          <div className="text-xs text-muted-foreground">ID: {component.id}</div>
-          <div className="text-xs text-muted-foreground mt-1">{definition.description}</div>
+          <div className="text-[10px] sm:text-xs text-muted-foreground font-mono truncate" title={component.id}>
+            ID: {component.id}
+          </div>
+          <div className="text-[10px] sm:text-xs text-muted-foreground leading-relaxed break-words">
+            {definition.description}
+          </div>
         </div>
 
-        <Separator />
+        <Separator className="my-2 sm:my-3" />
 
-        <div className="space-y-3">
-          <h4 className="text-sm font-medium">Position</h4>
-          <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2 sm:space-y-3">
+          <h4 className="text-xs sm:text-sm font-semibold">Position</h4>
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
             <div className="space-y-1">
               <Label htmlFor="x-pos" className="text-xs">X Position</Label>
               <Input
@@ -225,16 +240,30 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ circuitHook })
 
   return (
     <div className="h-full bg-background border-l border-border flex flex-col">
-      <div className="p-4 border-b border-border flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <Settings className="h-4 w-4" />
-          <h3 className="text-sm font-medium">Properties</h3>
+      <div className="p-2 sm:p-3 lg:p-4 border-b border-border flex-shrink-0">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <Settings className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+            <h3 className="text-xs sm:text-sm font-semibold">Properties</h3>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 p-0 xl:hidden"
+            onClick={() => {
+              circuitHook.selectComponent(null);
+              circuitHook.selectConnection(null);
+            }}
+            title="Close panel"
+          >
+            <span className="text-lg leading-none">×</span>
+          </Button>
         </div>
-        <p className="text-xs text-muted-foreground mt-1">Configure selected element</p>
+        <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">Configure selected element</p>
       </div>
       
       <ScrollArea className="flex-1">
-        <div className="p-4 space-y-6">
+        <div className="p-2 sm:p-3 lg:p-4 space-y-4 sm:space-y-6">
           
           {selectedComponent ? (
             <div className="space-y-6">

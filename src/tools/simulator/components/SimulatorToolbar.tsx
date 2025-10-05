@@ -67,17 +67,16 @@ export const SimulatorToolbar: React.FC<SimulatorToolbarProps> = ({
   ];
 
   return (
-    <div className="bg-background border-b border-border">
-      <div className="container mx-auto px-4 py-3">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+    <div className="bg-background border-b border-border w-full">
+      <div className="w-full px-4 py-3">
+        <div className="w-full flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           {/* Logo/Title and Tools */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             {/* Logo/Title */}
             <div className="flex items-center gap-2">
-              <Zap className="h-6 w-6 text-primary" />
-              <h1 className="text-lg font-semibold text-foreground">
+              <p className="text-lg font-semibold text-foreground">
                 Digital Circuit Simulator
-              </h1>
+              </p>
             </div>
 
             {/* Tool Selection */}

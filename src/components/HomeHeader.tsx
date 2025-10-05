@@ -168,7 +168,7 @@ const HomeHeader = () => {
             <NavigationMenuList>
               <NavigationMenuItem>
                 <NavigationMenuTrigger className="bg-transparent h-12">
-                  <Avatar className="h-8 w-8 mr-1">
+                  <Avatar className="h-9 w-9 mr-1">
                     {avatar ? (
                       <AvatarImage src={avatar} alt={displayName} className="h-full w-full object-cover" />
                     ) : (

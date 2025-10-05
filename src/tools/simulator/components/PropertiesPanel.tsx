@@ -225,17 +225,8 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ circuitHook })
 
   return (
     <div className="h-full bg-background border-l border-border flex flex-col">
-      <div className="p-4 border-b border-border flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <Settings className="h-4 w-4" />
-          <h3 className="text-sm font-medium">Properties</h3>
-        </div>
-        <p className="text-xs text-muted-foreground mt-1">Configure selected element</p>
-      </div>
-      
       <ScrollArea className="flex-1">
-        <div className="p-4 space-y-6">
-          
+        <div className="p-4 space-y-6"> 
           {selectedComponent ? (
             <div className="space-y-6">
               {renderComponentProperties(selectedComponent)}
@@ -262,7 +253,8 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ circuitHook })
           ) : selectedConnection ? (
             renderConnectionProperties(selectedConnection)
           ) : (
-            <div className="text-center py-8">
+            <div className="text-center py-8 my-auto">
+              <div className='h-60'></div>
               <Settings className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
               <p className="text-sm text-muted-foreground">
                 Select a component or connection to view its properties

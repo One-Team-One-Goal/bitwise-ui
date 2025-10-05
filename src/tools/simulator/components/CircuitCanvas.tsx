@@ -385,6 +385,39 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
     setZoom(newZoom);
   }, [zoom]);
 
+  // Zoom helpers: clamp and focused zoom (keeps a focus point stable when zooming)
+  const clampZoom = (z: number) => Math.max(0.1, Math.min(3, z));
+
+  const setZoomWithFocus = (newZoom: number, focusPos?: Position) => {
+    const rect = canvasRef.current?.getBoundingClientRect();
+    // If we don't have a canvas rect, just set zoom
+    if (!rect) {
+      setZoom(newZoom);
+      return;
+    }
+
+    const focus = focusPos ?? { x: rect.width / 2, y: rect.height / 2 };
+    const zoomRatio = newZoom / zoom;
+
+    setPan(prev => ({
+      x: focus.x - (focus.x - prev.x) * zoomRatio,
+      y: focus.y - (focus.y - prev.y) * zoomRatio
+    }));
+
+    setZoom(newZoom);
+  };
+
+  const ZOOM_STEP = 0.1;
+  const handleZoomDelta = (delta: number) => {
+    const newZoom = clampZoom(zoom + delta);
+    setZoomWithFocus(newZoom);
+  };
+
+  const handleSetZoomPercent = (percent: number) => {
+    const newZoom = clampZoom(percent / 100);
+    setZoomWithFocus(newZoom);
+  };
+
   // Get cursor style based on tool
   const getCursorStyle = () => {
     switch (toolbarState.selectedTool) {
@@ -398,6 +431,9 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
         return 'cursor-default';
     }
   };
+
+  // Utility: capitalize first letter for display
+  const capitalizeFirst = (s: string) => (s && s.length > 0) ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 
   // Simple component renderer
   const renderComponent = (component: Component) => {
@@ -533,11 +569,50 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
       </div>
 
       {/* Canvas info */}
-      <div className="absolute bottom-4 left-4 bg-white bg-opacity-95 rounded-lg px-3 py-2 text-sm text-gray-600 shadow-lg border border-gray-200">
-        <div className="space-y-1">
-          <div>Tool: <span className="font-medium text-blue-600">{toolbarState.selectedTool}</span></div>
-          <div>Components: <span className="font-medium">{circuitHook.circuitState.components.length}</span></div>
-          <div>Zoom: <span className="font-medium">{Math.round(zoom * 100)}%</span></div>
+      <div className="absolute bottom-4 right-4 bg-white bg-opacity-95 rounded-lg px-3 py-2 text-sm text-gray-600 shadow-lg border border-gray-200">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1">Tool: <span className="font-medium text-blue-600 ml-1">{capitalizeFirst(String(toolbarState.selectedTool))}</span></div>
+          <div className="flex items-center gap-1">Components: <span className="font-medium ml-1">{circuitHook.circuitState.components.length}</span></div>
+
+          {/* Zoom controls: minus button, numeric input (percent), plus button */}
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              aria-label="Zoom out"
+              onClick={() => handleZoomDelta(-ZOOM_STEP)}
+              className="inline-flex items-center justify-center rounded px-2 py-1 border border-gray-200 bg-white hover:bg-gray-50 text-sm"
+            >
+              −
+            </button>
+
+            <div className="flex items-center border rounded overflow-hidden">
+              <input
+                min={10}
+                max={300}
+                step={1}
+                value={Math.round(zoom * 100)}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  if (!Number.isNaN(val)) {
+                    handleSetZoomPercent(val);
+                  }
+                }}
+                className="w-11 text-center px-2 py-1 text-sm outline-none"
+                aria-label="Zoom percent"
+              />
+              <span className="py-1 pr-1 text-sm text-gray-500">%</span>
+            </div>
+
+            <button
+              type="button"
+              aria-label="Zoom in"
+              onClick={() => handleZoomDelta(ZOOM_STEP)}
+              className="inline-flex items-center justify-center rounded px-2 py-1 border border-gray-200 bg-white hover:bg-gray-50 text-sm"
+            >
+              +
+            </button>
+          </div>
+
           {connectionState.isConnecting && (
             <div className="text-blue-600 font-medium">🔗 Connecting...</div>
           )}

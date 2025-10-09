@@ -13,7 +13,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import DataAnalyticsCard from '@/components/DataAnalyticsCard'
 import { useAuthContext } from '@/contexts/AuthContext'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Brain, Target, AlertCircle } from 'lucide-react'
 
 // Define types for better TypeScript support
 interface Sublesson {
@@ -29,7 +29,6 @@ interface Lesson {
   details: string
   sublessons: Sublesson[]
 }
-
 
 // Lessons with sublessons
 const lessons: Lesson[] = [
@@ -138,9 +137,11 @@ export const Route = createFileRoute('/roadmap')({
 function RouteComponent() {
   const [selected, setSelected] = useState(lessons[0])
   const [loadingAssessment, setLoadingAssessment] = useState(false)
+  const [assessmentError, setAssessmentError] = useState<string | null>(null)
   const navigate = useNavigate()
   const { user } = useAuthContext()
   const [hovered, setHovered] = useState<typeof timelineItems[0] | null>(null)
+
   // Flatten lessons and sublessons for the timeline
   const timelineItems = lessons.flatMap((lesson) => [
     { ...lesson, isSublesson: false as const },
@@ -166,14 +167,77 @@ function RouteComponent() {
     }
     setSelected(item)
   }
-  
 
-   const displayItem = hovered || selected
+  // Handle adaptive assessment start
+  const handleStartAdaptiveAssessment = async () => {
+    if (!user) return
+
+    setLoadingAssessment(true)
+    setAssessmentError(null)
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/assessment/start-adaptive-practice`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid: user.id }),
+      })
+
+      const result = await response.json()
+
+      if (result.success && result.data) {
+        // Store the attempt data for the assessment component
+        sessionStorage.setItem('currentAttempt', JSON.stringify(result.data))
+        
+        // Navigate to the assessment
+        navigate({ to: `/assessment/${result.data.attemptId}` })
+      } else {
+        throw new Error(result.error || 'Failed to start adaptive assessment')
+      }
+    } catch (error) {
+      console.error('Failed to start adaptive assessment:', error)
+      setAssessmentError(error instanceof Error ? error.message : 'Failed to start assessment. Please try again.')
+    } finally {
+      setLoadingAssessment(false)
+    }
+  }
+
+  // Handle regular practice assessment start (fallback)
+  const handleStartRegularAssessment = async () => {
+    if (!user) return
+
+    setLoadingAssessment(true)
+    setAssessmentError(null)
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/assessment/start-practice`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid: user.id }),
+      })
+
+      const result = await response.json()
+
+      if (result.success && result.data) {
+        sessionStorage.setItem('currentAttempt', JSON.stringify(result.data))
+        navigate({ to: `/assessment/${result.data.attemptId}` })
+      } else {
+        throw new Error(result.error || 'Failed to start practice assessment')
+      }
+    } catch (error) {
+      console.error('Failed to start practice assessment:', error)
+      setAssessmentError(error instanceof Error ? error.message : 'Failed to start assessment. Please try again.')
+    } finally {
+      setLoadingAssessment(false)
+    }
+  }
+
+  const displayItem = hovered || selected
+
   return (
     <div className="m-auto mt-12 flex flex-col md:flex-row w-2/3 min-h-[80vh] gap-4 p-4">
       {/* Left: Lesson Details */}
       <div className='flex flex-col gap-4 mr-4 flex-shrink-0'>
-        {/* ...existing cards... */}
+        {/* Lesson Details Card */}
         <Card className="max-w-md w-full p-6 h-min">
           <CardContent className="p-0 space-y-2">
             <h2 className="text-2xl font-bold">
@@ -185,50 +249,68 @@ function RouteComponent() {
             <p className="text-sm text-muted-foreground">{displayItem.details}</p>
           </CardContent>
         </Card>
-        {/* ...Practice Assessment Card... */}
+
+        
+        {/* Data Analytics Card */}
+        <DataAnalyticsCard lesson={displayItem} user={user} />
+
+        {/* Adaptive Practice Assessment Card */}
         <Card className="max-w-md w-full p-6 h-min">
-          <CardContent className="p-0 space-y-2">
-            <h3 className="text-lg font-semibold mb-2">Practice Assessment</h3>
-            <p className="text-sm text-muted-foreground mb-2">
-              You can take this Practice Assessment to test your skills for this lesson.
-            </p>
+          <CardContent className="p-0 space-y-4">
+            <div>
+              <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+                <Brain className="w-5 h-5 text-purple-600" />
+                Adaptive Practice Assessment
+              </h3>
+              <p className="text-sm text-muted-foreground mb-2">
+                Take a personalized assessment that adapts to your skill level and focuses on areas where you need improvement.
+              </p>
+            </div>
+
             {!user && (
-              <div className="text-xs text-red-500 mb-2">You need to login before taking the assessment.</div>
+              <div className="flex items-center gap-2 text-xs text-red-500 bg-red-50 p-2 rounded">
+                <AlertCircle className="w-4 h-4" />
+                You need to login before taking the assessment.
+              </div>
             )}
-            <Button
-              disabled={!user || loadingAssessment}
-              className="w-full flex items-center justify-center"
-              onClick={async () => {
-                if (!user) return;
-                setLoadingAssessment(true); // Start loading
-                try {
-                  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/assessment/start-practice`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ uid: user.id }),
-                  });
-                  const data = await response.json();
-                  const { attemptId } = data;
-                  sessionStorage.setItem('currentAttempt', JSON.stringify(data));
-                  navigate({ to: `/assessment/${attemptId}` });
-                } finally {
-                  setLoadingAssessment(false); // Stop loading (even if error)
-                }
-              }}
-            >
-              {loadingAssessment ? (
-                <>
-                  <Loader2 className="animate-spin mr-2 h-4 w-4" />
-                  Loading...
-                </>
-              ) : (
-                'Take Practice Assessment'
-              )}
-            </Button>
+
+            {assessmentError && (
+              <div className="flex items-center gap-2 text-xs text-red-600 bg-red-50 p-2 rounded">
+                <AlertCircle className="w-4 h-4" />
+                {assessmentError}
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Button
+                disabled={!user || loadingAssessment}
+                className="w-full flex items-center justify-center bg-purple-600 hover:bg-purple-700"
+                onClick={handleStartAdaptiveAssessment}
+              >
+                {loadingAssessment ? (
+                  <>
+                    <Loader2 className="animate-spin mr-2 h-4 w-4" />
+                    Generating Assessment...
+                  </>
+                ) : (
+                  <>
+                    <Brain className="mr-2 h-4 w-4" />
+                    Take Adaptive Assessment
+                  </>
+                )}
+              </Button>
+
+           
+            </div>
+
+            <div className="text-xs text-muted-foreground">
+              <p className="mb-1">
+                <strong>Adaptive:</strong> Questions adjust to your skill level and focus on weak areas.
+              </p>
+            </div>
           </CardContent>
         </Card>
-        {/* ...Data Analytics Card... */}
-        <DataAnalyticsCard lesson={displayItem} user={user} />
+
       </div>
 
       {/* Right: Timeline with sublessons (scrollable only) */}
@@ -244,8 +326,6 @@ function RouteComponent() {
               onMouseEnter={() => setHovered(item)}
               onMouseLeave={() => setHovered(null)}
             >
-              {/* ...TimelineOppositeContent, TimelineSeparator, TimelineContent... */}
-              {/* ...existing code... */}
               <TimelineOppositeContent
                 sx={{
                   display: 'flex',

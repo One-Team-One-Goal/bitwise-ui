@@ -7,14 +7,12 @@ interface CircuitCanvasProps {
   circuitHook: any;
   toolbarState: ToolbarState;
   onCanvasClick: (position: Position) => void;
-  onToolSelect?: (tool: ToolbarState['selectedTool']) => void;
 }
 
 export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
   circuitHook,
   toolbarState,
-  onCanvasClick,
-  onToolSelect
+  onCanvasClick
 }) => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [pan, setPan] = useState<Position>({ x: 0, y: 0 });
@@ -31,97 +29,37 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
     offset: { x: 0, y: 0 }
   });
 
-  // Comprehensive keyboard shortcuts system
+  // Keyboard event handling for deleting selected items
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Skip if user is typing in an input field
+      // Only handle deletion if the user isn't typing in an input field
       if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
         return;
       }
 
-      const key = event.key.toLowerCase();
-      const ctrl = event.ctrlKey || event.metaKey;
-      const shift = event.shiftKey;
-
-      // Delete/Backspace - Remove selected items
-      if (key === 'delete' || key === 'backspace') {
+      if (event.key === 'Delete' || event.key === 'Backspace') {
         event.preventDefault();
+        
+        // Handle wire deletion if a wire is selected
         if (circuitHook.circuitState.selectedConnection) {
           circuitHook.removeConnection(circuitHook.circuitState.selectedConnection);
-        } else if (circuitHook.circuitState.selectedComponent) {
+        }
+        // Delete components if no wire is selected
+        else if (circuitHook.circuitState.selectedComponent) {
           circuitHook.removeComponent(circuitHook.circuitState.selectedComponent);
         }
       }
       
-      // Tool Shortcuts (without Ctrl/Cmd)
-      if (!ctrl && !shift && onToolSelect) {
-        switch (key) {
-          case 'v': // Select tool
-            event.preventDefault();
-            onToolSelect('select');
-            break;
-          case 'h': // Pan tool
-            event.preventDefault();
-            onToolSelect('pan');
-            break;
-          case 'w': // Wire tool
-            event.preventDefault();
-            onToolSelect('wire');
-            break;
-          case 'c': // Component tool
-            event.preventDefault();
-            onToolSelect('component');
-            break;
-        }
-      }
-
-      // Zoom shortcuts
-      if (ctrl && !shift) {
-        if (key === '=' || key === '+') {
-          event.preventDefault();
-          setZoom(prev => Math.min(prev + 0.1, 2));
-        } else if (key === '-' || key === '_') {
-          event.preventDefault();
-          setZoom(prev => Math.max(prev - 0.1, 0.5));
-        } else if (key === '0') {
-          event.preventDefault();
-          setZoom(1);
-          setPan({ x: 0, y: 0 });
-        }
-      }
-
-      // Escape - Deselect everything
-      if (key === 'escape') {
-        event.preventDefault();
+      // 'Escape' key to deselect everything
+      if (event.key === 'Escape') {
         circuitHook.selectComponent(null);
         circuitHook.selectConnection(null);
-        if (onToolSelect) onToolSelect('select');
-      }
-
-      // Clear all (Ctrl+Shift+Delete)
-      if (ctrl && shift && (key === 'delete' || key === 'backspace')) {
-        event.preventDefault();
-        if (window.confirm('Clear all components and connections?')) {
-          circuitHook.clearAll();
-        }
-      }
-
-      // Simulation controls
-      if (key === ' ' && !ctrl && !shift) {
-        // Space bar is reserved for pan (Space+drag)
-        // Don't prevent default to allow space scrolling
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [
-    circuitHook.circuitState.selectedConnection, 
-    circuitHook.circuitState.selectedComponent, 
-    circuitHook, 
-    toolbarState.selectedTool,
-    onToolSelect
-  ]);
+  }, [circuitHook.circuitState.selectedConnection, circuitHook.circuitState.selectedComponent, circuitHook, toolbarState.selectedTool]);
 
   const [panState, setPanState] = useState<{
     isPanning: boolean;

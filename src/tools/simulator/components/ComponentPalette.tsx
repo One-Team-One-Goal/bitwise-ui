@@ -87,46 +87,82 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
     );
   };
 
-  // Mobile horizontal layout
+  // Mobile horizontal layout with categories
   if (isMobile) {
-    const allComponents = categories.flatMap(cat => 
-      ComponentFactory.getDefinitionsByCategory(cat.id as any)
-        .map(comp => ({ ...comp, category: cat.name }))
-    );
-    
     return (
-      <div className="bg-background py-2 px-3">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-xs font-semibold text-muted-foreground">SELECT COMPONENT</h3>
-          <span className="text-xs text-muted-foreground">{allComponents.length} available</span>
+      <div className="bg-background">
+        {/* Category Tabs */}
+        <div className="border-b border-border overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+          <div className="flex gap-1 px-3 py-2 min-w-max">
+            {categories.map(category => {
+              const isExpanded = expandedCategories.has(category.id);
+              const IconComponent = category.icon;
+              const components = ComponentFactory.getDefinitionsByCategory(category.id as any);
+              
+              return (
+                <Button
+                  key={category.id}
+                  variant={isExpanded ? "default" : "outline"}
+                  size="sm"
+                  className="flex items-center gap-1.5 h-9 px-3 flex-shrink-0"
+                  onClick={() => toggleCategory(category.id)}
+                >
+                  <IconComponent className="h-3.5 w-3.5" />
+                  <span className="text-xs font-medium">{category.name}</span>
+                  <span className="text-xs opacity-60">({components.length})</span>
+                </Button>
+              );
+            })}
+          </div>
         </div>
-        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
-          {allComponents.map(definition => {
-            const isSelected = selectedComponentType === definition.type;
-            return (
-              <TooltipProvider key={definition.type}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant={isSelected ? "default" : "outline"}
-                      size="sm"
-                      className="flex-shrink-0 h-16 w-16 flex flex-col items-center justify-center gap-1 p-2"
-                      onClick={() => onComponentSelect(definition.type)}
-                    >
-                      <div className="text-lg font-mono">{definition.icon}</div>
-                      <div className="text-[10px] font-medium leading-tight text-center line-clamp-2">
-                        {definition.name.split(' ')[0]}
-                      </div>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="max-w-xs">
-                    <p className="text-xs font-semibold">{definition.name}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{definition.description}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            );
-          })}
+
+        {/* Component Grid */}
+        <div className="px-3 py-3">
+          {Array.from(expandedCategories).length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <p className="text-sm font-medium">Select a category above</p>
+              <p className="text-xs mt-1">Tap a category to view its components</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {categories.filter(cat => expandedCategories.has(cat.id)).map(category => {
+                const components = ComponentFactory.getDefinitionsByCategory(category.id as any);
+                
+                return (
+                  <div key={category.id}>
+                    <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                      {components.map(definition => {
+                        const isSelected = selectedComponentType === definition.type;
+                        return (
+                          <TooltipProvider key={definition.type}>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant={isSelected ? "default" : "outline"}
+                                  size="sm"
+                                  className="h-20 w-full flex flex-col items-center justify-center gap-1.5 p-2"
+                                  onClick={() => onComponentSelect(definition.type)}
+                                >
+                                  <div className="text-2xl font-mono">{definition.icon}</div>
+                                  <div className="text-[10px] font-medium leading-tight text-center line-clamp-2 w-full">
+                                    {definition.name}
+                                  </div>
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="max-w-xs">
+                                <p className="text-xs font-semibold">{definition.name}</p>
+                                <p className="text-xs text-muted-foreground mt-1">{definition.description}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     );

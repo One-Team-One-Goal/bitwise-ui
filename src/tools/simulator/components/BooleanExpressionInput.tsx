@@ -4,20 +4,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-//import { booleanExpressionService } from '@/services/booleanExpression.service';
+import { calculatorService } from '@/services/calculator.service';
 
 interface BooleanExpressionInputProps {
-  onExpressionValidated: (expression: string, isSimplified: boolean) => void;
   onGenerateCircuit: (expression: string) => void;
 }
 
 export const BooleanExpressionInput: React.FC<BooleanExpressionInputProps> = ({
-  //onExpressionValidated,
   onGenerateCircuit
 }) => {
   const [expression, setExpression] = useState('');
   const [showExamples, setShowExamples] = useState(false);
-  const [validationState, /* setValidationState */] = useState<{
+  const [simplifiedExpression, setSimplifiedExpression] = useState('');
+  const [validationState, setValidationState] = useState<{
     status: 'idle' | 'checking' | 'valid' | 'invalid' | 'simplified' | 'not-simplified';
     message: string;
     isSimplified?: boolean;
@@ -26,69 +25,76 @@ export const BooleanExpressionInput: React.FC<BooleanExpressionInputProps> = ({
     message: ''
   });
 
-  // const validateExpression = async (expr: string) => {
-  //   setValidationState({ status: 'checking', message: 'Validating expression...' });
+  const validateExpression = async (expr: string) => {
+    if (!expr.trim()) {
+      setValidationState({ status: 'idle', message: '' });
+      return;
+    }
+
+    setValidationState({ status: 'checking', message: 'Validating and simplifying expression...' });
     
-  //   try {
-  //     //const result = await booleanExpressionService.validateExpression(expr);
-  //     // const result = null;
-  //     // if (!result.isValid) {
-  //     //   setValidationState({
-  //     //     status: 'invalid',
-  //     //     message: result.message,
-  //     //   });
-  //     //   return;
-  //     // }
+    try {
+      console.log('🔄 Calling backend API with expression:', expr);
       
-  //     // if (result.isSimplified) {
-  //     //   setValidationState({
-  //     //     status: 'simplified',
-  //     //     message: result.message,
-  //     //     isSimplified: true
-  //     //   });
-  //     // } else {
-  //     //   setValidationState({
-  //     //     status: 'not-simplified',
-  //     //     message: result.message,
-  //     //     isSimplified: false
-  //     //   });
-  //     // }
+      // Call backend API directly with the expression (using mathematical symbols)
+      const result = await calculatorService.simplify(expr);
       
-  //     //onExpressionValidated(expr, result.isSimplified);
-  //   } catch (error) {
-  //     setValidationState({
-  //       status: 'invalid',
-  //       message: 'Failed to validate expression. Please try again.'
-  //     });
-  //   }
-  // };
-  
-  // const handleRandomExpression = async (/*difficulty: 'easy' | 'medium' | 'hard'*/) => {
-  //   setValidationState({ status: 'checking', message: 'Generating random expression...' });
-    
-  //   try {
-  //     //const result = await booleanExpressionService.generateRandomExpression(difficulty);
-  //     //  const result = null
-  //     // setExpression(result.expression);
-  //     setValidationState({ status: 'idle', message: '' });
-  //   } catch (error) {
-  //     setValidationState({
-  //       status: 'invalid',
-  //       message: 'Failed to generate random expression. Please try again.'
-  //     });
-  //   }
-  // };
+      console.log('✅ Backend response:', result);
+      
+      if (!result.success) {
+        console.error('❌ Validation failed:', result.error);
+        setValidationState({
+          status: 'invalid',
+          message: result.error || 'Invalid expression. Please check your syntax.',
+        });
+        setSimplifiedExpression('');
+        return;
+      }
+      
+      const originalExpr = result.result.originalExpression || expr;
+      const simplifiedExpr = result.result.simplifiedExpression || expr;
+      
+      console.log('📝 Original:', originalExpr, '| Simplified:', simplifiedExpr);
+      
+      // Check if expression was actually simplified
+      const isSimplified = originalExpr === simplifiedExpr;
+      
+      if (isSimplified) {
+        setValidationState({
+          status: 'simplified',
+          message: 'Expression is already in simplified form! Ready to generate circuit.',
+          isSimplified: true
+        });
+        setSimplifiedExpression(simplifiedExpr);
+      } else {
+        setValidationState({
+          status: 'not-simplified',
+          message: `Simplified to: ${simplifiedExpr}`,
+          isSimplified: false
+        });
+        setSimplifiedExpression(simplifiedExpr);
+      }
+    } catch (error) {
+      console.error('🔥 Error during validation:', error);
+      setValidationState({
+        status: 'invalid',
+        message: 'Failed to validate expression. Please try again.'
+      });
+      setSimplifiedExpression('');
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (expression.trim()) {
-      //validateExpression(expression);
+      validateExpression(expression);
     }
   };
 
   const handleGenerateCircuit = () => {
-    if (validationState.status === 'simplified') {
-      onGenerateCircuit(expression);
+    const exprToGenerate = simplifiedExpression || expression;
+    if (exprToGenerate.trim()) {
+      onGenerateCircuit(exprToGenerate);
     }
   };
 
@@ -139,7 +145,7 @@ export const BooleanExpressionInput: React.FC<BooleanExpressionInputProps> = ({
             <div className="flex-1 relative">
               <Input
                 type="text"
-                placeholder="e.g., A ∧ B ∨ C', (A ∨ B) ∧ ¬C, ¬((A ∨ B) ∧ (¬C ∨ D)) ∨ (E ∧ (A ∨ ¬D))"
+                placeholder="e.g., A∧B, A∨B∨C, (A∧B)∨(C∧D), ¬(A∧B)∨C, A⊕B"
                 value={expression}
                 onChange={(e) => setExpression(e.target.value)}
                 className="pr-10"
@@ -172,12 +178,12 @@ export const BooleanExpressionInput: React.FC<BooleanExpressionInputProps> = ({
                   <div className="p-2">
                     <div className="text-xs font-medium text-gray-600 mb-2">Click to use:</div>
                     {[
-                      'A ∧ B',
-                      'A ∨ B ∨ C',
-                      '(A ∧ B) ∨ (C ∧ D)',
-                      '¬(A ∧ B) ∨ C',
-                      '(A ⊕ B) ∧ C',
-                      '¬((A ∨ B) ∧ (¬C ∨ D)) ∨ (E ∧ (A ∨ ¬D))'
+                      'A∧B',
+                      'A∨B∨C',
+                      '(A∧B)∨(C∧D)',
+                      '¬(A∧B)∨C',
+                      'A⊕B',
+                      '¬((A∨B)∧(¬C∨D))∨(E∧(A∨¬D))'
                     ].map((example, index) => (
                       <button
                         key={index}
@@ -236,31 +242,35 @@ export const BooleanExpressionInput: React.FC<BooleanExpressionInputProps> = ({
 
         {/* Status Display */}
         {validationState.message && (
-          <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 border">
-            <div className="flex items-center gap-2 flex-1">
+          <div className="flex flex-col gap-2 p-3 rounded-lg bg-gray-50 border">
+            <div className="flex items-center gap-2">
               {getStatusBadge()}
               <span className="text-sm text-gray-700">{validationState.message}</span>
             </div>
-            {validationState.status === 'simplified' && (
-              <Button onClick={handleGenerateCircuit} size="sm" className="flex items-center gap-2">
-                <Zap className="h-4 w-4" />
-                Generate Circuit
-              </Button>
+            
+            {/* Generate Circuit Button - Always show if we have a valid expression */}
+            {(validationState.status === 'simplified' || validationState.status === 'not-simplified') && (
+              <div className="flex justify-end">
+                <Button onClick={handleGenerateCircuit} size="sm" className="flex items-center gap-2">
+                  <Zap className="h-4 w-4" />
+                  Generate Circuit
+                </Button>
+              </div>
             )}
           </div>
         )}
 
         {/* Helper Text */}
         <div className="text-xs text-gray-500 bg-blue-50 p-3 rounded-lg">
-          <strong>Expression Format:</strong> Use variables A, B, C... | AND: * or · | OR: + | NOT: ' | Parentheses: ( )
+          <strong>Expression Format:</strong> Use variables A, B, C... | AND: ∧ | OR: ∨ | NOT: ¬ | XOR: ⊕ | Parentheses: ( )
           <br />
-          <strong>Examples:</strong> A*B, A+B', (A+B)*C, A'*B + C*D'
+          <strong>Examples:</strong> A∧B, A∨B∨C, (A∧B)∨C, ¬(A∧B), A⊕B, ¬((A∨B)∧(¬C∨D))
         </div>
 
-        {/* Integration Note */}
-        {validationState.status === 'not-simplified' && (
-          <div className="text-xs text-orange-700 bg-orange-50 p-3 rounded-lg border border-orange-200">
-            💡 <strong>Tip:</strong> Use the K-Map tool or Boolean Calculator to simplify your expression first, then return here to generate the circuit.
+        {/* Simplification Note */}
+        {validationState.status === 'not-simplified' && simplifiedExpression && (
+          <div className="text-xs text-green-700 bg-green-50 p-3 rounded-lg border border-green-200">
+            ✨ <strong>Simplified Expression Available:</strong> The circuit will be generated using the simplified form for optimal design.
           </div>
         )}
       </CardContent>

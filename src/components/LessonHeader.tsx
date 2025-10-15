@@ -32,6 +32,7 @@ const LessonHeader = ({ progress }: LessonHeaderProps) => {
           <Button
             variant="ghost"
             className="absolute left-4 top-1/2 -translate-y-1/2"
+            onClick={() => window.history.back()}
           >
             <ChevronLeft /> Back
           </Button>

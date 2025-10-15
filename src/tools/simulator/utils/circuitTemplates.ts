@@ -19,102 +19,67 @@ export const CIRCUIT_TEMPLATES: Record<string, CircuitTemplate> = {
   HALF_ADDER: {
     id: 'HALF_ADDER',
     name: 'Half Adder',
-    description: 'Adds two 1-bit numbers using XOR (sum) and AND (carry) gates',
+    description: 'Adds two 1-bit numbers. Sum output (A XOR B) shows the addition result, Carry output (A AND B) indicates overflow.',
     inputLabels: ['A', 'B'],
     outputLabels: ['Sum', 'Carry'],
     generateComponents: (basePosition: Position, baseId: string) => {
       const components: Component[] = [];
       const connections: Connection[] = [];
       
-      // Create XOR gate for sum
-      const xorGate = ComponentFactory.createComponent('XOR', {
-        x: basePosition.x + 100,
-        y: basePosition.y + 20
-      }, `${baseId}_xor`);
-      
-      // Create AND gate for carry
-      const andGate = ComponentFactory.createComponent('AND', {
-        x: basePosition.x + 100,
-        y: basePosition.y + 80
-      }, `${baseId}_and`);
-      
-      // Create input terminals
-      const inputA = ComponentFactory.createComponent('HIGH_CONSTANT', {
-        x: basePosition.x,
-        y: basePosition.y + 10
+      // Input switches with better spacing
+      const inputA = ComponentFactory.createComponent('SWITCH', {
+        x: basePosition.x + 20,
+        y: basePosition.y + 30
       }, `${baseId}_inputA`);
       inputA.label = 'A';
       
-      const inputB = ComponentFactory.createComponent('HIGH_CONSTANT', {
-        x: basePosition.x,
-        y: basePosition.y + 70
+      const inputB = ComponentFactory.createComponent('SWITCH', {
+        x: basePosition.x + 20,
+        y: basePosition.y + 100
       }, `${baseId}_inputB`);
       inputB.label = 'B';
       
-      // Create output LEDs
-      const sumLed = ComponentFactory.createComponent('LED', {
-        x: basePosition.x + 200,
+      // Logic gates with improved layout
+      const xorGate = ComponentFactory.createComponent('XOR', {
+        x: basePosition.x + 140,
         y: basePosition.y + 30
+      }, `${baseId}_xor`);
+      xorGate.label = 'SUM';
+      
+      const andGate = ComponentFactory.createComponent('AND', {
+        x: basePosition.x + 140,
+        y: basePosition.y + 100
+      }, `${baseId}_and`);
+      andGate.label = 'CARRY';
+      
+      // Output LEDs
+      const sumLed = ComponentFactory.createComponent('LED', {
+        x: basePosition.x + 280,
+        y: basePosition.y + 40
       }, `${baseId}_sum`);
       sumLed.label = 'Sum';
       
       const carryLed = ComponentFactory.createComponent('LED', {
-        x: basePosition.x + 200,
-        y: basePosition.y + 90
+        x: basePosition.x + 280,
+        y: basePosition.y + 110
       }, `${baseId}_carry`);
       carryLed.label = 'Carry';
       
-      components.push(xorGate, andGate, inputA, inputB, sumLed, carryLed);
+      components.push(inputA, inputB, xorGate, andGate, sumLed, carryLed);
       
       // Create connections
-      const connections_data = [
-        // Input A to both gates
-        {
-          id: `${baseId}_conn1`,
-          from: { componentId: inputA.id, connectionPointId: inputA.outputs[0].id },
-          to: { componentId: xorGate.id, connectionPointId: xorGate.inputs[0].id },
-          path: [],
-          value: false
-        },
-        {
-          id: `${baseId}_conn2`,
-          from: { componentId: inputA.id, connectionPointId: inputA.outputs[0].id },
-          to: { componentId: andGate.id, connectionPointId: andGate.inputs[0].id },
-          path: [],
-          value: false
-        },
-        // Input B to both gates
-        {
-          id: `${baseId}_conn3`,
-          from: { componentId: inputB.id, connectionPointId: inputB.outputs[0].id },
-          to: { componentId: xorGate.id, connectionPointId: xorGate.inputs[1].id },
-          path: [],
-          value: false
-        },
-        {
-          id: `${baseId}_conn4`,
-          from: { componentId: inputB.id, connectionPointId: inputB.outputs[0].id },
-          to: { componentId: andGate.id, connectionPointId: andGate.inputs[1].id },
-          path: [],
-          value: false
-        },
-        // Outputs to LEDs
-        {
-          id: `${baseId}_conn5`,
-          from: { componentId: xorGate.id, connectionPointId: xorGate.outputs[0].id },
-          to: { componentId: sumLed.id, connectionPointId: sumLed.inputs[0].id },
-          path: [],
-          value: false
-        },
-        {
-          id: `${baseId}_conn6`,
-          from: { componentId: andGate.id, connectionPointId: andGate.outputs[0].id },
-          to: { componentId: carryLed.id, connectionPointId: carryLed.inputs[0].id },
-          path: [],
-          value: false
-        }
+      const connectionsData = [
+        // A to both gates
+        { id: `${baseId}_conn1`, from: { componentId: inputA.id, connectionPointId: inputA.outputs[0].id }, to: { componentId: xorGate.id, connectionPointId: xorGate.inputs[0].id }, path: [], value: false },
+        { id: `${baseId}_conn2`, from: { componentId: inputA.id, connectionPointId: inputA.outputs[0].id }, to: { componentId: andGate.id, connectionPointId: andGate.inputs[0].id }, path: [], value: false },
+        // B to both gates
+        { id: `${baseId}_conn3`, from: { componentId: inputB.id, connectionPointId: inputB.outputs[0].id }, to: { componentId: xorGate.id, connectionPointId: xorGate.inputs[1].id }, path: [], value: false },
+        { id: `${baseId}_conn4`, from: { componentId: inputB.id, connectionPointId: inputB.outputs[0].id }, to: { componentId: andGate.id, connectionPointId: andGate.inputs[1].id }, path: [], value: false },
+        // Gates to LEDs
+        { id: `${baseId}_conn5`, from: { componentId: xorGate.id, connectionPointId: xorGate.outputs[0].id }, to: { componentId: sumLed.id, connectionPointId: sumLed.inputs[0].id }, path: [], value: false },
+        { id: `${baseId}_conn6`, from: { componentId: andGate.id, connectionPointId: andGate.outputs[0].id }, to: { componentId: carryLed.id, connectionPointId: carryLed.inputs[0].id }, path: [], value: false }
       ];
-      connections.push(...connections_data);
+      connections.push(...connectionsData);
       
       return {
         components,
@@ -134,76 +99,81 @@ export const CIRCUIT_TEMPLATES: Record<string, CircuitTemplate> = {
   FULL_ADDER: {
     id: 'FULL_ADDER',
     name: 'Full Adder',
-    description: 'Adds three 1-bit numbers (A, B, Carry In) producing sum and carry out',
+    description: 'Adds three 1-bit inputs (A, B, Carry In). Uses two XOR gates for sum and combination of AND/OR gates for carry out.',
     inputLabels: ['A', 'B', 'Cin'],
     outputLabels: ['Sum', 'Cout'],
     generateComponents: (basePosition: Position, baseId: string) => {
       const components: Component[] = [];
       const connections: Connection[] = [];
       
-      // Create first XOR gate (A XOR B)
-      const xor1 = ComponentFactory.createComponent('XOR', {
-        x: basePosition.x + 80,
-        y: basePosition.y + 20
-      }, `${baseId}_xor1`);
-      
-      // Create second XOR gate (previous result XOR Cin)
-      const xor2 = ComponentFactory.createComponent('XOR', {
-        x: basePosition.x + 160,
-        y: basePosition.y + 20
-      }, `${baseId}_xor2`);
-      
-      // Create first AND gate (A AND B)
-      const and1 = ComponentFactory.createComponent('AND', {
-        x: basePosition.x + 80,
-        y: basePosition.y + 80
-      }, `${baseId}_and1`);
-      
-      // Create second AND gate ((A XOR B) AND Cin)
-      const and2 = ComponentFactory.createComponent('AND', {
-        x: basePosition.x + 160,
-        y: basePosition.y + 80
-      }, `${baseId}_and2`);
-      
-      // Create OR gate for carry out
-      const or1 = ComponentFactory.createComponent('OR', {
-        x: basePosition.x + 240,
-        y: basePosition.y + 80
-      }, `${baseId}_or1`);
-      
-      // Create input terminals
-      const inputA = ComponentFactory.createComponent('HIGH_CONSTANT', {
-        x: basePosition.x,
-        y: basePosition.y + 10
+      // Input switches
+      const inputA = ComponentFactory.createComponent('SWITCH', {
+        x: basePosition.x + 20,
+        y: basePosition.y + 30
       }, `${baseId}_inputA`);
       inputA.label = 'A';
       
-      const inputB = ComponentFactory.createComponent('HIGH_CONSTANT', {
-        x: basePosition.x,
-        y: basePosition.y + 40
+      const inputB = ComponentFactory.createComponent('SWITCH', {
+        x: basePosition.x + 20,
+        y: basePosition.y + 90
       }, `${baseId}_inputB`);
       inputB.label = 'B';
       
-      const inputCin = ComponentFactory.createComponent('HIGH_CONSTANT', {
-        x: basePosition.x,
-        y: basePosition.y + 70
+      const inputCin = ComponentFactory.createComponent('SWITCH', {
+        x: basePosition.x + 20,
+        y: basePosition.y + 150
       }, `${baseId}_inputCin`);
       inputCin.label = 'Cin';
       
-      // Create output LEDs
+      // First stage: A XOR B
+      const xor1 = ComponentFactory.createComponent('XOR', {
+        x: basePosition.x + 140,
+        y: basePosition.y + 50
+      }, `${baseId}_xor1`);
+      xor1.label = 'XOR1';
+      
+      // Second stage: (A XOR B) XOR Cin = Sum
+      const xor2 = ComponentFactory.createComponent('XOR', {
+        x: basePosition.x + 280,
+        y: basePosition.y + 90
+      }, `${baseId}_xor2`);
+      xor2.label = 'SUM';
+      
+      // Carry logic: A AND B
+      const and1 = ComponentFactory.createComponent('AND', {
+        x: basePosition.x + 140,
+        y: basePosition.y + 130
+      }, `${baseId}_and1`);
+      and1.label = 'AND1';
+      
+      // Carry logic: (A XOR B) AND Cin
+      const and2 = ComponentFactory.createComponent('AND', {
+        x: basePosition.x + 280,
+        y: basePosition.y + 150
+      }, `${baseId}_and2`);
+      and2.label = 'AND2';
+      
+      // Final carry: OR of both AND gates
+      const or1 = ComponentFactory.createComponent('OR', {
+        x: basePosition.x + 420,
+        y: basePosition.y + 140
+      }, `${baseId}_or1`);
+      or1.label = 'COUT';
+      
+      // Output LEDs
       const sumLed = ComponentFactory.createComponent('LED', {
-        x: basePosition.x + 320,
-        y: basePosition.y + 30
+        x: basePosition.x + 420,
+        y: basePosition.y + 100
       }, `${baseId}_sum`);
       sumLed.label = 'Sum';
       
       const carryLed = ComponentFactory.createComponent('LED', {
-        x: basePosition.x + 320,
-        y: basePosition.y + 90
+        x: basePosition.x + 560,
+        y: basePosition.y + 150
       }, `${baseId}_carry`);
       carryLed.label = 'Cout';
       
-      components.push(xor1, xor2, and1, and2, or1, inputA, inputB, inputCin, sumLed, carryLed);
+      components.push(inputA, inputB, inputCin, xor1, xor2, and1, and2, or1, sumLed, carryLed);
       
       // Create connections
       const connectionsData = [
@@ -320,63 +290,65 @@ export const CIRCUIT_TEMPLATES: Record<string, CircuitTemplate> = {
   MULTIPLEXER_2TO1: {
     id: 'MULTIPLEXER_2TO1',
     name: '2-to-1 Multiplexer',
-    description: 'Selects one of two inputs based on a select signal',
+    description: 'Data selector that routes one of two inputs to output based on select signal. When S=0, output=A. When S=1, output=B.',
     inputLabels: ['A', 'B', 'S'],
     outputLabels: ['Y'],
     generateComponents: (basePosition: Position, baseId: string) => {
       const components: Component[] = [];
       const connections: Connection[] = [];
       
-      // Create NOT gate for select signal
-      const notGate = ComponentFactory.createComponent('NOT', {
-        x: basePosition.x + 80,
-        y: basePosition.y + 60
-      }, `${baseId}_not`);
+      // Input switches
+      const inputA = ComponentFactory.createComponent('SWITCH', {
+        x: basePosition.x + 20,
+        y: basePosition.y + 30
+      }, `${baseId}_inputA`);
+      inputA.label = 'Data A';
       
-      // Create AND gates
+      const inputB = ComponentFactory.createComponent('SWITCH', {
+        x: basePosition.x + 20,
+        y: basePosition.y + 130
+      }, `${baseId}_inputB`);
+      inputB.label = 'Data B';
+      
+      const inputS = ComponentFactory.createComponent('SWITCH', {
+        x: basePosition.x + 20,
+        y: basePosition.y + 230
+      }, `${baseId}_inputS`);
+      inputS.label = 'Select';
+      
+      // Logic gates
+      const notGate = ComponentFactory.createComponent('NOT', {
+        x: basePosition.x + 140,
+        y: basePosition.y + 230
+      }, `${baseId}_not`);
+      notGate.label = 'NOT S';
+      
       const and1 = ComponentFactory.createComponent('AND', {
-        x: basePosition.x + 160,
-        y: basePosition.y + 20
+        x: basePosition.x + 280,
+        y: basePosition.y + 50
       }, `${baseId}_and1`);
+      and1.label = 'A·S̄';
       
       const and2 = ComponentFactory.createComponent('AND', {
-        x: basePosition.x + 160,
-        y: basePosition.y + 80
+        x: basePosition.x + 280,
+        y: basePosition.y + 150
       }, `${baseId}_and2`);
+      and2.label = 'B·S';
       
-      // Create OR gate
       const orGate = ComponentFactory.createComponent('OR', {
-        x: basePosition.x + 240,
-        y: basePosition.y + 50
+        x: basePosition.x + 420,
+        y: basePosition.y + 100
       }, `${baseId}_or`);
+      orGate.label = 'OUTPUT';
       
-      // Create input terminals
-      const inputA = ComponentFactory.createComponent('HIGH_CONSTANT', {
-        x: basePosition.x,
-        y: basePosition.y + 10
-      }, `${baseId}_inputA`);
-      inputA.label = 'A';
-      
-      const inputB = ComponentFactory.createComponent('HIGH_CONSTANT', {
-        x: basePosition.x,
-        y: basePosition.y + 40
-      }, `${baseId}_inputB`);
-      inputB.label = 'B';
-      
-      const inputS = ComponentFactory.createComponent('HIGH_CONSTANT', {
-        x: basePosition.x,
-        y: basePosition.y + 70
-      }, `${baseId}_inputS`);
-      inputS.label = 'S';
-      
-      // Create output LED
+      // Output LED
       const outputLed = ComponentFactory.createComponent('LED', {
-        x: basePosition.x + 320,
-        y: basePosition.y + 60
+        x: basePosition.x + 560,
+        y: basePosition.y + 110
       }, `${baseId}_output`);
       outputLed.label = 'Y';
       
-      components.push(notGate, and1, and2, orGate, inputA, inputB, inputS, outputLed);
+      components.push(inputA, inputB, inputS, notGate, and1, and2, orGate, outputLed);
       
       // Create connections
       const connectionsData = [
@@ -465,57 +437,59 @@ export const CIRCUIT_TEMPLATES: Record<string, CircuitTemplate> = {
   DEMULTIPLEXER_1TO2: {
     id: 'DEMULTIPLEXER_1TO2',
     name: '1-to-2 Demultiplexer',
-    description: 'Routes input to one of two outputs based on select signal',
+    description: 'Data distributor that routes input to one of two outputs based on select. When S=0, Y0=D. When S=1, Y1=D.',
     inputLabels: ['D', 'S'],
     outputLabels: ['Y0', 'Y1'],
     generateComponents: (basePosition: Position, baseId: string) => {
       const components: Component[] = [];
       const connections: Connection[] = [];
       
-      // Create NOT gate for select signal
-      const notGate = ComponentFactory.createComponent('NOT', {
-        x: basePosition.x + 80,
-        y: basePosition.y + 60
-      }, `${baseId}_not`);
+      // Input switches
+      const inputD = ComponentFactory.createComponent('SWITCH', {
+        x: basePosition.x + 20,
+        y: basePosition.y + 80
+      }, `${baseId}_inputD`);
+      inputD.label = 'Data';
       
-      // Create AND gates
+      const inputS = ComponentFactory.createComponent('SWITCH', {
+        x: basePosition.x + 20,
+        y: basePosition.y + 180
+      }, `${baseId}_inputS`);
+      inputS.label = 'Select';
+      
+      // Logic gates
+      const notGate = ComponentFactory.createComponent('NOT', {
+        x: basePosition.x + 140,
+        y: basePosition.y + 180
+      }, `${baseId}_not`);
+      notGate.label = 'NOT S';
+      
       const and1 = ComponentFactory.createComponent('AND', {
-        x: basePosition.x + 160,
-        y: basePosition.y + 20
+        x: basePosition.x + 280,
+        y: basePosition.y + 50
       }, `${baseId}_and1`);
+      and1.label = 'Y0 Gate';
       
       const and2 = ComponentFactory.createComponent('AND', {
-        x: basePosition.x + 160,
-        y: basePosition.y + 80
+        x: basePosition.x + 280,
+        y: basePosition.y + 150
       }, `${baseId}_and2`);
+      and2.label = 'Y1 Gate';
       
-      // Create input terminals
-      const inputD = ComponentFactory.createComponent('HIGH_CONSTANT', {
-        x: basePosition.x,
-        y: basePosition.y + 10
-      }, `${baseId}_inputD`);
-      inputD.label = 'D';
-      
-      const inputS = ComponentFactory.createComponent('HIGH_CONSTANT', {
-        x: basePosition.x,
-        y: basePosition.y + 70
-      }, `${baseId}_inputS`);
-      inputS.label = 'S';
-      
-      // Create output LEDs
+      // Output LEDs
       const output0Led = ComponentFactory.createComponent('LED', {
-        x: basePosition.x + 260,
-        y: basePosition.y + 30
+        x: basePosition.x + 420,
+        y: basePosition.y + 60
       }, `${baseId}_output0`);
       output0Led.label = 'Y0';
       
       const output1Led = ComponentFactory.createComponent('LED', {
-        x: basePosition.x + 260,
-        y: basePosition.y + 90
+        x: basePosition.x + 420,
+        y: basePosition.y + 160
       }, `${baseId}_output1`);
       output1Led.label = 'Y1';
       
-      components.push(notGate, and1, and2, inputD, inputS, output0Led, output1Led);
+      components.push(inputD, inputS, notGate, and1, and2, output0Led, output1Led);
       
       // Create connections
       const connectionsData = [

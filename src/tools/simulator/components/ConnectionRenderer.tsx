@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { Connection } from '../types/index';
 
 interface ConnectionRendererProps {
@@ -9,6 +9,12 @@ interface ConnectionRendererProps {
   onPathUpdate?: (newPath: { x: number; y: number }[]) => void;
 }
 
+type WireDragState = {
+  type: 'path' | 'handle';
+  handleIndex?: number;
+  lastMouse: { x: number; y: number };
+};
+
 export const ConnectionRenderer: React.FC<ConnectionRendererProps> = ({
   connection,
   isSelected,
@@ -16,58 +22,87 @@ export const ConnectionRenderer: React.FC<ConnectionRendererProps> = ({
   onRemove,
   onPathUpdate
 }) => {
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  const pendingHandleRef = useRef<{ handleIndex: number; mouse: { x: number; y: number } } | null>(null);
+
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 });
+  const [dragState, setDragState] = useState<WireDragState | null>(null);
 
   // Handle wire dragging for rerouting
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (e.button === 0 && isSelected) { // Left click on selected wire
-      setIsDragging(true);
-      setDragStart({ x: e.clientX, y: e.clientY });
-      e.preventDefault();
-      e.stopPropagation();
+  const handlePathMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!isSelected) {
+      onSelect();
     }
-  };
 
-  const handleMouseMove = (e: MouseEvent) => {
-    if (isDragging && onPathUpdate) {
-      const deltaX = e.clientX - dragStart.x;
-      const deltaY = e.clientY - dragStart.y;
-      
-      // Update the middle points of the wire path
-      const newPath = connection.path.map((point, index) => {
-        if (index > 0 && index < connection.path.length - 1) {
-          return {
-            x: point.x + deltaX,
-            y: point.y + deltaY
-          };
-        }
-        return point;
-      });
-      
-      onPathUpdate(newPath);
-      setDragStart({ x: e.clientX, y: e.clientY });
+    setShowContextMenu(false);
+
+    if (!onPathUpdate) {
+      return;
     }
-  };
 
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  // Add global mouse event listeners
-  useEffect(() => {
-    if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      
-      return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
+    if (connection.path.length <= 2) {
+      const start = connection.path[0];
+      const end = connection.path[connection.path.length - 1];
+      const midpoint = {
+        x: (start.x + end.x) / 2,
+        y: (start.y + end.y) / 2
       };
+
+      const newPath = [...connection.path];
+      newPath.splice(1, 0, midpoint);
+      pendingHandleRef.current = {
+        handleIndex: 1,
+        mouse: { x: e.clientX, y: e.clientY }
+      };
+      onPathUpdate(newPath);
+      return;
     }
-  }, [isDragging, dragStart, connection.path, onPathUpdate]);
+
+    setDragState({
+      type: 'path',
+      lastMouse: { x: e.clientX, y: e.clientY }
+    });
+  };
+
+  const handleControlPointMouseDown = (e: React.MouseEvent, handleIndex: number) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (!onPathUpdate) return;
+    setShowContextMenu(false);
+    setDragState({
+      type: 'handle',
+      handleIndex,
+      lastMouse: { x: e.clientX, y: e.clientY }
+    });
+  };
+
+  const handleAddControlPoint = (e: React.MouseEvent, insertIndex: number, point: { x: number; y: number }) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!onPathUpdate) return;
+
+    const newPath = [...connection.path];
+    newPath.splice(insertIndex + 1, 0, point);
+    pendingHandleRef.current = {
+      handleIndex: insertIndex + 1,
+      mouse: { x: e.clientX, y: e.clientY }
+    };
+    onPathUpdate(newPath);
+  };
+
+  useEffect(() => {
+    if (!isSelected) {
+      setShowContextMenu(false);
+    }
+  }, [isSelected]);
 
   if (connection.path.length < 2) return null;
 
@@ -82,6 +117,80 @@ export const ConnectionRenderer: React.FC<ConnectionRendererProps> = ({
 
   const width = maxX - minX;
   const height = maxY - minY;
+
+  useEffect(() => {
+    if (!dragState || !onPathUpdate || !svgRef.current) return;
+
+    const handleMove = (event: MouseEvent) => {
+      const svgElement = svgRef.current;
+      if (!svgElement || !onPathUpdate) return;
+
+      const rect = svgElement.getBoundingClientRect();
+      const scaleX = rect.width / Math.max(width, 1);
+      const scaleY = rect.height / Math.max(height, 1);
+
+      if (dragState.type === 'path') {
+        const deltaX = (event.clientX - dragState.lastMouse.x) / scaleX;
+        const deltaY = (event.clientY - dragState.lastMouse.y) / scaleY;
+
+        if (Math.abs(deltaX) < 0.1 && Math.abs(deltaY) < 0.1) return;
+
+        const updatedPath = connection.path.map((point, index) => {
+          if (index === 0 || index === connection.path.length - 1) {
+            return point;
+          }
+          return {
+            x: point.x + deltaX,
+            y: point.y + deltaY
+          };
+        });
+
+        onPathUpdate(updatedPath);
+        setDragState(prev => prev ? { ...prev, lastMouse: { x: event.clientX, y: event.clientY } } : prev);
+      } else if (dragState.type === 'handle' && dragState.handleIndex !== undefined) {
+        const absoluteX = ((event.clientX - rect.left) / scaleX) + minX;
+        const absoluteY = ((event.clientY - rect.top) / scaleY) + minY;
+
+        const updatedPath = connection.path.map((point, index) =>
+          index === dragState.handleIndex ? { x: absoluteX, y: absoluteY } : point
+        );
+
+        onPathUpdate(updatedPath);
+      }
+    };
+
+    const handleUp = () => {
+      setDragState(null);
+    };
+
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMove);
+      window.removeEventListener('mouseup', handleUp);
+    };
+  }, [dragState, connection.path, onPathUpdate, width, height, minX, minY]);
+
+  useEffect(() => {
+    if (!pendingHandleRef.current) return;
+    if (!onPathUpdate) {
+      pendingHandleRef.current = null;
+      return;
+    }
+
+    const pending = pendingHandleRef.current;
+    if (!connection.path[pending.handleIndex]) {
+      return;
+    }
+
+    pendingHandleRef.current = null;
+    setDragState({
+      type: 'handle',
+      handleIndex: pending.handleIndex,
+      lastMouse: pending.mouse
+    });
+  }, [connection.path, onPathUpdate]);
 
   // Create smooth orthogonal path
   const createSmoothPath = () => {
@@ -165,10 +274,12 @@ export const ConnectionRenderer: React.FC<ConnectionRendererProps> = ({
   };
 
   const colors = getWireColor();
+  const isPathDragging = dragState?.type === 'path';
 
   return (
     <>
       <svg
+        ref={svgRef}
         className="absolute pointer-events-none"
         style={{
           left: minX,
@@ -210,15 +321,15 @@ export const ConnectionRenderer: React.FC<ConnectionRendererProps> = ({
         {/* Arrow marker for signal direction */}
         <marker
           id={`arrowhead-${connection.id}`}
-          markerWidth="12"
-          markerHeight="8"
-          refX="11"
-          refY="4"
+          markerWidth="6"
+          markerHeight="6"
+          refX="5"
+          refY="3"
           orient="auto"
           markerUnits="strokeWidth"
         >
           <polygon
-            points="0 0, 12 4, 0 8"
+            points="0 0, 6 3, 0 6"
             fill={colors.stroke}
             stroke="none"
           />
@@ -261,6 +372,7 @@ export const ConnectionRenderer: React.FC<ConnectionRendererProps> = ({
           e.stopPropagation();
           onSelect();
         }}
+        onMouseDown={handlePathMouseDown}
         onContextMenu={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -292,8 +404,8 @@ export const ConnectionRenderer: React.FC<ConnectionRendererProps> = ({
         }`}
         style={{
           filter: isSelected ? colors.shadow : connection.value ? `url(#glow-${connection.id})` : undefined,
-          strokeDasharray: isDragging ? '5,5' : 'none',
-          strokeDashoffset: isDragging ? '10' : '0'
+          strokeDasharray: isPathDragging ? '5,5' : 'none',
+          strokeDashoffset: isPathDragging ? '10' : '0'
         }}
         markerEnd={`url(#arrowhead-${connection.id})`}
         onClick={(e) => {
@@ -307,7 +419,7 @@ export const ConnectionRenderer: React.FC<ConnectionRendererProps> = ({
           setShowContextMenu(true);
           onSelect();
         }}
-        onMouseDown={handleMouseDown}
+        onMouseDown={handlePathMouseDown}
       />
 
       {/* Animated signal flow for HIGH state */}
@@ -335,6 +447,7 @@ export const ConnectionRenderer: React.FC<ConnectionRendererProps> = ({
               strokeWidth="2"
               className="cursor-grab hover:scale-125 transition-transform"
               style={{ pointerEvents: 'auto' }}
+              onMouseDown={(e) => handleControlPointMouseDown(e, index + 1)}
             />
           ))}
           
@@ -347,13 +460,7 @@ export const ConnectionRenderer: React.FC<ConnectionRendererProps> = ({
             return (
               <circle
                 key={`mid-handle-${index}`}
-                cx={midX - minX}
-                cy={midY - minY}
-                r="3"
-                fill="#06b6d4"
-                stroke="white"
-                strokeWidth="1"
-                className="cursor-crosshair hover:scale-150 transition-transform opacity-70"
+                onMouseDown={(e) => handleAddControlPoint(e, index, { x: midX, y: midY })}
                 style={{ pointerEvents: 'auto' }}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -468,46 +575,6 @@ export const ConnectionRenderer: React.FC<ConnectionRendererProps> = ({
           >
             {connection.value ? '1' : '0'}
           </text>
-        </g>
-      )}
-
-      {/* Wire control points - only show when selected */}
-      {isSelected && onPathUpdate && connection.path.length >= 2 && (
-        <g>
-          {/* Midpoint control for adjusting wire routing */}
-          <circle
-            cx={(startPoint.x + endPoint.x) / 2 - minX}
-            cy={(startPoint.y + endPoint.y) / 2 - minY}
-            r="8"
-            fill="#3b82f6"
-            stroke="#ffffff"
-            strokeWidth="2"
-            className="cursor-move"
-            style={{ opacity: 0.8 }}
-            onMouseDown={(e) => {
-              e.stopPropagation();
-              // TODO: Implement drag functionality for wire routing
-            }}
-          />
-          
-          {/* Control points for each path segment */}
-          {connection.path.length > 2 && connection.path.slice(1, -1).map((point, index) => (
-            <circle
-              key={index}
-              cx={point.x - minX}
-              cy={point.y - minY}
-              r="6"
-              fill="#3b82f6"
-              stroke="#ffffff"
-              strokeWidth="2"
-              className="cursor-move"
-              style={{ opacity: 0.7 }}
-              onMouseDown={(e) => {
-                e.stopPropagation();
-                // TODO: Implement individual control point dragging
-              }}
-            />
-          ))}
         </g>
       )}
     </svg>

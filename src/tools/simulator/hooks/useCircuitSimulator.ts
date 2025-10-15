@@ -155,8 +155,14 @@ export const useCircuitSimulator = () => {
       from: { componentId: fromComponentId, connectionPointId: fromConnectionPointId },
       to: { componentId: toComponentId, connectionPointId: toConnectionPointId },
       path: [
-        { x: fromComponent.position.x + fromPoint.position.x, y: fromComponent.position.y + fromPoint.position.y },
-        { x: toComponent.position.x + toPoint.position.x, y: toComponent.position.y + toPoint.position.y }
+        { 
+          x: fromComponent.position.x + fromPoint.position.x,
+          y: fromComponent.position.y + fromPoint.position.y
+        },
+        { 
+          x: toComponent.position.x + toPoint.position.x,
+          y: toComponent.position.y + toPoint.position.y
+        }
       ],
       value: false
     };
@@ -207,6 +213,28 @@ export const useCircuitSimulator = () => {
       };
     });
   }, [circuitState.connections]);
+
+  const updateConnection = useCallback((connectionId: string, updates: Partial<Connection>) => {
+    setCircuitState(prev => ({
+      ...prev,
+      connections: prev.connections.map(connection => {
+        if (connection.id !== connectionId) {
+          return connection;
+        }
+
+        const updatedConnection: Connection = {
+          ...connection,
+          ...updates
+        };
+
+        if (updates.path) {
+          updatedConnection.path = updates.path.map(point => ({ ...point }));
+        }
+
+        return updatedConnection;
+      })
+    }));
+  }, []);
 
   const selectComponent = useCallback((componentId: string | null) => {
     setCircuitState(prev => ({
@@ -312,6 +340,7 @@ export const useCircuitSimulator = () => {
     moveComponent,
     addConnection,
     removeConnection,
+  updateConnection,
     selectComponent,
     selectConnection,
     startSimulation,

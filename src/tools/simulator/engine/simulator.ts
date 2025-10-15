@@ -135,6 +135,27 @@ export class CircuitSimulator {
       case 'LOW_CONSTANT':
         this.updateLowConstant(component);
         break;
+      case 'SWITCH':
+        this.updateSwitch(component);
+        break;
+      case 'PUSH_BUTTON':
+        this.updatePushButton(component);
+        break;
+      case 'CLOCK':
+        this.updateClock(component);
+        break;
+      case 'HALF_ADDER':
+        this.updateHalfAdder(component);
+        break;
+      case 'FULL_ADDER':
+        this.updateFullAdder(component);
+        break;
+      case 'MULTIPLEXER_2TO1':
+        this.updateMultiplexer2to1(component);
+        break;
+      case 'DECODER_2TO4':
+        this.updateDecoder2to4(component);
+        break;
       default:
         break;
     }
@@ -170,8 +191,11 @@ export class CircuitSimulator {
   }
 
   private updateXnorGate(component: Component): void {
-    const trueCount = component.inputs.filter(input => input.value).length;
-    component.outputs[0].value = trueCount % 2 === 0;
+    // XNOR: Output HIGH when all inputs are the same (all HIGH or all LOW)
+    // For 2 inputs: A XNOR B = (A AND B) OR (NOT A AND NOT B)
+    const allHigh = component.inputs.every(input => input.value);
+    const allLow = component.inputs.every(input => !input.value);
+    component.outputs[0].value = allHigh || allLow;
   }
 
   private updateBufferGate(component: Component): void {
@@ -181,21 +205,33 @@ export class CircuitSimulator {
   private updateSRFlipFlop(component: Component): void {
     const s = component.inputs[0].value; // Set
     const r = component.inputs[1].value; // Reset
+    const clk = component.inputs[2]?.value || false; // Clock
+    const prevClk = component.properties.prevClk || false;
     const currentQ = component.outputs[0].value;
     const currentQNot = component.outputs[1].value;
 
-    if (s && !r) {
-      component.outputs[0].value = true;  // Q
-      component.outputs[1].value = false; // Q'
-    } else if (!s && r) {
-      component.outputs[0].value = false; // Q
-      component.outputs[1].value = true;  // Q'
-    } else if (!s && !r) {
-      // Hold state
-      component.outputs[0].value = currentQ;
-      component.outputs[1].value = currentQNot;
+    // Rising edge trigger
+    if (clk && !prevClk) {
+      if (s && !r) {
+        component.outputs[0].value = true;  // Q
+        component.outputs[1].value = false; // Q'
+      } else if (!s && r) {
+        component.outputs[0].value = false; // Q
+        component.outputs[1].value = true;  // Q'
+      } else if (!s && !r) {
+        // Hold state
+        component.outputs[0].value = currentQ;
+        component.outputs[1].value = currentQNot;
+      }
+      // S=1, R=1 is an invalid state (outputs may be unpredictable)
+      else if (s && r) {
+        // Invalid state - both outputs go LOW in most implementations
+        component.outputs[0].value = false;
+        component.outputs[1].value = false;
+      }
     }
-    // S=1, R=1 is an invalid state (not handled)
+
+    component.properties.prevClk = clk;
   }
 
   private updateDFlipFlop(component: Component): void {
@@ -260,6 +296,96 @@ export class CircuitSimulator {
 
   private updateLowConstant(component: Component): void {
     component.outputs[0].value = false;
+  }
+
+  private updateSwitch(component: Component): void {
+    // Switch maintains its output state (toggled by user interaction)
+    // Output is already set by user interaction, just maintain it
+    if (component.outputs[0]) {
+      component.outputs[0].value = component.outputs[0].value ?? false;
+    }
+  }
+
+  private updatePushButton(component: Component): void {
+    // Push button maintains its output state (set HIGH when pressed, LOW when released)
+    if (component.outputs[0]) {
+      component.outputs[0].value = component.outputs[0].value ?? false;
+    }
+  }
+
+  private updateClock(component: Component): void {
+    // Clock toggles automatically based on frequency
+    // Initialize clock properties if not set
+    if (!component.properties.clockFrequency) {
+      component.properties.clockFrequency = 1000; // Default 1 Hz (1000ms period)
+      component.properties.lastToggle = Date.now();
+    }
+    
+    const now = Date.now();
+    const period = component.properties.clockFrequency;
+    const elapsed = now - component.properties.lastToggle;
+    
+    // Toggle clock output when half period has elapsed
+    if (elapsed >= period / 2) {
+      component.outputs[0].value = !component.outputs[0].value;
+      component.properties.lastToggle = now;
+    }
+  }
+
+  private updateHalfAdder(component: Component): void {
+    // Half Adder: inputs A, B; outputs Sum (A XOR B), Carry (A AND B)
+    if (component.inputs.length >= 2 && component.outputs.length >= 2) {
+      const a = component.inputs[0].value;
+      const b = component.inputs[1].value;
+      component.outputs[0].value = a !== b; // Sum = A XOR B
+      component.outputs[1].value = a && b;  // Carry = A AND B
+    }
+  }
+
+  private updateFullAdder(component: Component): void {
+    // Full Adder: inputs A, B, Cin; outputs Sum, Cout
+    if (component.inputs.length >= 3 && component.outputs.length >= 2) {
+      const a = component.inputs[0].value;
+      const b = component.inputs[1].value;
+      const cin = component.inputs[2].value;
+      
+      // Sum = A XOR B XOR Cin
+      const xor1 = a !== b;
+      const sum = xor1 !== cin;
+      
+      // Cout = (A AND B) OR (Cin AND (A XOR B))
+      const and1 = a && b;
+      const and2 = cin && xor1;
+      const cout = and1 || and2;
+      
+      component.outputs[0].value = sum;
+      component.outputs[1].value = cout;
+    }
+  }
+
+  private updateMultiplexer2to1(component: Component): void {
+    // 2:1 MUX: inputs A (data 0), B (data 1), S (select); output Y
+    if (component.inputs.length >= 3 && component.outputs.length >= 1) {
+      const a = component.inputs[0].value;
+      const b = component.inputs[1].value;
+      const s = component.inputs[2].value;
+      // When S=0, output A; when S=1, output B
+      component.outputs[0].value = s ? b : a;
+    }
+  }
+
+  private updateDecoder2to4(component: Component): void {
+    // 2:4 Decoder: inputs A1, A0; outputs Y0, Y1, Y2, Y3
+    // Only one output is HIGH based on the binary input
+    if (component.inputs.length >= 2 && component.outputs.length >= 4) {
+      const a1 = component.inputs[0].value;
+      const a0 = component.inputs[1].value;
+      const value = (a1 ? 2 : 0) + (a0 ? 1 : 0);
+      
+      for (let i = 0; i < 4; i++) {
+        component.outputs[i].value = (i === value);
+      }
+    }
   }
 
   getComponent(id: string): Component | undefined {

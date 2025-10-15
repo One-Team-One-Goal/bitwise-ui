@@ -67,20 +67,22 @@ export const SimulatorToolbar: React.FC<SimulatorToolbarProps> = ({
   ];
 
   return (
-    <div className="bg-background border-b border-border w-full">
-      <div className="w-full px-4 py-3">
-        <div className="w-full flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+    <div className="bg-background border-b border-border">
+      <div className="px-2 sm:px-4 py-2 sm:py-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
           {/* Logo/Title and Tools */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            {/* Logo/Title */}
-            <div className="flex items-center gap-2">
-              <p className="text-lg font-semibold text-foreground">
-                Digital Circuit Simulator
-              </p>
+          <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-4">
+            {/* Logo/Title - Compact on mobile */}
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <Zap className="h-5 w-5 sm:h-6 sm:w-6 text-primary flex-shrink-0" />
+              <h1 className="text-sm sm:text-base lg:text-lg font-semibold text-foreground truncate">
+                <span className="hidden sm:inline">Digital Circuit Simulator</span>
+                <span className="sm:hidden">Circuit Sim</span>
+              </h1>
             </div>
 
-            {/* Tool Selection */}
-            <div className="flex items-center gap-1 p-1 bg-muted rounded-lg">
+            {/* Tool Selection - Compact buttons on mobile */}
+            <div className="flex items-center gap-0.5 sm:gap-1 p-0.5 sm:p-1 bg-muted rounded-md sm:rounded-lg">
               {tools.map(tool => {
                 const IconComponent = tool.icon;
                 const isSelected = toolbarState.selectedTool === tool.id;
@@ -92,10 +94,10 @@ export const SimulatorToolbar: React.FC<SimulatorToolbarProps> = ({
                     size="sm"
                     onClick={() => onToolSelect(tool.id)}
                     title={tool.description}
-                    className="flex items-center gap-2"
+                    className="h-8 w-8 sm:h-9 sm:w-auto p-1 sm:px-3 flex items-center justify-center sm:gap-2"
                   >
-                    <IconComponent className="h-4 w-4" />
-                    <span className="hidden sm:inline">{tool.name}</span>
+                    <IconComponent className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    <span className="hidden md:inline text-xs sm:text-sm">{tool.name}</span>
                   </Button>
                 );
               })}

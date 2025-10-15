@@ -123,7 +123,7 @@ export const BooleanExpressionInput: React.FC<BooleanExpressionInputProps> = ({
   };
 
   return (
-    <Card className="w-full">
+    <Card className="w-full border-0 shadow-none">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Zap className="h-5 w-5" />

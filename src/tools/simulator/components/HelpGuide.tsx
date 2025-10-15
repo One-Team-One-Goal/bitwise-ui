@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import introJs from 'intro.js';
 import 'intro.js/introjs.css';
 import './introjs.css'
@@ -92,16 +93,21 @@ export const HelpGuide: React.FC<HelpGuideProps> = ({ onStartTour }) => {
   }, []);
 
   return (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={startTour}
-      className="flex items-center gap-2 hover:bg-blue-50 hover:border-blue-300"
-      title="Start Interactive Tour"
-      data-tour="help-button"
-    >
-      <HelpCircle className="h-4 w-4" />
-      <span className="hidden sm:inline">Help</span>
-    </Button>
+    <Tooltip>
+      <TooltipTrigger>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={startTour}
+          className="h-10 w-10 p-0"
+          data-tour="help-button"
+        >
+          <HelpCircle className="h-6 w-6" />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side='left'>
+        Start Interactive Tour
+      </TooltipContent>
+    </Tooltip>
   );
 };

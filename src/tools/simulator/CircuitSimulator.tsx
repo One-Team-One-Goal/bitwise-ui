@@ -7,6 +7,7 @@ import { BooleanExpressionInput } from './components/BooleanExpressionInput';
 import { useCircuitSimulator } from './hooks/useCircuitSimulator';
 import { Card, CardContent } from '@/components/ui/card';
 import type { ComponentType, ToolbarState } from './types';
+import { MousePointer, Hand, Cable, Scissors, Cpu } from 'lucide-react';
 
 export const CircuitSimulator: React.FC = () => {
   const circuitHook = useCircuitSimulator();
@@ -15,6 +16,39 @@ export const CircuitSimulator: React.FC = () => {
     selectedComponentType: null
   });
   const [showBooleanExpression, setShowBooleanExpression] = useState(false);
+
+  const tools = [
+    {
+      id: 'select' as const,
+      name: 'Select',
+      icon: MousePointer,
+      description: 'Select and move components'
+    },
+    {
+      id: 'pan' as const,
+      name: 'Pan',
+      icon: Hand,
+      description: 'Pan the canvas'
+    },
+    {
+      id: 'wire' as const,
+      name: 'Wire',
+      icon: Cable,
+      description: 'Connect components'
+    },
+    {
+      id: 'wire-edit' as const,
+      name: 'Wire Edit',
+      icon: Scissors,
+      description: 'Select and manage wires'
+    },
+    {
+      id: 'component' as const,
+      name: 'Component',
+      icon: Cpu,
+      description: 'Place components'
+    }
+  ];
 
   const handleToolSelect = (tool: ToolbarState['selectedTool']) => {
     setToolbarState(prev => ({
@@ -43,13 +77,7 @@ export const CircuitSimulator: React.FC = () => {
     <div className="h-full flex flex-col bg-background relative">
       {/* Toolbar */}
       <div data-tour="toolbar">
-        <SimulatorToolbar
-          toolbarState={toolbarState}
-          onToolSelect={handleToolSelect}
-          circuitHook={circuitHook}
-          showBooleanExpression={showBooleanExpression}
-          onToggleBooleanExpression={() => setShowBooleanExpression(!showBooleanExpression)}
-        />
+        <SimulatorToolbar />
       </div>
 
       <div className="flex flex-1 overflow-hidden min-h-0">
@@ -68,6 +96,9 @@ export const CircuitSimulator: React.FC = () => {
             toolbarState={toolbarState}
             onCanvasClick={handleCanvasClick}
             onToolSelect={handleToolSelect}
+            tools={tools}
+            showBooleanExpression={showBooleanExpression}
+            onToggleBooleanExpression={() => setShowBooleanExpression(!showBooleanExpression)}
           />
         </div>
 

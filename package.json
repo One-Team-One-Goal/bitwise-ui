@@ -9,7 +9,7 @@
     "render-build": "npm ci --include=dev && npm run build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start": "serve -s dist -l $PORT",
+    "start": "serve -s dist -l ${PORT:-3000}",
     "postinstall": "test \"$NODE_ENV\" = \"production\" || (test -d .git && husky install || true)"
   },
   "lint-staged": {

@@ -2,19 +2,34 @@ import React, { useRef, useCallback, useState, useEffect } from 'react';
 import type { Component, Connection, Position, ToolbarState } from '../types';
 import { ConnectionRenderer } from './ConnectionRenderer';
 import { ComponentRenderer } from './ComponentRenderer';
+import { Button } from '@/components/ui/button';
+import { Grid2X2, RotateCcw, Trash2, Calculator } from 'lucide-react';
+import { HelpGuide } from './HelpGuide';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 interface CircuitCanvasProps {
   circuitHook: any;
   toolbarState: ToolbarState;
   onCanvasClick: (position: Position) => void;
   onToolSelect?: (tool: ToolbarState['selectedTool']) => void;
+  tools: Array<{
+    id: string;
+    name: string;
+    icon: any;
+    description: string;
+  }>;
+  showBooleanExpression: boolean;
+  onToggleBooleanExpression: () => void;
 }
 
 export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
   circuitHook,
   toolbarState,
   onCanvasClick,
-  onToolSelect
+  onToolSelect,
+  tools,
+  showBooleanExpression,
+  onToggleBooleanExpression
 }) => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [pan, setPan] = useState<Position>({ x: 0, y: 0 });
@@ -532,6 +547,105 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
 
   return (
     <div className="relative w-full h-full overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
+      {/* Tool Selection Buttons - Top Left */}
+      <div className="absolute top-3 left-3 z-10 flex flex-row gap-0.5 p-1 bg-white/90 backdrop-blur-sm rounded-md shadow-lg border border-gray-200">
+        {tools.map((tool) => (
+          <Tooltip key={tool.id}>
+            <TooltipTrigger>
+              <Button
+                variant={toolbarState.selectedTool === tool.id ? "default" : "ghost"}
+                size="sm"
+                onClick={() => onToolSelect?.(tool.id as ToolbarState['selectedTool'])}
+                className="h-9 w-9 p-0"
+              >
+                <tool.icon className="h-6 w-6" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {tool.description}
+            </TooltipContent>
+          </Tooltip>
+        ))}
+      </div>
+
+      <div className="absolute top-3 right-15 z-10 flex flex-col gap-2 p-1">
+        {/* Boolean Expression Toggle */}
+        <Tooltip>
+          <TooltipTrigger>
+            <Button
+              variant={showBooleanExpression ? "default" : "outline"}
+              size="sm"
+              onClick={onToggleBooleanExpression}
+              className="h-9 p-0"
+            >
+              <Calculator className="h-6 w-6 mr-2" />
+              Boolean to circuit
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            Toggle Boolean Expression Input
+          </TooltipContent>
+        </Tooltip>
+      </div>
+
+      {/* Controls - Top Right */}
+      <div className="absolute top-3 right-3 z-10 flex flex-col gap-2 p-1">
+
+        {/* Clear All */}
+        <Tooltip>
+          <TooltipTrigger>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={circuitHook.clearAll}
+              className="h-9 w-9 p-0"
+            >
+              <Trash2 className="h-6 w-6" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            Clear all components
+          </TooltipContent>
+        </Tooltip>
+
+        {/* Reset */}
+        <Tooltip>
+          <TooltipTrigger>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={circuitHook.resetSimulation}
+              className="h-9 w-9 p-0"
+            >
+              <RotateCcw className="h-6 w-6" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="left">
+            Reset simulation
+          </TooltipContent>
+        </Tooltip>
+
+        {/* Help Guide */}
+        <HelpGuide />
+
+        {/* Grid Toggle */}
+        <Tooltip>
+          <TooltipTrigger>
+            <Button
+              variant={circuitHook.circuitState.snapToGrid ? "default" : "outline"}
+              size="sm"
+              onClick={circuitHook.toggleSnapToGrid}
+              className="h-9 w-9 p-0"
+            >
+              <Grid2X2 className="h-6 w-6" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="left">
+            Toggle snap to grid
+          </TooltipContent>
+        </Tooltip>
+      </div>
+
       <div
         ref={canvasRef}
         className={`w-full h-full relative canvas-background ${getCursorStyle()} touch-none`}

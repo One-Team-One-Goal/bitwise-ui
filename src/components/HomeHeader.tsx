@@ -44,6 +44,10 @@ const HomeHeader = () => {
     )
   }
 
+  if (location.pathname === '/digitalCircuit') {
+    return;
+  }
+
   return (
     <header
       className={`z-50 w-full h-24 transition-transform duration-300 ${
@@ -76,7 +80,7 @@ const HomeHeader = () => {
                         <a
                           className="flex h-full w-full flex-col justify-end rounded-md bg-cover bg-center p-6 no-underline outline-hidden select-none focus:shadow-md"
                           href="/roadmap"
-                          style={{ backgroundImage: `linear-gradient(rgba(255,255,255,0.6), rgba(255,255,255,0.6)), url(${CodeImg})` }}
+                          style={{ backgroundImage: `linear-gradient(rgba(255,255,255,0.95), rgba(255,255,255,0.95)), url(${CodeImg})` }}
                         >
                           <div className="mt-4 mb-2 text-lg font-medium">
                             bitwise

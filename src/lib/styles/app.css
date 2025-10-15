@@ -13,6 +13,16 @@
   font-family: 'Inter', sans-serif;
 }
 
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+#root {
+  height: 100%;
+}
+
 /* Light mode tokens */
 :root {
   --background: oklch(1 0 0);

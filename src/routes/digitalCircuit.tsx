@@ -7,7 +7,7 @@ export const Route = createFileRoute('/digitalCircuit')({
 
 function RouteComponent() {
   return (
-    <div className="h-screen lg:h-[calc(100vh-8rem)] w-full overflow-hidden lg:overflow-visible">
+    <div className="h-screen w-full overflow-hidden lg:overflow-visible">
       <CircuitSimulator />
     </div>
   )

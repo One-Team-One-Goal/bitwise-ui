@@ -6,6 +6,8 @@ import { PropertiesPanel } from './components/PropertiesPanel';
 import { BooleanExpressionInput } from './components/BooleanExpressionInput';
 import { useCircuitSimulator } from './hooks/useCircuitSimulator';
 import { Card, CardContent } from '@/components/ui/card';
+import { parseExpression } from './utils/expressionParser';
+import { generateCircuitFromExpression } from './utils/circuitGenerator';
 import type { ComponentType, ToolbarState } from './types';
 import { MousePointer, Hand, Cable, Scissors, Cpu } from 'lucide-react';
 
@@ -95,7 +97,6 @@ export const CircuitSimulator: React.FC = () => {
             circuitHook={circuitHook}
             toolbarState={toolbarState}
             onCanvasClick={handleCanvasClick}
-            onToolSelect={handleToolSelect}
             tools={tools}
             showBooleanExpression={showBooleanExpression}
             onToggleBooleanExpression={() => setShowBooleanExpression(!showBooleanExpression)}
@@ -110,10 +111,12 @@ export const CircuitSimulator: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobile & Tablet Component Palette - Horizontal scrollable strip at bottom */}
+      {/* Mobile & Tablet Component Palette - Fixed at bottom */}
       <div className="lg:hidden">
-        {toolbarState.selectedTool === 'component' && (
-          <div className="flex-shrink-0 bg-background border-t border-border">
+        {toolbarState.selectedTool === 'component' && 
+         !circuitHook.circuitState.selectedComponent && 
+         !circuitHook.circuitState.selectedConnection && (
+          <div className="fixed bottom-0 left-0 right-0 z-40 bg-background border-t-2 border-border shadow-2xl max-h-[60vh] overflow-y-auto">
             <ComponentPalette
               onComponentSelect={handleComponentTypeSelect}
               selectedComponentType={toolbarState.selectedComponentType}
@@ -143,12 +146,72 @@ export const CircuitSimulator: React.FC = () => {
           <Card className="shadow-lg border-border bg-background/95 backdrop-blur-sm">
             <CardContent className="p-4">
               <BooleanExpressionInput
-                onExpressionValidated={(expression, isSimplified) => {
-                  console.log('Expression validated:', expression, 'Simplified:', isSimplified);
-                }}
                 onGenerateCircuit={(expression) => {
-                  console.log('Generate circuit for:', expression);
-                  // TODO: Implement circuit generation from expression
+                  // Parse the expression into an expression tree
+                  const parseResult = parseExpression(expression);
+                  
+                  if (!parseResult.success || !parseResult.tree) {
+                    console.error('Failed to parse expression:', parseResult.error);
+                    // TODO: Show user-friendly error message
+                    return;
+                  }
+                  
+                  // Generate circuit components and connections from expression tree
+                  const circuitResult = generateCircuitFromExpression(
+                    parseResult.tree,
+                    parseResult.variables
+                  );
+                  
+                  // Clear existing circuit and load generated circuit
+                  circuitHook.clearAll();
+                  
+                  // Load generated components and connections
+                  // We'll add each component and connection one by one
+                  // First add all components
+                  const componentIdMap = new Map<string, string>();
+                  
+                  circuitResult.components.forEach(generatedComp => {
+                    const newComp = circuitHook.addComponent(
+                      generatedComp.type,
+                      generatedComp.position
+                    );
+                    componentIdMap.set(generatedComp.id, newComp.id);
+                    
+                    // Update label if present
+                    if (generatedComp.label) {
+                      circuitHook.updateComponent(newComp.id, { label: generatedComp.label });
+                    }
+                  });
+                  
+                  // Then add all connections using the new component IDs
+                  circuitResult.connections.forEach(conn => {
+                    const fromCompId = componentIdMap.get(conn.from.componentId);
+                    const toCompId = componentIdMap.get(conn.to.componentId);
+                    
+                    if (fromCompId && toCompId) {
+                      // Find the corresponding connection points in the new components
+                      const fromComp = circuitHook.circuitState.components.find(c => c.id === fromCompId);
+                      const toComp = circuitHook.circuitState.components.find(c => c.id === toCompId);
+                      
+                      if (fromComp && toComp && fromComp.outputs[0] && toComp.inputs[0]) {
+                        circuitHook.addConnection(
+                          fromCompId,
+                          fromComp.outputs[0].id,
+                          toCompId,
+                          toComp.inputs[0].id
+                        );
+                      }
+                    }
+                  });
+                  
+                  // Close the boolean expression panel
+                  setShowBooleanExpression(false);
+                  
+                  console.log('Circuit generated successfully:', {
+                    components: circuitResult.components.length,
+                    connections: circuitResult.connections.length,
+                    variables: parseResult.variables
+                  });
                 }}
               />
             </CardContent>

@@ -6,6 +6,11 @@ export const API_ENDPOINTS = {
         LOGIN: `${API_BASE_URL}/auth/login`,
         LOGOUT: `${API_BASE_URL}/auth/logout`,
     },
+    CALCULATOR: {
+        SIMPLIFY: `${API_BASE_URL}/calculator/simplify`,
+        EVALUATE: `${API_BASE_URL}/calculator/evaluate`,
+        TRUTH_TABLE: `${API_BASE_URL}/calculator/truth-table`,
+    },
     // add here for more
 } as const;
 

@@ -57,25 +57,13 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
       if (event.key === 'Delete' || event.key === 'Backspace') {
         event.preventDefault();
         
-        // Prioritize wire deletion when wire-edit tool is selected
-        if (toolbarState.selectedTool === 'wire-edit' && circuitHook.circuitState.selectedConnection) {
+        // Handle wire deletion if a wire is selected
+        if (circuitHook.circuitState.selectedConnection) {
           circuitHook.removeConnection(circuitHook.circuitState.selectedConnection);
         }
-        // Handle wire deletion in any mode if a wire is selected
-        else if (circuitHook.circuitState.selectedConnection) {
-          circuitHook.removeConnection(circuitHook.circuitState.selectedConnection);
-        }
-        // Only delete components if no wire is selected
+        // Delete components if no wire is selected
         else if (circuitHook.circuitState.selectedComponent) {
           circuitHook.removeComponent(circuitHook.circuitState.selectedComponent);
-        }
-      }
-      
-      // 'W' key to quickly switch to wire edit mode
-      if (event.key === 'w' || event.key === 'W') {
-        if (!event.ctrlKey && !event.metaKey && onToolSelect) {
-          event.preventDefault();
-          onToolSelect('wire-edit');
         }
       }
       

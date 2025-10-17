@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "prebuild": "npm ci --include=dev || true",
     "render-build": "npm ci --include=dev && npm run build",
     "lint": "eslint .",
     "preview": "vite preview",

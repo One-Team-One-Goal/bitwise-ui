@@ -336,7 +336,8 @@ export default function DataAnalyticsCard({ lesson, user }: { lesson: any; user:
                   <li key={topic.topicId} className="text-xs flex justify-between items-center">
                     <div>
                       <Link
-                        to={`/lesson/${topic.lessonId}`}
+                        to="/lesson/$lessonId"
+                        params={{ lessonId: String(topic.lessonId) }}
                         className="text-blue-600 underline hover:text-blue-800"
                         title={`Go to ${lessonNames[topic.lessonId] || 'Lesson'}`}
                       >
@@ -360,7 +361,8 @@ export default function DataAnalyticsCard({ lesson, user }: { lesson: any; user:
                 {weakTopics.map((topic) => (
                   <li key={topic.topicId} className="text-xs">
                     <Link
-                      to={`/lesson/${lesson.id}`}
+                      to="/lesson/$lessonId"
+                      params={{ lessonId: String(lesson.id) }}
                       className="text-blue-600 underline hover:text-blue-800"
                       title={`Review ${topic.topicTitle} in this lesson`}
                     >

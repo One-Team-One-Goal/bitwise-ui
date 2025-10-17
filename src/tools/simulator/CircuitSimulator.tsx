@@ -52,13 +52,7 @@ export const CircuitSimulator: React.FC = () => {
     }
   ];
 
-  const handleToolSelect = (tool: ToolbarState['selectedTool']) => {
-    setToolbarState(prev => ({
-      ...prev,
-      selectedTool: tool,
-      selectedComponentType: tool === 'component' ? prev.selectedComponentType : null
-    }));
-  };
+  // handleToolSelect removed (unused)
 
   const handleComponentTypeSelect = (componentType: ComponentType) => {
     setToolbarState({

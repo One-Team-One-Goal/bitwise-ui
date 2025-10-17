@@ -598,7 +598,8 @@ function RouteComponent() {
                     {weakestAreas.map((area, idx) => (
                       <Link
                         key={idx}
-                        to={`/lesson/${topicToLessonId[area] || 1}`}
+                        to="/lesson/$lessonId"
+                        params={{ lessonId: String(topicToLessonId[area] || 1) }}
                         className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm underline hover:bg-red-200 transition"
                         title={`Go to ${lessonNames[topicToLessonId[area] || 1]}`}
                       >
@@ -639,7 +640,8 @@ function RouteComponent() {
                           <span className="text-yellow-600 mt-1">•</span>
                           {tag ? (
                             <Link
-                              to={`/lesson/${topicToLessonId[tag]}`}
+                              to="/lesson/$lessonId"
+                              params={{ lessonId: String(topicToLessonId[tag]) }}
                               className="underline text-yellow-900 hover:text-yellow-700"
                               title={`Go to ${lessonNames[topicToLessonId[tag]]}`}
                             >

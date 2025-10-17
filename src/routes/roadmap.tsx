@@ -13,7 +13,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import DataAnalyticsCard from '@/components/DataAnalyticsCard'
 import { useAuthContext } from '@/contexts/AuthContext'
-import { Loader2, Brain, Target, AlertCircle } from 'lucide-react'
+import { Loader2, Brain, AlertCircle } from 'lucide-react'
 
 // Define types for better TypeScript support
 interface Sublesson {
@@ -202,7 +202,7 @@ function RouteComponent() {
   }
 
   // Handle regular practice assessment start (fallback)
-  const handleStartRegularAssessment = async () => {
+  /* const handleStartRegularAssessment = async () => {
     if (!user) return
 
     setLoadingAssessment(true)
@@ -229,7 +229,7 @@ function RouteComponent() {
     } finally {
       setLoadingAssessment(false)
     }
-  }
+  } */
 
   const displayItem = hovered || selected
 

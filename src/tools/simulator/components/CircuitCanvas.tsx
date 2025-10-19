@@ -20,6 +20,10 @@ interface CircuitCanvasProps {
   }>;
   showBooleanExpression: boolean;
   onToggleBooleanExpression: () => void;
+  undoStack: any[];
+  redoStack: any[];
+  handleUndo: () => void;
+  handleRedo: () => void;
 }
 
 export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
@@ -29,7 +33,11 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
   onToolSelect,
   tools,
   showBooleanExpression,
-  onToggleBooleanExpression
+  onToggleBooleanExpression,
+  undoStack,
+  redoStack,
+  handleUndo,
+  handleRedo
 }) => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [pan, setPan] = useState<Position>({ x: 0, y: 0 });
@@ -535,7 +543,7 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
 
   return (
     <div className="relative w-full h-full overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Tool Selection Buttons - Top Left */}
+      {/* Tool Selection Buttons + Undo/Redo - Top Left */}
       <div className="absolute top-3 left-3 z-10 flex flex-row gap-0.5 p-1 bg-white/90 backdrop-blur-sm rounded-md shadow-lg border border-gray-200">
         {tools.map((tool) => (
           <Tooltip key={tool.id}>
@@ -554,6 +562,40 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
             </TooltipContent>
           </Tooltip>
         ))}
+        {/* Divider for undo/redo */}
+        <div className="w-px h-8 bg-gray-200 mx-1 self-center" />
+        {/* Undo Button */}
+        <Tooltip>
+          <TooltipTrigger>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleUndo}
+              disabled={undoStack.length <= 1}
+              className="h-9 w-9 p-0"
+              aria-label="Undo"
+            >
+              <RotateCcw className="h-6 w-6" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Undo</TooltipContent>
+        </Tooltip>
+        {/* Redo Button */}
+        <Tooltip>
+          <TooltipTrigger>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRedo}
+              disabled={redoStack.length === 0}
+              className="h-9 w-9 p-0"
+              aria-label="Redo"
+            >
+              <RotateCcw className="h-6 w-6 rotate-180" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Redo</TooltipContent>
+        </Tooltip>
       </div>
 
       <div className="absolute top-3 right-15 z-10 flex flex-col gap-2 p-1">
@@ -719,8 +761,8 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
         </div>
       </div>
       
-      {/* Mobile & Tablet zoom controls - Better positioning */}
-      <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 lg:hidden flex flex-col gap-1.5 sm:gap-2 z-10">
+      {/* Zoom controls - Bottom right overlay */}
+      <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 flex flex-col gap-1.5 sm:gap-2 z-10">
         <button
           onClick={() => setZoom(prev => Math.min(prev + 0.1, 2))}
           className="w-9 h-9 sm:w-11 sm:h-11 bg-white dark:bg-gray-800 rounded-full shadow-lg border-2 border-gray-300 dark:border-gray-600 flex items-center justify-center text-gray-700 dark:text-gray-200 active:bg-gray-100 dark:active:bg-gray-700 transition-all hover:scale-110 active:scale-95"

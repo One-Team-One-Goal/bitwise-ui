@@ -9,10 +9,40 @@ import { Card, CardContent } from '@/components/ui/card';
 import { parseExpression } from './utils/expressionParser';
 import { generateCircuitFromExpression } from './utils/circuitGenerator';
 import type { ComponentType, ToolbarState } from './types';
-import { MousePointer, Hand, Cable, Scissors, Cpu } from 'lucide-react';
+import { MousePointer, Hand, Cable, Cpu } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export const CircuitSimulator: React.FC = () => {
+  // Undo/redo state
   const circuitHook = useCircuitSimulator();
+  const [undoStack, setUndoStack] = useState<any[]>([]);
+  const [redoStack, setRedoStack] = useState<any[]>([]);
+
+  // Save state to undo stack on every change
+  React.useEffect(() => {
+    setUndoStack(stack => [...stack, circuitHook.circuitState]);
+    // Clear redo stack on new action
+    setRedoStack([]);
+    // eslint-disable-next-line
+  }, [circuitHook.circuitState]);
+
+  const handleUndo = () => {
+    if (undoStack.length > 1) {
+      const prev = undoStack[undoStack.length - 2];
+      setUndoStack(stack => stack.slice(0, -1));
+      setRedoStack(stack => [circuitHook.circuitState, ...stack]);
+      circuitHook.setCircuitState(prev);
+    }
+  };
+
+  const handleRedo = () => {
+    if (redoStack.length > 0) {
+      const next = redoStack[0];
+      setRedoStack(stack => stack.slice(1));
+      setUndoStack(stack => [...stack, next]);
+      circuitHook.setCircuitState(next);
+    }
+  };
   const [toolbarState, setToolbarState] = useState<ToolbarState>({
     selectedTool: 'select',
     selectedComponentType: null
@@ -37,12 +67,6 @@ export const CircuitSimulator: React.FC = () => {
       name: 'Wire',
       icon: Cable,
       description: 'Connect components'
-    },
-    {
-      id: 'wire-edit' as const,
-      name: 'Wire Edit',
-      icon: Scissors,
-      description: 'Select and manage wires'
     },
     {
       id: 'component' as const,
@@ -74,10 +98,14 @@ export const CircuitSimulator: React.FC = () => {
   };
 
   return (
+
+
     <div className="h-full flex flex-col bg-background relative">
       {/* Toolbar */}
       <div data-tour="toolbar">
-        <SimulatorToolbar />
+        <div className="flex items-center gap-2">
+          <SimulatorToolbar />
+        </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden min-h-0">
@@ -99,6 +127,10 @@ export const CircuitSimulator: React.FC = () => {
             tools={tools}
             showBooleanExpression={showBooleanExpression}
             onToggleBooleanExpression={() => setShowBooleanExpression(!showBooleanExpression)}
+            undoStack={undoStack}
+            redoStack={redoStack}
+            handleUndo={handleUndo}
+            handleRedo={handleRedo}
           />
         </div>
 
@@ -162,7 +194,7 @@ export const CircuitSimulator: React.FC = () => {
                   );
                   
                   // Clear existing circuit and load generated circuit
-                  circuitHook.clearAll();
+                  // circuitHook.clearAll(); // Removed: not present in hook
                   
                   // Load generated components and connections
                   // We'll add each component and connection one by one

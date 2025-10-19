@@ -9,6 +9,7 @@ interface ComponentRendererProps {
   onMouseDown: (event: React.MouseEvent) => void;
   onConnectionPointClick: (connectionPointId: string) => void;
   onClick?: (event: React.MouseEvent) => void;
+  circuitHook?: any;
 }
 
 export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
@@ -16,7 +17,8 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
   isSelected,
   onMouseDown,
   onConnectionPointClick,
-  onClick
+  onClick,
+  circuitHook
 }) => {
   const definition = COMPONENT_DEFINITIONS[component.type];
 
@@ -112,16 +114,16 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
       case 'OR':
         return (
           <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
-            {/* OR gate - curved shield shape */}
+            {/* OR gate - scaled to match AND gate size */}
             <path
-              d={`M15,10 Q20,10 25,${height/2} Q20,${height-10} 15,${height-10} Q35,${height/2} ${width-15},${height/2} Q35,${height/2} 15,10`}
+              d={`M 15,10 Q ${width/2-10},10 ${width-25},${height/2} Q ${width/2-10},${height-10} 15,${height-10} Q 35,${height/2} 15,10 Z`}
               fill="white"
               stroke={isSelected ? '#3b82f6' : 'black'}
               strokeWidth={isSelected ? "3" : "2"}
             />
             {/* Input connection points visual guide */}
-            <line x1="18" y1={height/3 + 2} x2="8" y2={height/3} stroke="black" strokeWidth="1"/>
-            <line x1="18" y1={2*height/3 - 2} x2="8" y2={2*height/3} stroke="black" strokeWidth="1"/>
+            <line x1="15" y1={height/3} x2="8" y2={height/3} stroke="black" strokeWidth="1"/>
+            <line x1="15" y1={2*height/3} x2="8" y2={2*height/3} stroke="black" strokeWidth="1"/>
             {/* Output connection point visual guide */}
             <line x1={width-15} y1={height/2} x2={width-8} y2={height/2} stroke="black" strokeWidth="1"/>
           </svg>
@@ -183,12 +185,12 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
       case 'NOR':
         return (
           <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
-            {/* NOR gate - OR shape with inversion bubble */}
+            {/* NOR gate - scaled to match AND gate size, with inversion bubble */}
             <path
-              d={`M15,10 Q20,10 25,${height/2} Q20,${height-10} 15,${height-10} Q35,${height/2} ${width-20},${height/2} Q35,${height/2} 15,10`}
+              d={`M 15,10 Q ${width/2-10},10 ${width-25},${height/2} Q ${width/2-10},${height-10} 15,${height-10} Q 35,${height/2} 15,10 Z`}
               fill="white"
-              stroke="black"
-              strokeWidth="2"
+              stroke={isSelected ? '#3b82f6' : 'black'}
+              strokeWidth={isSelected ? "3" : "2"}
             />
             {/* Inversion bubble */}
             <circle
@@ -196,12 +198,12 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
               cy={height/2}
               r="6"
               fill="white"
-              stroke="black"
-              strokeWidth="2"
+              stroke={isSelected ? '#3b82f6' : 'black'}
+              strokeWidth={isSelected ? "3" : "2"}
             />
             {/* Input connection points visual guide */}
-            <line x1="18" y1={height/3 + 2} x2="8" y2={height/3} stroke="black" strokeWidth="1"/>
-            <line x1="18" y1={2*height/3 - 2} x2="8" y2={2*height/3} stroke="black" strokeWidth="1"/>
+            <line x1="15" y1={height/3} x2="8" y2={height/3} stroke="black" strokeWidth="1"/>
+            <line x1="15" y1={2*height/3} x2="8" y2={2*height/3} stroke="black" strokeWidth="1"/>
             {/* Output connection point visual guide */}
             <line x1={width-6} y1={height/2} x2={width-2} y2={height/2} stroke="black" strokeWidth="1"/>
           </svg>
@@ -212,21 +214,21 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
           <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
             {/* XOR gate - OR shape with additional curved line */}
             <path
-              d={`M20,10 Q25,10 30,${height/2} Q25,${height-10} 20,${height-10} Q40,${height/2} ${width-15},${height/2} Q40,${height/2} 20,10`}
+              d={`M 20,10 Q 23,10 27,${height/2} Q 23,${height-10} 20,${height-10} Q 45,${height/2} ${width-15},${height/2} Q 45,${height/2} 20,10 Z`}
               fill="white"
-              stroke="black"
-              strokeWidth="2"
+              stroke={isSelected ? '#3b82f6' : 'black'}
+              strokeWidth={isSelected ? "3" : "2"}
             />
             {/* Additional curved line for XOR */}
             <path
-              d={`M10,10 Q15,${height/2} 10,${height-10}`}
+              d={`M 10,10 Q 13,${height/2} 10,${height-10}`}
               fill="none"
-              stroke="black"
-              strokeWidth="2"
+              stroke={isSelected ? '#3b82f6' : 'black'}
+              strokeWidth={isSelected ? "3" : "2"}
             />
             {/* Input connection points visual guide */}
-            <line x1="23" y1={height/3 + 3} x2="8" y2={height/3} stroke="black" strokeWidth="1"/>
-            <line x1="23" y1={2*height/3 - 3} x2="8" y2={2*height/3} stroke="black" strokeWidth="1"/>
+            <line x1="25" y1={height/3 + 3} x2="8" y2={height/3} stroke="black" strokeWidth="1"/>
+            <line x1="25" y1={2*height/3 - 3} x2="8" y2={2*height/3} stroke="black" strokeWidth="1"/>
             {/* Output connection point visual guide */}
             <line x1={width-15} y1={height/2} x2={width-8} y2={height/2} stroke="black" strokeWidth="1"/>
           </svg>
@@ -237,17 +239,17 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
           <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
             {/* XNOR gate - XOR shape with inversion bubble */}
             <path
-              d={`M20,10 Q25,10 30,${height/2} Q25,${height-10} 20,${height-10} Q40,${height/2} ${width-20},${height/2} Q40,${height/2} 20,10`}
+              d={`M 20,10 Q 23,10 27,${height/2} Q 23,${height-10} 20,${height-10} Q 45,${height/2} ${width-20},${height/2} Q 45,${height/2} 20,10 Z`}
               fill="white"
-              stroke="black"
-              strokeWidth="2"
+              stroke={isSelected ? '#3b82f6' : 'black'}
+              strokeWidth={isSelected ? "3" : "2"}
             />
             {/* Additional curved line for XOR */}
             <path
-              d={`M10,10 Q15,${height/2} 10,${height-10}`}
+              d={`M 10,10 Q 13,${height/2} 10,${height-10}`}
               fill="none"
-              stroke="black"
-              strokeWidth="2"
+              stroke={isSelected ? '#3b82f6' : 'black'}
+              strokeWidth={isSelected ? "3" : "2"}
             />
             {/* Inversion bubble */}
             <circle
@@ -255,12 +257,12 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
               cy={height/2}
               r="6"
               fill="white"
-              stroke="black"
-              strokeWidth="2"
+              stroke={isSelected ? '#3b82f6' : 'black'}
+              strokeWidth={isSelected ? "3" : "2"}
             />
             {/* Input connection points visual guide */}
-            <line x1="23" y1={height/3 + 3} x2="8" y2={height/3} stroke="black" strokeWidth="1"/>
-            <line x1="23" y1={2*height/3 - 3} x2="8" y2={2*height/3} stroke="black" strokeWidth="1"/>
+            <line x1="25" y1={height/3 + 3} x2="8" y2={height/3} stroke="black" strokeWidth="1"/>
+            <line x1="25" y1={2*height/3 - 3} x2="8" y2={2*height/3} stroke="black" strokeWidth="1"/>
             {/* Output connection point visual guide */}
             <line x1={width-6} y1={height/2} x2={width-2} y2={height/2} stroke="black" strokeWidth="1"/>
           </svg>
@@ -273,8 +275,8 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
             <polygon
               points={`15,10 ${width-8},${height/2} 15,${height-10}`}
               fill="white"
-              stroke="black"
-              strokeWidth="2"
+              stroke={isSelected ? '#3b82f6' : 'black'}
+              strokeWidth={isSelected ? "3" : "2"}
             />
             {/* Input connection point visual guide */}
             <line x1="15" y1={height/2} x2="8" y2={height/2} stroke="black" strokeWidth="1"/>
@@ -1069,7 +1071,39 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
         return renderInputControl();
       case 'outputs':
         return renderOutputControl();
-      default:
+      case 'other':
+        if (component.type === 'LABEL') {
+          // Calculate min width/height and grow with content
+          const labelLines = (component.label ?? '').split('\n');
+          const minWidth = 60;
+          const minHeight = 24; // smaller base height for single line
+          const charWidth = 8; // px per character (approx)
+          const lineHeight = 18; // px per line (approx)
+          const contentWidth = Math.max(minWidth, Math.max(...labelLines.map(line => line.length * charWidth)) + 24);
+          // Grow height for each line, with a small padding
+          const contentHeight = Math.max(minHeight, labelLines.length * lineHeight + 8);
+          return (
+            <div
+              className="bg-white border-2 border-gray-400 rounded flex items-center justify-center"
+              style={{ borderColor: isSelected ? '#3b82f6' : '#9ca3af', position: 'relative', width: contentWidth, height: contentHeight, minWidth, minHeight }}
+            >
+              <textarea
+                value={component.label ?? ''}
+                onChange={e => {
+                  if (typeof onClick === 'function') e.stopPropagation();
+                  if (circuitHook && typeof circuitHook.updateComponent === 'function') {
+                    circuitHook.updateComponent(component.id, { label: e.target.value });
+                  }
+                }}
+                onClick={e => e.stopPropagation()}
+                className="w-full h-full text-center bg-transparent border-none outline-none text-sm px-2 resize-none"
+                style={{ pointerEvents: 'auto', overflow: 'hidden', resize: 'none' }}
+                placeholder="Label text..."
+                rows={labelLines.length || 1}
+              />
+            </div>
+          );
+        }
         return (
           <div
             className="w-full h-full bg-gray-100 border-2 border-gray-400 rounded"

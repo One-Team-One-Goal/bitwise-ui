@@ -52,7 +52,12 @@ export const CircuitSimulator: React.FC = () => {
     }
   ];
 
-  // handleToolSelect removed (unused)
+  const handleToolSelect = (tool: ToolbarState['selectedTool']) => {
+    setToolbarState({
+      selectedTool: tool,
+      selectedComponentType: tool === 'component' ? toolbarState.selectedComponentType : null
+    });
+  };
 
   const handleComponentTypeSelect = (componentType: ComponentType) => {
     setToolbarState({
@@ -64,8 +69,7 @@ export const CircuitSimulator: React.FC = () => {
   const handleCanvasClick = (position: { x: number; y: number }) => {
     if (toolbarState.selectedTool === 'component' && toolbarState.selectedComponentType) {
       circuitHook.addComponent(toolbarState.selectedComponentType, position);
-      // Optionally keep the tool selected or switch back to select
-      // setToolbarState(prev => ({ ...prev, selectedTool: 'select' }));
+      setToolbarState(prev => ({ ...prev, selectedTool: 'select', selectedComponentType: null }));
     }
   };
 
@@ -91,6 +95,7 @@ export const CircuitSimulator: React.FC = () => {
             circuitHook={circuitHook}
             toolbarState={toolbarState}
             onCanvasClick={handleCanvasClick}
+            onToolSelect={handleToolSelect}
             tools={tools}
             showBooleanExpression={showBooleanExpression}
             onToggleBooleanExpression={() => setShowBooleanExpression(!showBooleanExpression)}

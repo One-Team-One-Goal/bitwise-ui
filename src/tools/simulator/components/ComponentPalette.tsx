@@ -33,7 +33,7 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
   isMobile = false
 }) => {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
-    new Set(['gates', 'inputs', 'outputs'])
+    new Set()
   );
 
   const toggleCategory = (category: string) => {
@@ -170,7 +170,7 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
 
   // Desktop vertical layout
   return (
-    <div className="h-full bg-background border-r border-border flex flex-col">
+    <div className="h-full w-full bg-background border-r border-border flex flex-col">
       <div className="p-3 border-b border-border flex-shrink-0">
         <h3 className="text-sm font-semibold">Components</h3>
         <p className="text-xs text-muted-foreground mt-0.5">
@@ -178,8 +178,8 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
         </p>
       </div>
 
-      <ScrollArea className="flex-1 min-h-0">
-        <div className="p-2 space-y-1.5">
+      <ScrollArea className="flex-1 min-h-0 w-full">
+        <div className="p-2 space-y-1.5 w-full">
           {categories.map(category => {
             const isExpanded = expandedCategories.has(category.id);
             const components = ComponentFactory.getDefinitionsByCategory(category.id as any);

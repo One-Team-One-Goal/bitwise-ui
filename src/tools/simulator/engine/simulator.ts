@@ -74,6 +74,7 @@ export class CircuitSimulator {
 
         if (fromOutput && toInput) {
           const oldValue = toInput.value;
+          
           toInput.value = fromOutput.value;
           connection.value = fromOutput.value;
 
@@ -89,6 +90,11 @@ export class CircuitSimulator {
         }
       }
     });
+    
+    // Limit simulation events to prevent memory issues
+    if (this.simulationEvents.length > 1000) {
+      this.simulationEvents = this.simulationEvents.slice(-500);
+    }
   }
 
   private updateComponent(component: Component): void {

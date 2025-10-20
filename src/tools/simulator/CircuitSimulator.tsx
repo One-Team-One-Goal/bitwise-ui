@@ -9,10 +9,55 @@ import { Card, CardContent } from '@/components/ui/card';
 import { parseExpression } from './utils/expressionParser';
 import { generateCircuitFromExpression } from './utils/circuitGenerator';
 import type { ComponentType, ToolbarState } from './types';
-import { MousePointer, Hand, Cable, Scissors, Cpu } from 'lucide-react';
+import { MousePointer, Hand, Cable, Cpu } from 'lucide-react';
 
 export const CircuitSimulator: React.FC = () => {
+  // Undo/redo state
   const circuitHook = useCircuitSimulator();
+  const [undoStack, setUndoStack] = useState<any[]>([]);
+  const [redoStack, setRedoStack] = useState<any[]>([]);
+  const isUndoingRef = React.useRef(false);
+
+  // Save state to undo stack on every change (but not during undo/redo operations)
+  React.useEffect(() => {
+    if (!isUndoingRef.current) {
+      setUndoStack(stack => {
+        // Avoid adding duplicate states
+        const lastState = stack[stack.length - 1];
+        if (lastState && JSON.stringify(lastState) === JSON.stringify(circuitHook.circuitState)) {
+          return stack;
+        }
+        return [...stack, circuitHook.circuitState];
+      });
+      // Clear redo stack on new action
+      setRedoStack([]);
+    }
+    // eslint-disable-next-line
+  }, [circuitHook.circuitState]);
+
+  const handleUndo = () => {
+    if (undoStack.length > 1) {
+      isUndoingRef.current = true;
+      const prev = undoStack[undoStack.length - 2];
+      setUndoStack(stack => stack.slice(0, -1));
+      setRedoStack(stack => [circuitHook.circuitState, ...stack]);
+      circuitHook.setCircuitState(prev);
+      // Reset flag after state update completes
+      setTimeout(() => { isUndoingRef.current = false; }, 0);
+    }
+  };
+
+  const handleRedo = () => {
+    if (redoStack.length > 0) {
+      isUndoingRef.current = true;
+      const next = redoStack[0];
+      setRedoStack(stack => stack.slice(1));
+      setUndoStack(stack => [...stack, next]);
+      circuitHook.setCircuitState(next);
+      // Reset flag after state update completes
+      setTimeout(() => { isUndoingRef.current = false; }, 0);
+    }
+  };
   const [toolbarState, setToolbarState] = useState<ToolbarState>({
     selectedTool: 'select',
     selectedComponentType: null
@@ -39,12 +84,6 @@ export const CircuitSimulator: React.FC = () => {
       description: 'Connect components'
     },
     {
-      id: 'wire-edit' as const,
-      name: 'Wire Edit',
-      icon: Scissors,
-      description: 'Select and manage wires'
-    },
-    {
       id: 'component' as const,
       name: 'Component',
       icon: Cpu,
@@ -52,7 +91,12 @@ export const CircuitSimulator: React.FC = () => {
     }
   ];
 
-  // handleToolSelect removed (unused)
+  const handleToolSelect = (tool: ToolbarState['selectedTool']) => {
+    setToolbarState({
+      selectedTool: tool,
+      selectedComponentType: tool === 'component' ? toolbarState.selectedComponentType : null
+    });
+  };
 
   const handleComponentTypeSelect = (componentType: ComponentType) => {
     setToolbarState({
@@ -64,16 +108,19 @@ export const CircuitSimulator: React.FC = () => {
   const handleCanvasClick = (position: { x: number; y: number }) => {
     if (toolbarState.selectedTool === 'component' && toolbarState.selectedComponentType) {
       circuitHook.addComponent(toolbarState.selectedComponentType, position);
-      // Optionally keep the tool selected or switch back to select
-      // setToolbarState(prev => ({ ...prev, selectedTool: 'select' }));
+      setToolbarState(prev => ({ ...prev, selectedTool: 'select', selectedComponentType: null }));
     }
   };
 
   return (
+
+
     <div className="h-full flex flex-col bg-background relative">
       {/* Toolbar */}
       <div data-tour="toolbar">
-        <SimulatorToolbar />
+        <div className="flex items-center gap-2">
+          <SimulatorToolbar />
+        </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden min-h-0">
@@ -91,9 +138,14 @@ export const CircuitSimulator: React.FC = () => {
             circuitHook={circuitHook}
             toolbarState={toolbarState}
             onCanvasClick={handleCanvasClick}
+            onToolSelect={handleToolSelect}
             tools={tools}
             showBooleanExpression={showBooleanExpression}
             onToggleBooleanExpression={() => setShowBooleanExpression(!showBooleanExpression)}
+            undoStack={undoStack}
+            redoStack={redoStack}
+            handleUndo={handleUndo}
+            handleRedo={handleRedo}
           />
         </div>
 
@@ -157,7 +209,7 @@ export const CircuitSimulator: React.FC = () => {
                   );
                   
                   // Clear existing circuit and load generated circuit
-                  circuitHook.clearAll();
+                  // circuitHook.clearAll(); // Removed: not present in hook
                   
                   // Load generated components and connections
                   // We'll add each component and connection one by one

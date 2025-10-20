@@ -20,6 +20,10 @@ interface CircuitCanvasProps {
   }>;
   showBooleanExpression: boolean;
   onToggleBooleanExpression: () => void;
+  undoStack: any[];
+  redoStack: any[];
+  handleUndo: () => void;
+  handleRedo: () => void;
 }
 
 export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
@@ -29,7 +33,11 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
   onToolSelect,
   tools,
   showBooleanExpression,
-  onToggleBooleanExpression
+  onToggleBooleanExpression,
+  undoStack,
+  redoStack,
+  handleUndo,
+  handleRedo
 }) => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [pan, setPan] = useState<Position>({ x: 0, y: 0 });
@@ -293,40 +301,52 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
         const toPoint = toComponent.inputs.find((i: any) => i.id === connection.to.connectionPointId);
 
         if (fromPoint && toPoint) {
-          // Calculate connection point positions using stored offsets
+          // Calculate connection point positions
           const startX = fromComponent.position.x + fromPoint.position.x;
           const startY = fromComponent.position.y + fromPoint.position.y;
-
           const endX = toComponent.position.x + toPoint.position.x;
           const endY = toComponent.position.y + toPoint.position.y;
 
-          const existingPath = connection.path && connection.path.length >= 2
-            ? connection.path
-            : [
-                { x: startX, y: startY },
-                { x: endX, y: endY }
-              ];
+          // Only update if we have a valid path
+          if (!connection.path || connection.path.length < 2) {
+            const newPath = [
+              { x: startX, y: startY },
+              { x: endX, y: endY }
+            ];
+            if (circuitHook.updateConnection) {
+              circuitHook.updateConnection(connection.id, { path: newPath });
+            }
+            return;
+          }
 
+          const existingPath = connection.path;
           const startPoint = { x: startX, y: startY };
           const endPoint = { x: endX, y: endY };
-
           const oldStart = existingPath[0];
           const oldEnd = existingPath[existingPath.length - 1];
 
-          const deltaFrom = connection.from.componentId === componentId
-            ? { x: startPoint.x - oldStart.x, y: startPoint.y - oldStart.y }
-            : { x: 0, y: 0 };
+          // Calculate deltas
+          const deltaFromX = startPoint.x - oldStart.x;
+          const deltaFromY = startPoint.y - oldStart.y;
+          const deltaToX = endPoint.x - oldEnd.x;
+          const deltaToY = endPoint.y - oldEnd.y;
 
-          const deltaTo = connection.to.componentId === componentId
-            ? { x: endPoint.x - oldEnd.x, y: endPoint.y - oldEnd.y }
-            : { x: 0, y: 0 };
+          // Skip update if no change
+          if (Math.abs(deltaFromX) < 0.01 && Math.abs(deltaFromY) < 0.01 && 
+              Math.abs(deltaToX) < 0.01 && Math.abs(deltaToY) < 0.01) {
+            return;
+          }
 
+          // Update path with interpolation for middle points
           const newPath = existingPath.map((point, index) => {
             if (index === 0) return startPoint;
             if (index === existingPath.length - 1) return endPoint;
+            
+            // Interpolate middle points based on their position ratio
+            const ratio = index / (existingPath.length - 1);
             return {
-              x: point.x + deltaFrom.x + deltaTo.x,
-              y: point.y + deltaFrom.y + deltaTo.y
+              x: point.x + deltaFromX * (1 - ratio) + deltaToX * ratio,
+              y: point.y + deltaFromY * (1 - ratio) + deltaToY * ratio
             };
           });
 
@@ -535,7 +555,7 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
 
   return (
     <div className="relative w-full h-full overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Tool Selection Buttons - Top Left */}
+      {/* Tool Selection Buttons + Undo/Redo - Top Left */}
       <div className="absolute top-3 left-3 z-10 flex flex-row gap-0.5 p-1 bg-white/90 backdrop-blur-sm rounded-md shadow-lg border border-gray-200">
         {tools.map((tool) => (
           <Tooltip key={tool.id}>
@@ -554,6 +574,40 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
             </TooltipContent>
           </Tooltip>
         ))}
+        {/* Divider for undo/redo */}
+        <div className="w-px h-8 bg-gray-200 mx-1 self-center" />
+        {/* Undo Button */}
+        <Tooltip>
+          <TooltipTrigger>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleUndo}
+              disabled={undoStack.length <= 1}
+              className="h-9 w-9 p-0"
+              aria-label="Undo"
+            >
+              <RotateCcw className="h-6 w-6" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Undo</TooltipContent>
+        </Tooltip>
+        {/* Redo Button */}
+        <Tooltip>
+          <TooltipTrigger>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRedo}
+              disabled={redoStack.length === 0}
+              className="h-9 w-9 p-0"
+              aria-label="Redo"
+            >
+              <RotateCcw className="h-6 w-6 rotate-180" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Redo</TooltipContent>
+        </Tooltip>
       </div>
 
       <div className="absolute top-3 right-15 z-10 flex flex-col gap-2 p-1">
@@ -719,8 +773,8 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
         </div>
       </div>
       
-      {/* Mobile & Tablet zoom controls - Better positioning */}
-      <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 lg:hidden flex flex-col gap-1.5 sm:gap-2 z-10">
+      {/* Zoom controls - Bottom right overlay */}
+      <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 flex flex-col gap-1.5 sm:gap-2 z-10">
         <button
           onClick={() => setZoom(prev => Math.min(prev + 0.1, 2))}
           className="w-9 h-9 sm:w-11 sm:h-11 bg-white dark:bg-gray-800 rounded-full shadow-lg border-2 border-gray-300 dark:border-gray-600 flex items-center justify-center text-gray-700 dark:text-gray-200 active:bg-gray-100 dark:active:bg-gray-700 transition-all hover:scale-110 active:scale-95"

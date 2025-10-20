@@ -159,12 +159,24 @@ export const useCircuitSimulator = () => {
     toConnectionPointId: string
   ) => {
     let createdConnection: Connection | null = null;
+    
     setCircuitState(prev => {
       const fromComponent = prev.components.find(c => c.id === fromComponentId);
       const toComponent = prev.components.find(c => c.id === toComponentId);
       
       if (!fromComponent || !toComponent) {
-        console.warn('Cannot create connection: component not found');
+        console.warn('[addConnection] Cannot create connection: component not found');
+        return prev;
+      }
+      
+      // FIX BUG #3: Check for exact duplicate FIRST to prevent StrictMode double-creation
+      const exactDuplicate = prev.connections.find(conn =>
+        (conn.from.componentId === fromComponentId && conn.from.connectionPointId === fromConnectionPointId &&
+         conn.to.componentId === toComponentId && conn.to.connectionPointId === toConnectionPointId)
+      );
+      
+      if (exactDuplicate) {
+        console.warn('[addConnection] BLOCKED: Connection already exists:', exactDuplicate.id);
         return prev;
       }
       
@@ -182,29 +194,26 @@ export const useCircuitSimulator = () => {
         return prev;
       }
       
-      // Check if the input is already connected
+      // Debug logging for connection attempts
+      console.log('[addConnection] Attempting connection:', {
+        from: `${fromComponentId} -> ${fromConnectionPointId}`,
+        to: `${toComponentId} -> ${toConnectionPointId}`,
+        existingConnections: prev.connections.length
+      });
+      
+      // Check if the input is already connected to a DIFFERENT source
       const existingInputConnection = prev.connections.find(conn =>
         conn.to.componentId === toComponentId && conn.to.connectionPointId === toConnectionPointId
       );
       
+      // If input is already connected to a different source, remove old connection
+      // (This allows re-routing but prevents issues with secondary inputs)
+      let connectionsToUse = prev.connections;
       if (existingInputConnection) {
-        console.warn('Cannot create connection: input already connected. Removing old connection first.');
-        // Remove the existing connection automatically
-        prev = {
-          ...prev,
-          connections: prev.connections.filter(c => c.id !== existingInputConnection.id)
-        };
-      }
-      
-      // Check for duplicate connection
-      const existingConnection = prev.connections.find(conn =>
-        (conn.from.componentId === fromComponentId && conn.from.connectionPointId === fromConnectionPointId &&
-         conn.to.componentId === toComponentId && conn.to.connectionPointId === toConnectionPointId)
-      );
-      
-      if (existingConnection) {
-        console.warn('Cannot create connection: connection already exists between these points');
-        return prev;
+        console.log('[addConnection] Input already connected, replacing old connection:', existingInputConnection.id);
+        connectionsToUse = prev.connections.filter(c => c.id !== existingInputConnection.id);
+      } else {
+        console.log('[addConnection] Input is free, proceeding with new connection');
       }
       
       const connectionId = `conn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -242,32 +251,62 @@ export const useCircuitSimulator = () => {
         return component;
       });
       
+      console.log('[addConnection] Successfully created connection:', newConnection.id);
+      
       return {
         ...prev,
         components: updatedComponents,
-        connections: [...prev.connections, newConnection],
+        connections: [...connectionsToUse, newConnection], // Use filtered connections
       };
     });
+    
+    console.log('[addConnection] Final result:', createdConnection ? 'SUCCESS' : 'FAILED');
     return createdConnection;
   }, []);
 
   const removeConnection = useCallback((connectionId: string) => {
+    console.log('[removeConnection] Removing connection:', connectionId);
     setCircuitState(prev => {
       const connection = prev.connections.find(c => c.id === connectionId);
-      if (!connection) return prev;
+      if (!connection) {
+        console.warn('[removeConnection] Connection not found:', connectionId);
+        return prev;
+      }
+      
+      console.log('[removeConnection] Found connection:', {
+        from: `${connection.from.componentId} -> ${connection.from.connectionPointId}`,
+        to: `${connection.to.componentId} -> ${connection.to.connectionPointId}`
+      });
+      
+      // CRITICAL FIX: Deep copy components to prevent state mutation
       const updatedComponents = prev.components.map(component => {
         if (component.id === connection.from.componentId) {
-          const output = component.outputs.find(o => o.id === connection.from.connectionPointId);
-          if (output) output.connected = false;
-          return { ...component };
+          // Deep copy outputs array and update the specific output
+          return {
+            ...component,
+            outputs: component.outputs.map(o => 
+              o.id === connection.from.connectionPointId 
+                ? { ...o, connected: false } 
+                : { ...o }
+            )
+          };
         }
         if (component.id === connection.to.componentId) {
-          const input = component.inputs.find(i => i.id === connection.to.connectionPointId);
-          if (input) input.connected = false;
-          return { ...component };
+          // Deep copy inputs array and update the specific input
+          return {
+            ...component,
+            inputs: component.inputs.map(i => 
+              i.id === connection.to.connectionPointId 
+                ? { ...i, connected: false } 
+                : { ...i }
+            )
+          };
         }
         return component;
       });
+      
+      console.log('[removeConnection] Successfully removed connection');
+      
       return {
         ...prev,
         components: updatedComponents,

@@ -5,21 +5,36 @@ export class CircuitSimulator {
   private connections: Map<string, Connection> = new Map();
   private simulationEvents: SimulationEvent[] = [];
   private isRunning: boolean = false;
-  private simulationSpeed: number = 100;
+  private simulationSpeed: number = 10; // FIX: Changed from 100ms to 10ms for faster response
 
   constructor() {}
 
   setComponents(components: Component[]): void {
     this.components.clear();
     components.forEach(component => {
-      this.components.set(component.id, { ...component });
+      // CRITICAL FIX: Deep copy to ensure output values are properly synced
+      // Shallow copy was causing switch toggles to not propagate
+      this.components.set(component.id, {
+        ...component,
+        inputs: component.inputs.map(i => ({ ...i })),
+        outputs: component.outputs.map(o => ({ ...o })),
+        position: { ...component.position },
+        size: { ...component.size },
+        properties: { ...component.properties }
+      });
     });
   }
 
   setConnections(connections: Connection[]): void {
     this.connections.clear();
     connections.forEach(connection => {
-      this.connections.set(connection.id, { ...connection });
+      // Deep copy connections to prevent reference issues
+      this.connections.set(connection.id, {
+        ...connection,
+        from: { ...connection.from },
+        to: { ...connection.to },
+        path: connection.path ? connection.path.map(p => ({ ...p })) : []
+      });
     });
   }
 

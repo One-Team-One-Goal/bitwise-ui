@@ -15,7 +15,8 @@ type WireDragState = {
   lastMouse: { x: number; y: number };
 };
 
-export const ConnectionRenderer: React.FC<ConnectionRendererProps> = ({
+// Memoize the component to prevent unnecessary re-renders
+export const ConnectionRenderer: React.FC<ConnectionRendererProps> = React.memo(({
   connection,
   isSelected,
   onSelect,
@@ -649,4 +650,12 @@ export const ConnectionRenderer: React.FC<ConnectionRendererProps> = ({
     )}
   </>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison function for better performance
+  return (
+    prevProps.connection.id === nextProps.connection.id &&
+    prevProps.connection.value === nextProps.connection.value &&
+    prevProps.isSelected === nextProps.isSelected &&
+    JSON.stringify(prevProps.connection.path) === JSON.stringify(nextProps.connection.path)
+  );
+});

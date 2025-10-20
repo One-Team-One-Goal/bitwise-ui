@@ -1,15 +1,9 @@
 import React, { useState } from 'react';
-import { CheckCircle, XCircle, AlertCircle, Zap, X, Sparkles, Calculator } from 'lucide-react';
+import { CheckCircle, XCircle, AlertCircle, Zap, X, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,7 +15,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useSimplify } from '@/hooks/useSimplify';
-import { useNavigate } from '@tanstack/react-router';
 
 // Predefined expression examples categorized by difficulty
 const EXPRESSION_EXAMPLES = {
@@ -68,7 +61,6 @@ export const BooleanExpressionInput: React.FC<BooleanExpressionInputProps> = ({
   const [expression, setExpression] = useState('');
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const { simplify, isSimplifying, simplifiedExpression, error, isSimplified } = useSimplify();
-  const navigate = useNavigate();
 
   const handleRandomExpression = (difficulty: 'easy' | 'medium' | 'hard') => {
     const examples = EXPRESSION_EXAMPLES[difficulty];
@@ -257,61 +249,16 @@ export const BooleanExpressionInput: React.FC<BooleanExpressionInputProps> = ({
               {/* Action Buttons */}
               {!error && simplifiedExpression && (
                 <div className="flex flex-col gap-2">
-                  {/* Expression Choice - Only show if can be simplified */}
-                  {!isSimplified && (
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <span>Generate from:</span>
-                      <div className="flex gap-1">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7"
-                          onClick={() => setExpression(expression)}
-                        >
-                          Original
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7"
-                          onClick={() => setExpression(simplifiedExpression)}
-                        >
-                          Simplified
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                  
-                  <div className="flex justify-between items-center gap-2">
-                    {/* Simplify Button - Only show if can be simplified */}
-                    {!isSimplified && (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="flex items-center gap-2"
-                              onClick={() => {
-                                navigate({ to: '/calculator' });
-                                onClose?.();
-                              }}
-                            >
-                              <Calculator className="h-4 w-4" />
-                              View Simplification Steps
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Open Boolean Calculator to see step-by-step simplification</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    )}
-                    
-                    {/* Generate Circuit Button */}
-                    <Button onClick={handleGenerateCircuit} size="sm" className="flex items-center gap-2 ml-auto">
+                  {/* Generate Circuit Button */}
+                  <div className="flex justify-end items-center gap-2">
+                    <Button 
+                      onClick={handleGenerateCircuit} 
+                      size="sm" 
+                      className="flex items-center gap-2"
+                      variant={isSimplified ? "default" : "secondary"}
+                    >
                       <Zap className="h-4 w-4" />
-                      Generate Circuit
+                      {isSimplified ? "Generate Circuit" : "Generate Simplified Circuit"}
                     </Button>
                   </div>
                 </div>

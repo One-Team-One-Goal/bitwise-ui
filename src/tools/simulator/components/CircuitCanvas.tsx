@@ -189,7 +189,23 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
         ...output,
         value: !output.value
       }));
+      
+      // CRITICAL FIX: Build updated component with deep copy of outputs
+      const updatedComponent: Component = {
+        ...component,
+        outputs: newOutputs,
+        inputs: component.inputs.map((i: any) => ({ ...i })) // Ensure inputs are also copied
+      };
+      
+      // Update React state
       circuitHook.updateComponent(componentId, { outputs: newOutputs });
+      
+      // CRITICAL FIX: Immediately sync to simulator with proper deep copy
+      // The simulator needs the updated values right away, not in 50ms
+      const allComponents = circuitHook.circuitState.components.map((c: Component) =>
+        c.id === componentId ? updatedComponent : c
+      );
+      circuitHook.simulator.setComponents(allComponents);
     }
   }, [circuitHook]);
 
@@ -248,7 +264,10 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
         if (startComponent && endComponent) {
           const startIsOutput = startComponent.outputs.some((o: any) => o.id === connectionState.startConnectionPoint);
           const endIsInput = endComponent.inputs.some((i: any) => i.id === connectionPointId);
+          const startIsInput = startComponent.inputs.some((i: any) => i.id === connectionState.startConnectionPoint);
+          const endIsOutput = endComponent.outputs.some((o: any) => o.id === connectionPointId);
           
+          // Case 1: Output → Input (normal direction)
           if (startIsOutput && endIsInput) {
             circuitHook.addConnection(
               connectionState.startComponent,
@@ -256,19 +275,21 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
               componentId,
               connectionPointId
             );
-          } else if (!startIsOutput && !endIsInput) {
-            // Both are inputs or both are outputs, try the reverse
-            const startIsInput = startComponent.inputs.some((i: any) => i.id === connectionState.startConnectionPoint);
-            const endIsOutput = endComponent.outputs.some((o: any) => o.id === connectionPointId);
-            
-            if (endIsOutput && startIsInput) {
-              circuitHook.addConnection(
-                componentId,
-                connectionPointId,
-                connectionState.startComponent,
-                connectionState.startConnectionPoint
-              );
-            }
+          } 
+          // Case 2: Input → Output (reverse direction, swap the order)
+          else if (startIsInput && endIsOutput) {
+            circuitHook.addConnection(
+              componentId,
+              connectionPointId,
+              connectionState.startComponent,
+              connectionState.startConnectionPoint
+            );
+          }
+          // Case 3: Invalid connections (input→input or output→output)
+          else {
+            console.warn('❌ Invalid connection:', 
+              startIsOutput ? 'output→output' : startIsInput ? 'input→input' : 'unknown type'
+            );
           }
         }
       }
@@ -280,7 +301,7 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
         startConnectionPoint: null
       });
     }
-  }, [toolbarState.selectedTool, connectionState, circuitHook]);
+  }, [toolbarState.selectedTool, connectionState, circuitHook.circuitState.components, circuitHook.addConnection]);
 
   // Utility function to update wire paths when components move
   const updateWirePathsForComponent = useCallback((componentId: string) => {
@@ -529,7 +550,10 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
   // Enhanced connection renderer with removal and editing support
   const renderConnection = useCallback((connection: Connection) => {
     // Check if path exists
-    if (!connection.path || connection.path.length === 0) return null;
+    if (!connection.path || connection.path.length === 0) {
+      console.warn('⚠️ Connection has no path:', connection.id);
+      return null;
+    }
 
     // Apply zoom and pan to connection path (inline transformation)
     const transformedPath = connection.path.map(point => ({
@@ -779,12 +803,24 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
       
       {/* Boolean Expression Display - Bottom Left */}
       {currentBooleanExpression && (
-        <div className="absolute bottom-4 left-4 bg-blue-50 bg-opacity-95 rounded-lg px-4 py-3 text-sm text-blue-900 shadow-lg border-2 border-blue-300">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold">Boolean Expression:</span>
-            <span className="font-mono text-blue-700">{currentBooleanExpression}</span>
-          </div>
-        </div>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <a
+              href="/calculator"
+              className="absolute bottom-4 left-4 bg-blue-50 hover:bg-blue-100 bg-opacity-95 hover:bg-opacity-100 rounded-lg px-4 py-3 text-sm text-blue-900 shadow-lg border-2 border-blue-300 hover:border-blue-400 transition-all cursor-pointer group"
+            >
+              <div className="flex items-center gap-2">
+                <Calculator className="h-4 w-4 text-blue-600 group-hover:scale-110 transition-transform" />
+                <span className="font-semibold">Expression:</span>
+                <span className="font-mono text-blue-700">{currentBooleanExpression}</span>
+              </div>
+            </a>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="max-w-xs">
+            <p className="font-semibold text-sm mb-1">Want to see how to simplify?</p>
+            <p className="text-xs text-gray-600">Click to open Boolean Calculator for step-by-step simplification</p>
+          </TooltipContent>
+        </Tooltip>
       )}
       
       {/* Zoom controls - Bottom right overlay */}

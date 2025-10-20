@@ -29,7 +29,7 @@ export const useKMaps = () => {
 
   // Update variables when count changes
   useEffect(() => {
-    const allVariables = ['A', 'B', 'C', 'D'];
+    const allVariables = ['A', 'B', 'C', 'D', 'E'];
     const newVariables = allVariables.slice(0, variableCount);
     setVariables(newVariables);
   }, [variableCount]);

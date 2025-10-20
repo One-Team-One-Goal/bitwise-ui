@@ -95,9 +95,12 @@ const Square: React.FC<SquareProps> = ({
         flex items-center justify-center 
         cursor-pointer transition-all duration-200
         text-lg font-mono
+        hover:scale-105 hover:shadow-lg hover:z-10
+        active:scale-95
         ${className}
       `}
       onClick={onClick}
+      title="Click to cycle: X → 0 → 1 → X"
       style={{
         ...valueStyle,
         ...getBorderStyle(),

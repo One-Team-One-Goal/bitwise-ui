@@ -71,7 +71,7 @@ const TruthTable: React.FC<TruthTableProps> = ({ variables, truthTable, onTruthT
 
     return (
         <div className="w-full max-w-md mx-auto">
-            <div className="border lg overflow-hidden">
+            <div className="border lg overflow-hidden max-h-[500px] overflow-y-auto">
                 <Table className="w-full">
                     <TableHeader>
                         <TableRow className="bg-muted hover:bg-muted/80 transition-colors">

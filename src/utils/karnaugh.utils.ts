@@ -73,6 +73,10 @@ export const getMatrixSquare = (dim: number): KMapMatrix => {
   if (dim === 3) {
     row = 2;
     col = 4;
+  } else if (dim === 5) {
+    // 5 variables: Two 4x4 maps (AB on rows, CD on columns, E splits the tables)
+    row = 4;
+    col = 4;
   }
 
   const matrix: CellValue[][][] = [];
@@ -99,40 +103,49 @@ export const setCoordinates = (
   if (typeMap === 3) {
     c = 4;
     r = 2;
+  } else if (typeMap === 5) {
+    // 5 variables: 4x4 map (same as 4 variables)
+    c = 4;
+    r = 4;
   }
 
+  // Gray code lookup tables for different dimensions
+  const grayCode2 = [0, 1]; // 00, 01
+  const grayCode4 = [0, 1, 3, 2]; // 00, 01, 11, 10
+
   for (let i = 0; i < c; i++) {
-    // Gray code mapping
+    // Gray code mapping for columns
     let l = i;
-    if (i === 2) l = 3;
-    else if (i === 3) l = 2;
+    if (c === 4) {
+      l = grayCode4[i];
+    }
 
     for (let j = 0; j < r; j++) {
-      // Gray code mapping
+      // Gray code mapping for rows
       let k = j;
-      if (j % r === 2) k = 3;
-      else if (j % r === 3) k = 2;
+      if (r === 4) {
+        k = grayCode4[j];
+      } else if (r === 2) {
+        k = grayCode2[j];
+      }
 
       // Set column coordinates
       let val = "";
       let t = typeMap;
       let p = 0;
 
+      const colBits = Math.ceil(t / 2);
       do {
         val += perm[i * r + j][p];
         p++;
-      } while (p < t / 2);
+      } while (p < colBits);
       
       squares[k][l][1] = val as CellValue;
 
       // Set row coordinates
       val = "";
-      p = Math.floor(t / 2);
-      if (typeMap === 3) {
-        t = 2;
-        p = Math.floor(t / 2 + 1);
-      }
-
+      p = colBits;
+      
       do {
         val += perm[i * r + j][p];
         p++;
@@ -152,6 +165,7 @@ export const cycleCellValue = (currentValue: CellValue): CellValue => {
 };
 
 export const getDimensions = (typeMap: number) => {
+  if (typeMap === 5) return { rows: 4, cols: 4 }; // Two 4x4 tables
   if (typeMap === 4) return { rows: 4, cols: 4 };
   if (typeMap === 3) return { rows: 2, cols: 4 };
   return { rows: 2, cols: 2 };

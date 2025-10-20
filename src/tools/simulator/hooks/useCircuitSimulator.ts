@@ -89,20 +89,51 @@ export const useCircuitSimulator = () => {
     setCircuitState(prev => {
       const fromComponent = prev.components.find(c => c.id === fromComponentId);
       const toComponent = prev.components.find(c => c.id === toComponentId);
-      if (!fromComponent || !toComponent) return prev;
+      
+      if (!fromComponent || !toComponent) {
+        console.warn('Cannot create connection: component not found');
+        return prev;
+      }
+      
+      // Prevent connecting a component to itself
+      if (fromComponentId === toComponentId) {
+        console.warn('Cannot create connection: cannot connect component to itself');
+        return prev;
+      }
+      
       const fromPoint = fromComponent.outputs.find(o => o.id === fromConnectionPointId);
       const toPoint = toComponent.inputs.find(i => i.id === toConnectionPointId);
-      if (!fromPoint || !toPoint) return prev;
+      
+      if (!fromPoint || !toPoint) {
+        console.warn('Cannot create connection: connection point not found');
+        return prev;
+      }
+      
+      // Check if the input is already connected
+      const existingInputConnection = prev.connections.find(conn =>
+        conn.to.componentId === toComponentId && conn.to.connectionPointId === toConnectionPointId
+      );
+      
+      if (existingInputConnection) {
+        console.warn('Cannot create connection: input already connected. Removing old connection first.');
+        // Remove the existing connection automatically
+        prev = {
+          ...prev,
+          connections: prev.connections.filter(c => c.id !== existingInputConnection.id)
+        };
+      }
+      
+      // Check for duplicate connection
       const existingConnection = prev.connections.find(conn =>
         (conn.from.componentId === fromComponentId && conn.from.connectionPointId === fromConnectionPointId &&
-         conn.to.componentId === toComponentId && conn.to.connectionPointId === toConnectionPointId) ||
-        (conn.to.componentId === fromComponentId && conn.to.connectionPointId === fromConnectionPointId &&
-         conn.from.componentId === toComponentId && conn.from.connectionPointId === toConnectionPointId)
+         conn.to.componentId === toComponentId && conn.to.connectionPointId === toConnectionPointId)
       );
+      
       if (existingConnection) {
         console.warn('Cannot create connection: connection already exists between these points');
         return prev;
       }
+      
       const connectionId = `conn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const newConnection: Connection = {
         id: connectionId,
@@ -114,10 +145,34 @@ export const useCircuitSimulator = () => {
         ],
         value: false
       };
+      
       console.log('Connection created successfully:', newConnection.id);
       createdConnection = newConnection;
+      
+      // Update connection point states
+      const updatedComponents = prev.components.map(component => {
+        if (component.id === fromComponentId) {
+          return {
+            ...component,
+            outputs: component.outputs.map(o => 
+              o.id === fromConnectionPointId ? { ...o, connected: true } : o
+            )
+          };
+        }
+        if (component.id === toComponentId) {
+          return {
+            ...component,
+            inputs: component.inputs.map(i => 
+              i.id === toConnectionPointId ? { ...i, connected: true } : i
+            )
+          };
+        }
+        return component;
+      });
+      
       return {
         ...prev,
+        components: updatedComponents,
         connections: [...prev.connections, newConnection],
       };
     });

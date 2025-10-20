@@ -10,37 +10,52 @@ import { parseExpression } from './utils/expressionParser';
 import { generateCircuitFromExpression } from './utils/circuitGenerator';
 import type { ComponentType, ToolbarState } from './types';
 import { MousePointer, Hand, Cable, Cpu } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 export const CircuitSimulator: React.FC = () => {
   // Undo/redo state
   const circuitHook = useCircuitSimulator();
   const [undoStack, setUndoStack] = useState<any[]>([]);
   const [redoStack, setRedoStack] = useState<any[]>([]);
+  const isUndoingRef = React.useRef(false);
 
-  // Save state to undo stack on every change
+  // Save state to undo stack on every change (but not during undo/redo operations)
   React.useEffect(() => {
-    setUndoStack(stack => [...stack, circuitHook.circuitState]);
-    // Clear redo stack on new action
-    setRedoStack([]);
+    if (!isUndoingRef.current) {
+      setUndoStack(stack => {
+        // Avoid adding duplicate states
+        const lastState = stack[stack.length - 1];
+        if (lastState && JSON.stringify(lastState) === JSON.stringify(circuitHook.circuitState)) {
+          return stack;
+        }
+        return [...stack, circuitHook.circuitState];
+      });
+      // Clear redo stack on new action
+      setRedoStack([]);
+    }
     // eslint-disable-next-line
   }, [circuitHook.circuitState]);
 
   const handleUndo = () => {
     if (undoStack.length > 1) {
+      isUndoingRef.current = true;
       const prev = undoStack[undoStack.length - 2];
       setUndoStack(stack => stack.slice(0, -1));
       setRedoStack(stack => [circuitHook.circuitState, ...stack]);
       circuitHook.setCircuitState(prev);
+      // Reset flag after state update completes
+      setTimeout(() => { isUndoingRef.current = false; }, 0);
     }
   };
 
   const handleRedo = () => {
     if (redoStack.length > 0) {
+      isUndoingRef.current = true;
       const next = redoStack[0];
       setRedoStack(stack => stack.slice(1));
       setUndoStack(stack => [...stack, next]);
       circuitHook.setCircuitState(next);
+      // Reset flag after state update completes
+      setTimeout(() => { isUndoingRef.current = false; }, 0);
     }
   };
   const [toolbarState, setToolbarState] = useState<ToolbarState>({

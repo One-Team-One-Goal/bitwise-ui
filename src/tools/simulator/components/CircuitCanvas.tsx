@@ -301,40 +301,52 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
         const toPoint = toComponent.inputs.find((i: any) => i.id === connection.to.connectionPointId);
 
         if (fromPoint && toPoint) {
-          // Calculate connection point positions using stored offsets
+          // Calculate connection point positions
           const startX = fromComponent.position.x + fromPoint.position.x;
           const startY = fromComponent.position.y + fromPoint.position.y;
-
           const endX = toComponent.position.x + toPoint.position.x;
           const endY = toComponent.position.y + toPoint.position.y;
 
-          const existingPath = connection.path && connection.path.length >= 2
-            ? connection.path
-            : [
-                { x: startX, y: startY },
-                { x: endX, y: endY }
-              ];
+          // Only update if we have a valid path
+          if (!connection.path || connection.path.length < 2) {
+            const newPath = [
+              { x: startX, y: startY },
+              { x: endX, y: endY }
+            ];
+            if (circuitHook.updateConnection) {
+              circuitHook.updateConnection(connection.id, { path: newPath });
+            }
+            return;
+          }
 
+          const existingPath = connection.path;
           const startPoint = { x: startX, y: startY };
           const endPoint = { x: endX, y: endY };
-
           const oldStart = existingPath[0];
           const oldEnd = existingPath[existingPath.length - 1];
 
-          const deltaFrom = connection.from.componentId === componentId
-            ? { x: startPoint.x - oldStart.x, y: startPoint.y - oldStart.y }
-            : { x: 0, y: 0 };
+          // Calculate deltas
+          const deltaFromX = startPoint.x - oldStart.x;
+          const deltaFromY = startPoint.y - oldStart.y;
+          const deltaToX = endPoint.x - oldEnd.x;
+          const deltaToY = endPoint.y - oldEnd.y;
 
-          const deltaTo = connection.to.componentId === componentId
-            ? { x: endPoint.x - oldEnd.x, y: endPoint.y - oldEnd.y }
-            : { x: 0, y: 0 };
+          // Skip update if no change
+          if (Math.abs(deltaFromX) < 0.01 && Math.abs(deltaFromY) < 0.01 && 
+              Math.abs(deltaToX) < 0.01 && Math.abs(deltaToY) < 0.01) {
+            return;
+          }
 
+          // Update path with interpolation for middle points
           const newPath = existingPath.map((point, index) => {
             if (index === 0) return startPoint;
             if (index === existingPath.length - 1) return endPoint;
+            
+            // Interpolate middle points based on their position ratio
+            const ratio = index / (existingPath.length - 1);
             return {
-              x: point.x + deltaFrom.x + deltaTo.x,
-              y: point.y + deltaFrom.y + deltaTo.y
+              x: point.x + deltaFromX * (1 - ratio) + deltaToX * ratio,
+              y: point.y + deltaFromY * (1 - ratio) + deltaToY * ratio
             };
           });
 

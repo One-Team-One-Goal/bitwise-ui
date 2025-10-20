@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, useState, useEffect } from 'react';
+import React, { useRef, useCallback, useState, useEffect, useMemo } from 'react';
 import type { Component, Connection, Position, ToolbarState } from '../types';
 import { ConnectionRenderer } from './ConnectionRenderer';
 import { ComponentRenderer } from './ComponentRenderer';
@@ -24,6 +24,7 @@ interface CircuitCanvasProps {
   redoStack: any[];
   handleUndo: () => void;
   handleRedo: () => void;
+  currentBooleanExpression?: string;
 }
 
 export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
@@ -37,7 +38,8 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
   undoStack,
   redoStack,
   handleUndo,
-  handleRedo
+  handleRedo,
+  currentBooleanExpression = ''
 }) => {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [pan, setPan] = useState<Position>({ x: 0, y: 0 });
@@ -484,59 +486,61 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
   // Utility: capitalize first letter for display
   const capitalizeFirst = (s: string) => (s && s.length > 0) ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 
-  // Simple component renderer
-  const renderComponent = (component: Component) => {
-    const isSelected = circuitHook.circuitState.selectedComponent === component.id;
-    
-    return (
-      <div
-        key={component.id}
-        style={{
-          position: 'absolute',
-          transform: `translate(${component.position.x * zoom + pan.x}px, ${component.position.y * zoom + pan.y}px) scale(${zoom})`,
-          transformOrigin: 'top left',
-          width: component.size.width,
-          height: component.size.height
-        }}
-      >
-        <ComponentRenderer
-          component={component}
-          isSelected={isSelected}
-          onMouseDown={(event: React.MouseEvent) => {
-            // Handle component interaction based on tool
-            if (toolbarState.selectedTool === 'select') {
-              handleComponentMouseDown(component.id, event);
-            }
+  // Memoize component rendering to prevent unnecessary recalculations
+  const renderedComponents = useMemo(() => {
+    return circuitHook.circuitState.components.map((component: Component) => {
+      const isSelected = circuitHook.circuitState.selectedComponent === component.id;
+      
+      return (
+        <div
+          key={component.id}
+          style={{
+            position: 'absolute',
+            transform: `translate(${component.position.x * zoom + pan.x}px, ${component.position.y * zoom + pan.y}px) scale(${zoom})`,
+            transformOrigin: 'top left',
+            width: component.size.width,
+            height: component.size.height
           }}
-          onClick={(event: React.MouseEvent) => {
-            // Handle interactive component clicks (switches, buttons, constants)
-            handleComponentClick(component.id, event);
-          }}
-          onConnectionPointClick={(connectionPointId: string) => {
-            // Create a mock event for compatibility
-            const mockEvent = new MouseEvent('click') as any;
-            handleConnectionPointClick(component.id, connectionPointId, mockEvent);
-          }}
-        />
-      </div>
-    );
-  };
+        >
+          <ComponentRenderer
+            component={component}
+            isSelected={isSelected}
+            onMouseDown={(event: React.MouseEvent) => {
+              // Handle component interaction based on tool
+              if (toolbarState.selectedTool === 'select') {
+                handleComponentMouseDown(component.id, event);
+              }
+            }}
+            onClick={(event: React.MouseEvent) => {
+              // Handle interactive component clicks (switches, buttons, constants)
+              handleComponentClick(component.id, event);
+            }}
+            onConnectionPointClick={(connectionPointId: string) => {
+              // Create a mock event for compatibility
+              const mockEvent = new MouseEvent('click') as any;
+              handleConnectionPointClick(component.id, connectionPointId, mockEvent);
+            }}
+          />
+        </div>
+      );
+    });
+  }, [circuitHook.circuitState.components, circuitHook.circuitState.selectedComponent, zoom, pan, toolbarState.selectedTool, handleComponentMouseDown, handleComponentClick, handleConnectionPointClick]);
 
   // Enhanced connection renderer with removal and editing support
-  const renderConnection = (connection: Connection) => {
-    // Apply zoom and pan to connection path
-    const transformedConnection = {
-      ...connection,
-      path: connection.path.map(point => ({
-        x: point.x * zoom + pan.x,
-        y: point.y * zoom + pan.y
-      }))
-    };
-    
+  const renderConnection = useCallback((connection: Connection) => {
+    // Check if path exists
+    if (!connection.path || connection.path.length === 0) return null;
+
+    // Apply zoom and pan to connection path (inline transformation)
+    const transformedPath = connection.path.map(point => ({
+      x: point.x * zoom + pan.x,
+      y: point.y * zoom + pan.y
+    }));
+
     return (
       <div key={connection.id}>
         <ConnectionRenderer
-          connection={transformedConnection}
+          connection={{ ...connection, path: transformedPath }}
           isSelected={circuitHook.circuitState.selectedConnection === connection.id}
           onSelect={() => circuitHook.selectConnection(connection.id)}
           onRemove={() => circuitHook.removeConnection(connection.id)}
@@ -551,7 +555,7 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
         />
       </div>
     );
-  };
+  }, [circuitHook, zoom, pan]);
 
   return (
     <div className="relative w-full h-full overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
@@ -710,7 +714,7 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
         {circuitHook.circuitState.connections.map(renderConnection)}
 
         {/* Components */}
-        {circuitHook.circuitState.components.map(renderComponent)}
+        {renderedComponents}
 
         {/* Connection preview line when connecting */}
         {connectionState.isConnecting && connectionState.startComponent && (
@@ -772,6 +776,16 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
           )}
         </div>
       </div>
+      
+      {/* Boolean Expression Display - Bottom Left */}
+      {currentBooleanExpression && (
+        <div className="absolute bottom-4 left-4 bg-blue-50 bg-opacity-95 rounded-lg px-4 py-3 text-sm text-blue-900 shadow-lg border-2 border-blue-300">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold">Boolean Expression:</span>
+            <span className="font-mono text-blue-700">{currentBooleanExpression}</span>
+          </div>
+        </div>
+      )}
       
       {/* Zoom controls - Bottom right overlay */}
       <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 flex flex-col gap-1.5 sm:gap-2 z-10">

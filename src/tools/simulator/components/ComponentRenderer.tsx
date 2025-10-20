@@ -1,7 +1,6 @@
 import React from 'react';
 import type { Component, ConnectionPoint } from '../types/index';
 import { COMPONENT_DEFINITIONS } from '../utils/componentFactory';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ComponentRendererProps {
   component: Component;
@@ -12,7 +11,8 @@ interface ComponentRendererProps {
   circuitHook?: any;
 }
 
-export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
+// Memoize the component to prevent unnecessary re-renders
+export const ComponentRenderer: React.FC<ComponentRendererProps> = React.memo(({
   component,
   isSelected,
   onMouseDown,
@@ -1114,97 +1114,63 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = ({
     }
   };
 
-  const getComponentDescription = () => {
-    const descriptions: Record<string, string> = {
-      'AND': 'AND Gate - Output is HIGH only when all inputs are HIGH',
-      'OR': 'OR Gate - Output is HIGH when any input is HIGH',
-      'NOT': 'NOT Gate - Inverts the input signal',
-      'NAND': 'NAND Gate - Output is LOW only when all inputs are HIGH',
-      'NOR': 'NOR Gate - Output is LOW when any input is HIGH',
-      'XOR': 'XOR Gate - Output is HIGH when inputs are different',
-      'XNOR': 'XNOR Gate - Output is HIGH when inputs are the same',
-      'BUFFER': 'Buffer Gate - Amplifies the input signal without changing logic',
-      'SWITCH': 'Toggle Switch - Click to toggle between HIGH and LOW',
-      'PUSH_BUTTON': 'Push Button - Momentary HIGH signal when pressed',
-      'CLOCK': 'Clock Generator - Generates periodic square wave signal',
-      'HIGH_CONSTANT': 'Logic HIGH - Always outputs 1',
-      'LOW_CONSTANT': 'Logic LOW - Always outputs 0',
-      'LED': 'Light Emitting Diode - Visual indicator for HIGH signals',
-      'SEVEN_SEGMENT': '7-Segment Display - Shows digits 0-9 based on input pattern',
-      'DIGITAL_DISPLAY': 'Digital Display - Shows binary number as decimal value',
-      'SR_FLIPFLOP': 'SR Flip-Flop - Set-Reset memory element',
-      'D_FLIPFLOP': 'D Flip-Flop - Data memory element with clock',
-      'JK_FLIPFLOP': 'JK Flip-Flop - Universal flip-flop with no invalid state',
-      'T_FLIPFLOP': 'T Flip-Flop - Toggle flip-flop changes state on clock',
-      'HALF_ADDER': 'Half Adder - Adds two single bits producing sum and carry',
-      'FULL_ADDER': 'Full Adder - Adds two bits and carry input producing sum and carry',
-      'FOUR_BIT_ADDER': '4-Bit Adder - Adds two 4-bit binary numbers',
-      'MULTIPLEXER_2TO1': '2-to-1 Multiplexer - Selects one of two inputs based on control signal',
-      'DECODER_2TO4': '2-to-4 Decoder - Converts 2-bit input to 4-line output'
-    };
-    
-    return descriptions[component.type] || `${component.type} - Digital circuit component`;
-  };
-
   // Check if any inputs are connected
   const hasConnectedInputs = component.inputs.some(input => input.connected);
   const hasActiveInputs = component.inputs.some(input => input.connected && input.value);
 
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div
-            className={`relative cursor-move select-none ${isSelected ? 'z-20' : 'z-10'} transition-all duration-200 hover:z-30`}
-            style={{
-              width: component.size.width,
-              height: component.size.height,
-              transform: `rotate(${component.rotation}deg)`
-            }}
-            onMouseDown={onMouseDown}
-            onClick={onClick}
-          >
-            {/* Connected inputs indicator - greenish glow */}
-            {hasConnectedInputs && (
-              <div 
-                className={`absolute -inset-1 rounded-lg transition-all duration-300 pointer-events-none ${
-                  hasActiveInputs 
-                    ? 'bg-green-400/20 shadow-lg shadow-green-400/30 ring-2 ring-green-400/40' 
-                    : 'bg-emerald-300/15 ring-1 ring-emerald-400/30'
-                }`}
-                style={{
-                  animation: hasActiveInputs ? 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' : 'none'
-                }}
-              />
-            )}
-            
-            {/* Component body */}
-            {renderComponent()}
-            
-            {/* Input connection points */}
-            {component.inputs.map((input, index) => renderConnectionPoint(input, index))}
-            
-            {/* Output connection points */}
-            {component.outputs.map((output, index) => renderConnectionPoint(output, index))}
-            
-            {/* Component label */}
-            {component.label && (
-              <div className="absolute -bottom-6 left-0 text-xs text-gray-600 whitespace-nowrap">
-                {component.label}
-              </div>
-            )}
-          </div>
-        </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-sm">
-          <div className="space-y-1">
-            <p className="font-semibold">{definition.name}</p>
-            <p className="text-sm text-muted-foreground">{getComponentDescription()}</p>
-            {component.label && (
-              <p className="text-xs text-muted-foreground">Label: {component.label}</p>
-            )}
-          </div>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <div
+      className={`relative cursor-move select-none ${isSelected ? 'z-20' : 'z-10'} transition-all duration-200 hover:z-30`}
+      style={{
+        width: component.size.width,
+        height: component.size.height,
+        transform: `rotate(${component.rotation}deg)`
+      }}
+      onMouseDown={onMouseDown}
+      onClick={onClick}
+      title={`${definition.name}${component.label ? ` - ${component.label}` : ''}`}
+    >
+      {/* Connected inputs indicator - greenish glow */}
+      {hasConnectedInputs && (
+        <div 
+          className={`absolute -inset-1 rounded-lg transition-all duration-300 pointer-events-none ${
+            hasActiveInputs 
+              ? 'bg-green-400/20 shadow-lg shadow-green-400/30 ring-2 ring-green-400/40' 
+              : 'bg-emerald-300/15 ring-1 ring-emerald-400/30'
+          }`}
+          style={{
+            animation: hasActiveInputs ? 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' : 'none'
+          }}
+        />
+      )}
+      
+      {/* Component body */}
+      {renderComponent()}
+      
+      {/* Input connection points */}
+      {component.inputs.map((input, index) => renderConnectionPoint(input, index))}
+      
+      {/* Output connection points */}
+      {component.outputs.map((output, index) => renderConnectionPoint(output, index))}
+      
+      {/* Component label */}
+      {component.label && (
+        <div className="absolute -bottom-6 left-0 text-xs text-gray-600 whitespace-nowrap">
+          {component.label}
+        </div>
+      )}
+    </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison function for better performance
+  return (
+    prevProps.component.id === nextProps.component.id &&
+    prevProps.component.position.x === nextProps.component.position.x &&
+    prevProps.component.position.y === nextProps.component.position.y &&
+    prevProps.component.rotation === nextProps.component.rotation &&
+    prevProps.component.label === nextProps.component.label &&
+    prevProps.isSelected === nextProps.isSelected &&
+    JSON.stringify(prevProps.component.inputs) === JSON.stringify(nextProps.component.inputs) &&
+    JSON.stringify(prevProps.component.outputs) === JSON.stringify(nextProps.component.outputs)
+  );
+});

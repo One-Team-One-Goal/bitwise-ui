@@ -43,6 +43,14 @@ export class CircuitSimulator {
     this.simulationEvents = [];
   }
 
+  getComponents(): Component[] {
+    return Array.from(this.components.values());
+  }
+
+  getConnections(): Connection[] {
+    return Array.from(this.connections.values());
+  }
+
   private simulate(): void {
     if (!this.isRunning) return;
 
@@ -54,42 +62,54 @@ export class CircuitSimulator {
   }
 
   private propagateSignals(): void {
-    // First, update all components based on their inputs
-    this.components.forEach(component => {
-      this.updateComponent(component);
-    });
+    // Run multiple iterations to ensure signals propagate through all layers
+    // For deep circuits, signals need to flow from inputs -> gates -> more gates -> LED
+    for (let iteration = 0; iteration < 10; iteration++) {
+      let changesOccurred = false;
+      
+      // First propagate signals through connections
+      this.connections.forEach(connection => {
+        const fromComponent = this.components.get(connection.from.componentId);
+        const toComponent = this.components.get(connection.to.componentId);
 
-    // Then propagate signals through connections
-    this.connections.forEach(connection => {
-      const fromComponent = this.components.get(connection.from.componentId);
-      const toComponent = this.components.get(connection.to.componentId);
+        if (fromComponent && toComponent) {
+          const fromOutput = fromComponent.outputs.find(
+            output => output.id === connection.from.connectionPointId
+          );
+          const toInput = toComponent.inputs.find(
+            input => input.id === connection.to.connectionPointId
+          );
 
-      if (fromComponent && toComponent) {
-        const fromOutput = fromComponent.outputs.find(
-          output => output.id === connection.from.connectionPointId
-        );
-        const toInput = toComponent.inputs.find(
-          input => input.id === connection.to.connectionPointId
-        );
+          if (fromOutput && toInput) {
+            const oldValue = toInput.value;
+            
+            toInput.value = fromOutput.value;
+            connection.value = fromOutput.value;
 
-        if (fromOutput && toInput) {
-          const oldValue = toInput.value;
-          
-          toInput.value = fromOutput.value;
-          connection.value = fromOutput.value;
-
-          if (oldValue !== toInput.value) {
-            this.simulationEvents.push({
-              timestamp: Date.now(),
-              componentId: toComponent.id,
-              connectionPointId: toInput.id,
-              oldValue,
-              newValue: toInput.value
-            });
+            if (oldValue !== toInput.value) {
+              changesOccurred = true;
+              this.simulationEvents.push({
+                timestamp: Date.now(),
+                componentId: toComponent.id,
+                connectionPointId: toInput.id,
+                oldValue,
+                newValue: toInput.value
+              });
+            }
           }
         }
+      });
+      
+      // Then update all components based on their inputs
+      this.components.forEach(component => {
+        this.updateComponent(component);
+      });
+      
+      // If no changes occurred, we can stop iterating
+      if (!changesOccurred && iteration > 0) {
+        break;
       }
-    });
+    }
     
     // Limit simulation events to prevent memory issues
     if (this.simulationEvents.length > 1000) {

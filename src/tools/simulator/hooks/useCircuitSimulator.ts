@@ -18,13 +18,86 @@ export const useCircuitSimulator = () => {
   const simulatorRef = useRef<CircuitSimulator>(new CircuitSimulator());
 
   useEffect(() => {
+    // Update simulator state when components or connections change
     simulatorRef.current.setComponents(circuitState.components);
     simulatorRef.current.setConnections(circuitState.connections);
-    if (circuitState.components.length > 0 || circuitState.connections.length > 0) {
-      simulatorRef.current.start();
-      setCircuitState(prev => ({ ...prev, isSimulating: true }));
-    }
   }, [circuitState.components, circuitState.connections]);
+
+  // Sync simulator state back to React state periodically (only update values, not structure)
+  useEffect(() => {
+    const syncInterval = setInterval(() => {
+      if (circuitState.isSimulating) {
+        const updatedComponents = simulatorRef.current.getComponents();
+        const updatedConnections = simulatorRef.current.getConnections();
+        
+        setCircuitState(prev => {
+          // Only update if there are actual value changes
+          const componentsChanged = prev.components.some((comp, idx) => {
+            const updated = updatedComponents[idx];
+            if (!updated) return false;
+            
+            // Check if any input/output values changed
+            return comp.inputs.some((input, i) => input.value !== updated.inputs[i]?.value) ||
+                   comp.outputs.some((output, i) => output.value !== updated.outputs[i]?.value);
+          });
+          
+          const connectionsChanged = prev.connections.some((conn, idx) => {
+            const updated = updatedConnections[idx];
+            return updated && conn.value !== updated.value;
+          });
+          
+          if (!componentsChanged && !connectionsChanged) {
+            return prev; // No changes, don't update state
+          }
+          
+          // Update only the values, preserve positions and paths
+          return {
+            ...prev,
+            components: prev.components.map(comp => {
+              const updated = updatedComponents.find(u => u.id === comp.id);
+              if (!updated) return comp;
+              
+              return {
+                ...comp,
+                inputs: comp.inputs.map((input, i) => ({
+                  ...input,
+                  value: updated.inputs[i]?.value ?? input.value
+                })),
+                outputs: comp.outputs.map((output, i) => ({
+                  ...output,
+                  value: updated.outputs[i]?.value ?? output.value
+                }))
+              };
+            }),
+            connections: prev.connections.map(conn => {
+              const updated = updatedConnections.find(u => u.id === conn.id);
+              if (!updated) return conn;
+              
+              return {
+                ...conn,
+                value: updated.value
+              };
+            })
+          };
+        });
+      }
+    }, 50); // Sync every 50ms
+
+    return () => clearInterval(syncInterval);
+  }, [circuitState.isSimulating]);
+
+  // Start the simulator once on mount
+  useEffect(() => {
+    try {
+      simulatorRef.current.start?.();
+      setCircuitState(prev => ({ ...prev, isSimulating: true }));
+    } catch (err) {
+      // If start throws or is not defined, ignore
+    }
+    return () => {
+      try { simulatorRef.current.stop?.(); } catch (e) {}
+    };
+  }, []);
 
   const addComponent = useCallback((type: ComponentType, position: Position) => {
     const component = ComponentFactory.createComponent(type, position);
@@ -146,7 +219,6 @@ export const useCircuitSimulator = () => {
         value: false
       };
       
-      console.log('Connection created successfully:', newConnection.id);
       createdConnection = newConnection;
       
       // Update connection point states
@@ -252,16 +324,35 @@ export const useCircuitSimulator = () => {
 
   const resetSimulation = useCallback(() => {
     simulatorRef.current.reset();
+    
+    // Reset all component values
+    const resetComponents = circuitState.components.map(component => ({
+      ...component,
+      inputs: component.inputs.map(input => ({ ...input, value: false })),
+      outputs: component.outputs.map(output => ({ ...output, value: false }))
+    }));
+    
+    const resetConnections = circuitState.connections.map(connection => ({ 
+      ...connection, 
+      value: false 
+    }));
+    
     setCircuitState(prev => ({
       ...prev,
-      isSimulating: false,
-      components: prev.components.map(component => ({
-        ...component,
-        outputs: component.outputs.map(output => ({ ...output, value: false }))
-      })),
-      connections: prev.connections.map(connection => ({ ...connection, value: false }))
+      components: resetComponents,
+      connections: resetConnections
     }));
-  }, []);
+    
+    // Update simulator with reset values
+    simulatorRef.current.setComponents(resetComponents);
+    simulatorRef.current.setConnections(resetConnections);
+    
+    // Restart simulation
+    if (!circuitState.isSimulating) {
+      simulatorRef.current.start();
+      setCircuitState(prev => ({ ...prev, isSimulating: true }));
+    }
+  }, [circuitState.components, circuitState.connections, circuitState.isSimulating]);
 
   const setSimulationSpeed = useCallback((speed: number) => {
     simulatorRef.current.setSimulationSpeed(speed);
@@ -288,13 +379,25 @@ export const useCircuitSimulator = () => {
 
   const clearAll = useCallback(() => {
     stopSimulation();
+    // Reset simulator completely
+    simulatorRef.current.reset();
+    simulatorRef.current.setComponents([]);
+    simulatorRef.current.setConnections([]);
+    
     setCircuitState(prev => ({
       ...prev,
       components: [],
       connections: [],
       selectedComponent: null,
-      selectedConnection: null
+      selectedConnection: null,
+      isSimulating: false
     }));
+    
+    // Restart simulation after clearing
+    setTimeout(() => {
+      simulatorRef.current.start();
+      setCircuitState(prev => ({ ...prev, isSimulating: true }));
+    }, 100);
   }, [stopSimulation]);
 
   const setGridSize = useCallback((size: number) => {

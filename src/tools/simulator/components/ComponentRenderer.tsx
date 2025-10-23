@@ -1,4 +1,4 @@
-import React from 'react';
+import * as React from 'react';
 import type { Component, ConnectionPoint } from '../types/index';
 import { COMPONENT_DEFINITIONS } from '../utils/componentFactory';
 
@@ -6,9 +6,10 @@ interface ComponentRendererProps {
   component: Component;
   isSelected: boolean;
   onMouseDown: (event: React.MouseEvent) => void;
-  onConnectionPointClick: (connectionPointId: string) => void;
+  onConnectionPointClick: (connectionPointId: string, event: React.MouseEvent) => void;
   onClick?: (event: React.MouseEvent) => void;
   circuitHook?: any;
+  currentTool?: string;
 }
 
 // Memoize the component to prevent unnecessary re-renders
@@ -18,30 +19,44 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = React.memo(({
   onMouseDown,
   onConnectionPointClick,
   onClick,
-  circuitHook
+  circuitHook,
+  currentTool
 }) => {
   const definition = COMPONENT_DEFINITIONS[component.type];
 
   const renderConnectionPoint = (point: ConnectionPoint, index: number) => {
     const isInput = point.type === 'input';
+    const isWireMode = currentTool === 'wire';
     
     return (
       <div
         key={point.id}
-        className={`absolute cursor-pointer z-20 transition-all duration-200 group`}
+        className={`absolute transition-all duration-200 group ${isWireMode ? 'z-30 cursor-crosshair' : 'z-5'}`}
         style={{
           left: isInput ? -8 : component.size.width - 8,
           top: ((index + 1) * component.size.height / (isInput ? component.inputs.length + 1 : component.outputs.length + 1)) - 8,
+          pointerEvents: 'auto'
+        }}
+        onMouseDown={(e) => {
+          if (isWireMode) {
+            // Prevent component drag when preparing to wire
+            e.stopPropagation();
+          }
         }}
         onClick={(e) => {
+          if (!isWireMode) {
+            return;
+          }
           e.stopPropagation();
-          onConnectionPointClick(point.id);
+          onConnectionPointClick(point.id, e);
         }}
         title={`${point.type} ${index + 1} - ${point.value ? 'HIGH (1)' : 'LOW (0)'}${point.connected ? ' (Connected)' : ' (Available)'}`}
       >
-        {/* Hover ring */}
+        {/* Hover ring - enhanced visibility in wire mode */}
         <div
-          className={`absolute inset-0 w-4 h-4 rounded-full border-2 transition-all duration-200 opacity-0 group-hover:opacity-100 scale-150 group-hover:scale-200 ${
+          className={`absolute inset-0 w-4 h-4 rounded-full border-2 transition-all duration-200 ${
+            isWireMode ? 'opacity-0 group-hover:opacity-100 scale-150 group-hover:scale-200' : 'opacity-0'
+          } ${
             point.connected 
               ? 'border-green-400' 
               : point.value 
@@ -50,14 +65,18 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = React.memo(({
           }`}
         />
         
-        {/* Main connection point */}
+        {/* Main connection point - MORE VISIBLE */}
         <div
-          className={`relative w-4 h-4 rounded-full border-2 transition-all duration-200 group-hover:scale-125 ${
+          className={`relative w-4 h-4 rounded-full border-2 transition-all duration-200 ${
+            isWireMode ? 'group-hover:scale-150 group-hover:z-50' : ''
+          } ${
             point.connected 
-              ? 'bg-green-500 border-green-600 shadow-lg shadow-green-500/50' 
+              ? 'bg-green-500 border-green-600 shadow-lg shadow-green-500/50 opacity-100' 
               : point.value 
-                ? 'bg-red-500 border-red-600 shadow-md shadow-red-500/50' 
-                : 'bg-gray-200 border-gray-400 group-hover:bg-blue-200 group-hover:border-blue-500 group-hover:shadow-md group-hover:shadow-blue-500/30'
+                ? 'bg-red-500 border-red-600 shadow-md shadow-red-500/50 opacity-100' 
+                : isWireMode 
+                  ? 'bg-blue-300 border-blue-500 opacity-90 group-hover:bg-blue-400 group-hover:border-blue-600 group-hover:shadow-lg group-hover:shadow-blue-500/50 group-hover:opacity-100'
+                  : 'bg-gray-400 border-gray-500 opacity-70'
           }`}
         >
           {/* Inner glow for active states */}
@@ -806,15 +825,31 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = React.memo(({
         // 7-segment display with proper segment decoding
         // Inputs: [a, b, c, d, e, f, g] (7 segments)
         // Or: [BCD0, BCD1, BCD2, BCD3] for BCD mode (4 bits)
-        const segments = component.inputs.map(i => i.value);
-        
-        // If 4 inputs, treat as BCD and convert to 7-segment pattern
-        let segmentStates = segments;
-        if (component.inputs.length === 4) {
-          // Convert BCD (4 bits) to decimal value
-          const bcdValue = segments.reduce((acc, bit, idx) => 
-            acc + (bit ? Math.pow(2, 3 - idx) : 0), 0);
-          
+        const segments = component.inputs.map(i => Boolean(i.value));
+
+        const mode = component.properties?.sevenSegmentMode ?? 'auto';
+        const firstFourInputs = component.inputs.slice(0, 4);
+        const extraInputs = component.inputs.slice(4);
+        const extrasHaveSignal = extraInputs.some(input => input.connected || input.value);
+        const firstFourAllConnected = firstFourInputs.length === 4 && firstFourInputs.every(input => input.connected);
+
+        const shouldUseBcd =
+          mode === 'bcd' ||
+          (mode !== 'segments' && (
+            component.inputs.length === 4 ||
+            (firstFourInputs.length === 4 && firstFourAllConnected && !extrasHaveSignal)
+          ));
+
+        let segmentStates = [...segments];
+
+        if (shouldUseBcd && firstFourInputs.length === 4) {
+          const bcdBits = component.inputs.length === 4
+            ? segmentStates
+            : segmentStates.slice(0, 4);
+
+          const bcdValue = bcdBits.reduce((acc, bit, idx) =>
+            acc + (bit ? Math.pow(2, bcdBits.length - 1 - idx) : 0), 0);
+
           // BCD to 7-segment decoder (segments: a, b, c, d, e, f, g)
           const bcdTo7Seg: Record<number, boolean[]> = {
             0: [true, true, true, true, true, true, false],    // 0
@@ -834,10 +869,14 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = React.memo(({
             14: [true, false, false, true, true, true, true],   // E
             15: [true, false, false, false, true, true, true],  // F
           };
-          segmentStates = bcdTo7Seg[bcdValue] || bcdTo7Seg[0];
+
+          segmentStates = [...(bcdTo7Seg[bcdValue] || bcdTo7Seg[0])];
         }
-        
+
         // Ensure we have exactly 7 segments
+        if (segmentStates.length > 7) {
+          segmentStates = segmentStates.slice(0, 7);
+        }
         while (segmentStates.length < 7) {
           segmentStates.push(false);
         }
@@ -1117,17 +1156,28 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = React.memo(({
   // Check if any inputs are connected
   const hasConnectedInputs = component.inputs.some(input => input.connected);
   const hasActiveInputs = component.inputs.some(input => input.connected && input.value);
-
+  
+  // Check if component is an interactive control (switches, buttons, etc.)
   return (
     <div
-      className={`relative cursor-move select-none ${isSelected ? 'z-20' : 'z-10'} transition-all duration-200 hover:z-30`}
+      className={`relative select-none ${isSelected ? 'z-20' : 'z-10'} transition-all duration-200 hover:z-30`}
       style={{
         width: component.size.width,
         height: component.size.height,
-        transform: `rotate(${component.rotation}deg)`
+        transform: `rotate(${component.rotation}deg)`,
+        cursor: currentTool === 'select' ? 'move' : currentTool === 'wire' ? 'crosshair' : 'default'
       }}
-      onMouseDown={onMouseDown}
-      onClick={onClick}
+      onMouseDown={(e) => {
+        if (currentTool === 'select') {
+          onMouseDown(e);
+        }
+      }}
+      onClick={(e) => {
+        // Always allow clicking interactive controls in select mode
+        if (currentTool === 'select') {
+          onClick?.(e);
+        }
+      }}
       title={`${definition.name}${component.label ? ` - ${component.label}` : ''}`}
     >
       {/* Connected inputs indicator - greenish glow */}
@@ -1170,6 +1220,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = React.memo(({
     prevProps.component.rotation === nextProps.component.rotation &&
     prevProps.component.label === nextProps.component.label &&
     prevProps.isSelected === nextProps.isSelected &&
+    prevProps.currentTool === nextProps.currentTool &&
     JSON.stringify(prevProps.component.inputs) === JSON.stringify(nextProps.component.inputs) &&
     JSON.stringify(prevProps.component.outputs) === JSON.stringify(nextProps.component.outputs)
   );

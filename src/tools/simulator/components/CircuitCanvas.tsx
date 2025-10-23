@@ -1,4 +1,5 @@
-import React, { useRef, useCallback, useState, useEffect, useMemo } from 'react';
+import * as React from 'react';
+import { useRef, useCallback, useState, useEffect, useMemo } from 'react';
 import type { Component, Connection, Position, ToolbarState } from '../types';
 import { ConnectionRenderer } from './ConnectionRenderer';
 import { ComponentRenderer } from './ComponentRenderer';
@@ -6,6 +7,20 @@ import { Button } from '@/components/ui/button';
 import { Grid2X2, RotateCcw, Trash2, Calculator } from 'lucide-react';
 import { HelpGuide } from './HelpGuide';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+
+const INITIAL_CONNECTION_STATE: {
+  isConnecting: boolean;
+  startComponent: string | null;
+  startConnectionPoint: string | null;
+  startPosition: Position | null;
+  currentMousePosition: Position | null;
+} = {
+  isConnecting: false,
+  startComponent: null,
+  startConnectionPoint: null,
+  startPosition: null,
+  currentMousePosition: null
+};
 
 interface CircuitCanvasProps {
   circuitHook: any;
@@ -49,12 +64,30 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
     componentId: string | null;
     startPosition: Position;
     offset: Position;
+    hasMoved: boolean; // Track if the user actually moved the mouse (drag vs click)
   }>({
     isDragging: false,
     componentId: null,
     startPosition: { x: 0, y: 0 },
-    offset: { x: 0, y: 0 }
+    offset: { x: 0, y: 0 },
+    hasMoved: false
   });
+  const lastDragInfoRef = useRef<{ componentId: string | null; timestamp: number }>({ componentId: null, timestamp: 0 });
+
+  // State for delete confirmation/animation
+  const [deleteAnimation, setDeleteAnimation] = useState<{
+    componentId?: string;
+    connectionId?: string;
+  } | null>(null);
+
+  // State for box selection (drag to select multiple)
+  const [selectionBox, setSelectionBox] = useState<{
+    isSelecting: boolean;
+    startPosition: Position;
+    currentPosition: Position;
+  } | null>(null);
+
+  const [selectedComponents, setSelectedComponents] = useState<Set<string>>(new Set());
 
   // Keyboard event handling for deleting selected items
   useEffect(() => {
@@ -69,11 +102,44 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
         
         // Handle wire deletion if a wire is selected
         if (circuitHook.circuitState.selectedConnection) {
-          circuitHook.removeConnection(circuitHook.circuitState.selectedConnection);
+          const connId = circuitHook.circuitState.selectedConnection;
+          
+          // Show delete animation/highlight
+          setDeleteAnimation({ connectionId: connId });
+          
+          // Wait briefly for visual feedback, then delete
+          setTimeout(() => {
+            circuitHook.removeConnection(connId);
+            setDeleteAnimation(null);
+          }, 150);
         }
-        // Delete components if no wire is selected
+        // FEATURE: Delete multiple selected components
+        else if (selectedComponents.size > 0) {
+          // Delete all selected components
+          selectedComponents.forEach(compId => {
+            setDeleteAnimation({ componentId: compId });
+          });
+          
+          setTimeout(() => {
+            selectedComponents.forEach(compId => {
+              circuitHook.removeComponent(compId);
+            });
+            setSelectedComponents(new Set());
+            setDeleteAnimation(null);
+          }, 150);
+        }
+        // Delete single selected component
         else if (circuitHook.circuitState.selectedComponent) {
-          circuitHook.removeComponent(circuitHook.circuitState.selectedComponent);
+          const compId = circuitHook.circuitState.selectedComponent;
+          
+          // Show delete animation/highlight
+          setDeleteAnimation({ componentId: compId });
+          
+          // Wait briefly for visual feedback, then delete
+          setTimeout(() => {
+            circuitHook.removeComponent(compId);
+            setDeleteAnimation(null);
+          }, 150);
         }
       }
       
@@ -81,12 +147,82 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
       if (event.key === 'Escape') {
         circuitHook.selectComponent(null);
         circuitHook.selectConnection(null);
+        setDeleteAnimation(null);
+        setSelectedComponents(new Set());
+        setSelectionBox(null);
+      }
+
+      // Ctrl+Z for undo
+      if ((event.ctrlKey || event.metaKey) && event.key === 'z' && !event.shiftKey) {
+        event.preventDefault();
+        if (undoStack.length > 1) {
+          handleUndo();
+        }
+      }
+
+      // Ctrl+Shift+Z or Ctrl+Y for redo
+      if (((event.ctrlKey || event.metaKey) && event.key === 'z' && event.shiftKey) ||
+          ((event.ctrlKey || event.metaKey) && event.key === 'y')) {
+        event.preventDefault();
+        if (redoStack.length > 0) {
+          handleRedo();
+        }
+      }
+
+      // R key to reset simulation
+      if (event.key === 'r' || event.key === 'R') {
+        event.preventDefault();
+        circuitHook.resetSimulation();
+      }
+
+      // S key for select tool
+      if (event.key === 's' || event.key === 'S') {
+        if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
+        event.preventDefault();
+        onToolSelect?.('select');
+      }
+
+      // W key for wire tool
+      if (event.key === 'w' || event.key === 'W') {
+        if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
+        event.preventDefault();
+        onToolSelect?.('wire');
+      }
+
+      // P key for pan tool
+      if (event.key === 'p' || event.key === 'P') {
+        if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
+        event.preventDefault();
+        onToolSelect?.('pan');
+      }
+
+      // Space bar to toggle selected switch/button
+      if (event.key === ' ' && circuitHook.circuitState.selectedComponent) {
+        if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
+        event.preventDefault();
+        const component = circuitHook.circuitState.components.find(
+          (c: Component) => c.id === circuitHook.circuitState.selectedComponent
+        );
+        if (component && (component.type === 'SWITCH' || component.type === 'PUSH_BUTTON')) {
+          // Toggle the output value
+          const newOutputs = component.outputs.map((output: any) => ({
+            ...output,
+            value: !output.value
+          }));
+          circuitHook.updateComponent(component.id, { outputs: newOutputs });
+        }
+      }
+
+      // Ctrl+A to select all
+      if ((event.ctrlKey || event.metaKey) && event.key === 'a') {
+        event.preventDefault();
+        // For now, just focus on the canvas
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [circuitHook.circuitState.selectedConnection, circuitHook.circuitState.selectedComponent, circuitHook, toolbarState.selectedTool]);
+  }, [circuitHook.circuitState.selectedConnection, circuitHook.circuitState.selectedComponent, circuitHook, toolbarState.selectedTool, undoStack, redoStack, handleUndo, handleRedo, onToolSelect]);
 
   const [panState, setPanState] = useState<{
     isPanning: boolean;
@@ -98,15 +234,20 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
     startPan: { x: 0, y: 0 }
   });
 
-  const [connectionState, setConnectionState] = useState<{
-    isConnecting: boolean;
-    startComponent: string | null;
-    startConnectionPoint: string | null;
-  }>({
-    isConnecting: false,
-    startComponent: null,
-    startConnectionPoint: null
-  });
+  const [connectionState, setConnectionState] = useState<typeof INITIAL_CONNECTION_STATE>({ ...INITIAL_CONNECTION_STATE });
+  const connectionStateRef = useRef(connectionState);
+
+  useEffect(() => {
+    connectionStateRef.current = connectionState;
+  }, [connectionState]);
+
+  useEffect(() => {
+    if (toolbarState.selectedTool !== 'wire' && connectionStateRef.current.isConnecting) {
+      const resetState = { ...INITIAL_CONNECTION_STATE };
+      connectionStateRef.current = resetState;
+      setConnectionState(resetState);
+    }
+  }, [toolbarState.selectedTool]);
 
   // Convert screen coordinates to canvas coordinates
   const screenToCanvas = useCallback((screenPos: Position): Position => {
@@ -137,19 +278,23 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
       circuitHook.selectConnection(null);
       
       // Reset connection state if clicking on empty canvas
-      if (connectionState.isConnecting) {
-        setConnectionState({
+      if (connectionStateRef.current.isConnecting) {
+        const resetState = {
           isConnecting: false,
           startComponent: null,
-          startConnectionPoint: null
-        });
+          startConnectionPoint: null,
+          startPosition: null,
+          currentMousePosition: null
+        };
+        connectionStateRef.current = resetState;
+        setConnectionState(resetState);
       }
     }
 
     onCanvasClick(canvasPosition);
-  }, [dragState.isDragging, panState.isPanning, onCanvasClick, circuitHook, screenToCanvas, connectionState.isConnecting]);
+  }, [dragState.isDragging, panState.isPanning, onCanvasClick, circuitHook, screenToCanvas]);
 
-  // Handle mouse down for canvas (pan tool)
+  // Handle mouse down for canvas (pan tool or selection box)
   const handleCanvasMouseDown = useCallback((event: React.MouseEvent) => {
     if (event.target !== canvasRef.current) return;
     
@@ -168,13 +313,31 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
         startPan: pan
       });
       event.preventDefault();
+    } else if (toolbarState.selectedTool === 'select') {
+      // FEATURE: Box selection - drag on empty canvas to select multiple
+      const canvasPos = screenToCanvas(screenPosition);
+      setSelectionBox({
+        isSelecting: true,
+        startPosition: canvasPos,
+        currentPosition: canvasPos
+      });
+      event.preventDefault();
     }
-  }, [toolbarState.selectedTool, pan]);
+  }, [toolbarState.selectedTool, pan, screenToCanvas]);
 
   // Handle component click for interactive controls
   const handleComponentClick = useCallback((componentId: string, event: React.MouseEvent) => {
     event.stopPropagation();
     
+    const now = Date.now();
+    const { componentId: lastDraggedId, timestamp } = lastDragInfoRef.current;
+    const DRAG_CLICK_SUPPRESSION_MS = 250;
+
+    if (lastDraggedId === componentId && now - timestamp < DRAG_CLICK_SUPPRESSION_MS) {
+      lastDragInfoRef.current = { componentId: null, timestamp: 0 };
+      return;
+    }
+
     // Handle interactive input controls
     const component = circuitHook.circuitState.components.find((c: Component) => c.id === componentId);
     if (!component) return;
@@ -207,7 +370,7 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
       );
       circuitHook.simulator.setComponents(allComponents);
     }
-  }, [circuitHook]);
+  }, [circuitHook, lastDragInfoRef]);
 
   // Handle component mouse down
   const handleComponentMouseDown = useCallback((componentId: string, event: React.MouseEvent) => {
@@ -236,8 +399,10 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
         offset: {
           x: canvasPos.x - component.position.x,
           y: canvasPos.y - component.position.y
-        }
+        },
+        hasMoved: false
       });
+
     }
   }, [toolbarState.selectedTool, circuitHook, screenToCanvas]);
 
@@ -245,63 +410,174 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
   const handleConnectionPointClick = useCallback((componentId: string, connectionPointId: string, event: React.MouseEvent) => {
     event.stopPropagation();
     
-    if (toolbarState.selectedTool !== 'wire') return;
+    console.log('[handleConnectionPointClick] called:', { componentId, connectionPointId, tool: toolbarState.selectedTool });
+    
+    if (toolbarState.selectedTool !== 'wire') {
+      console.log('[handleConnectionPointClick] Not in wire mode, ignoring click');
+      return;
+    }
 
-    if (!connectionState.isConnecting) {
-      // Start a new connection
-      setConnectionState({
+  const currentState = connectionStateRef.current;
+
+  if (!currentState.isConnecting) {
+      // Start a new connection - find the component and connection point position
+      const component = circuitHook.circuitState.components.find((c: Component) => c.id === componentId);
+      if (!component) {
+        console.log('[handleConnectionPointClick] Component not found:', componentId);
+        return;
+      }
+      
+      // Find the connection point to get its position
+      const allPoints = [...component.inputs, ...component.outputs];
+      const connectionPoint = allPoints.find((p: any) => p.id === connectionPointId);
+      if (!connectionPoint) {
+        console.log('[handleConnectionPointClick] Connection point not found:', connectionPointId);
+        return;
+      }
+
+      // If this connection point is already connected, remove existing wires to allow rerouting
+      const connectionsAtPoint = circuitHook.circuitState.connections.filter((conn: Connection) => {
+        if (connectionPoint.type === 'output') {
+          return conn.from.componentId === componentId && conn.from.connectionPointId === connectionPointId;
+        }
+        return conn.to.componentId === componentId && conn.to.connectionPointId === connectionPointId;
+      });
+
+      if (connectionsAtPoint.length > 0) {
+        const shouldDetach = connectionPoint.type === 'input' || connectionsAtPoint.length === 1;
+        if (shouldDetach) {
+          console.log(
+            '[handleConnectionPointClick] Detaching existing connections before rerouting:',
+            connectionsAtPoint.map((conn: Connection) => conn.id)
+          );
+          connectionsAtPoint.forEach((conn: Connection) => circuitHook.removeConnection(conn.id));
+        }
+      }
+      
+      console.log('[handleConnectionPointClick] Starting connection from:', {
+        component: component.type,
+        pointType: connectionPoint.type,
+        pointId: connectionPointId
+      });
+      
+      // Calculate the absolute position of the connection point
+      const startPos = {
+        x: component.position.x + connectionPoint.position.x,
+        y: component.position.y + connectionPoint.position.y
+      };
+      
+      let initialCursorPosition = startPos;
+      const canvasRect = canvasRef.current?.getBoundingClientRect();
+      if (canvasRect) {
+        const screenPosition = {
+          x: event.clientX - canvasRect.left,
+          y: event.clientY - canvasRect.top
+        };
+        initialCursorPosition = screenToCanvas(screenPosition);
+      }
+
+      const nextState = {
         isConnecting: true,
         startComponent: componentId,
-        startConnectionPoint: connectionPointId
-      });
+        startConnectionPoint: connectionPointId,
+        startPosition: startPos,
+        currentMousePosition: initialCursorPosition
+      };
+      connectionStateRef.current = nextState;
+      setConnectionState(nextState);
     } else {
+      console.log('[handleConnectionPointClick] Attempting to complete connection to:', { componentId, connectionPointId });
+      
+      // Check if clicking the same connection point - if so, cancel the connection
+      if (currentState.startComponent === componentId && 
+          currentState.startConnectionPoint === connectionPointId) {
+        console.log('[handleConnectionPointClick] Clicked same connection point - canceling connection');
+        const resetState = { ...INITIAL_CONNECTION_STATE };
+        connectionStateRef.current = resetState;
+        setConnectionState(resetState);
+        return;
+      }
+      
       // Complete the connection
-      if (connectionState.startComponent && connectionState.startConnectionPoint) {
+      if (currentState.startComponent && currentState.startConnectionPoint) {
         // Check if we're connecting output to input
-        const startComponent = circuitHook.circuitState.components.find((c: Component) => c.id === connectionState.startComponent);
+        const startComponent = circuitHook.circuitState.components.find((c: Component) => c.id === currentState.startComponent);
         const endComponent = circuitHook.circuitState.components.find((c: Component) => c.id === componentId);
         
         if (startComponent && endComponent) {
-          const startIsOutput = startComponent.outputs.some((o: any) => o.id === connectionState.startConnectionPoint);
+          const startIsOutput = startComponent.outputs.some((o: any) => o.id === currentState.startConnectionPoint);
           const endIsInput = endComponent.inputs.some((i: any) => i.id === connectionPointId);
-          const startIsInput = startComponent.inputs.some((i: any) => i.id === connectionState.startConnectionPoint);
+          const startIsInput = startComponent.inputs.some((i: any) => i.id === currentState.startConnectionPoint);
           const endIsOutput = endComponent.outputs.some((o: any) => o.id === connectionPointId);
+          
+          console.log('[handleConnectionPointClick] Connection analysis:', {
+            start: { component: startComponent.type, isOutput: startIsOutput, isInput: startIsInput },
+            end: { component: endComponent.type, isOutput: endIsOutput, isInput: endIsInput }
+          });
           
           // Case 1: Output → Input (normal direction)
           if (startIsOutput && endIsInput) {
-            circuitHook.addConnection(
-              connectionState.startComponent,
-              connectionState.startConnectionPoint,
+            console.log('[handleConnectionPointClick] Valid connection: Output to Input');
+            const result = circuitHook.addConnection(
+              currentState.startComponent,
+              currentState.startConnectionPoint,
               componentId,
               connectionPointId
             );
+            if (result) {
+              console.log('[handleConnectionPointClick] Connection created successfully');
+            } else {
+              console.warn('[handleConnectionPointClick] Connection failed - may already exist or invalid');
+            }
           } 
           // Case 2: Input → Output (reverse direction, swap the order)
           else if (startIsInput && endIsOutput) {
-            circuitHook.addConnection(
+            console.log('[handleConnectionPointClick] Valid connection (reversed): Input to Output, swapping order');
+            const result = circuitHook.addConnection(
               componentId,
               connectionPointId,
-              connectionState.startComponent,
-              connectionState.startConnectionPoint
+              currentState.startComponent,
+              currentState.startConnectionPoint
             );
+            if (result) {
+              console.log('[handleConnectionPointClick] Connection created successfully (reversed)');
+            } else {
+              console.warn('[handleConnectionPointClick] Connection failed - may already exist or invalid');
+            }
           }
           // Case 3: Invalid connections (input→input or output→output)
           else {
-            console.warn('❌ Invalid connection:', 
-              startIsOutput ? 'output→output' : startIsInput ? 'input→input' : 'unknown type'
-            );
+            const errorType = startIsOutput && endIsOutput ? 'output to output' : 
+                              startIsInput && endIsInput ? 'input to input' : 'unknown type';
+            console.warn('[handleConnectionPointClick] Invalid connection:', errorType);
+            
+            // Show error message to user
+            const errorMsg = document.createElement('div');
+            errorMsg.className = 'fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-bounce';
+            errorMsg.textContent = `Invalid Connection: Cannot connect ${errorType}`;
+            document.body.appendChild(errorMsg);
+            setTimeout(() => {
+              errorMsg.style.transition = 'opacity 0.3s';
+              errorMsg.style.opacity = '0';
+              setTimeout(() => document.body.removeChild(errorMsg), 300);
+            }, 2000);
           }
         }
       }
       
       // Reset connection state
-      setConnectionState({
-        isConnecting: false,
-        startComponent: null,
-        startConnectionPoint: null
-      });
+      const resetState = { ...INITIAL_CONNECTION_STATE };
+      connectionStateRef.current = resetState;
+      setConnectionState(resetState);
     }
-  }, [toolbarState.selectedTool, connectionState, circuitHook.circuitState.components, circuitHook.addConnection]);
+  }, [
+    toolbarState.selectedTool,
+    circuitHook.circuitState.components,
+    circuitHook.circuitState.connections,
+    circuitHook.addConnection,
+    circuitHook.removeConnection,
+    screenToCanvas
+  ]);
 
   // Utility function to update wire paths when components move
   const updateWirePathsForComponent = useCallback((componentId: string) => {
@@ -391,17 +667,79 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
       y: event.clientY - rect.top
     };
 
+    // Update wire preview position when in connecting mode
+    if (connectionStateRef.current.isConnecting && connectionStateRef.current.startPosition) {
+      const canvasPos = screenToCanvas(screenPos);
+      setConnectionState(prev => {
+        const nextState = {
+          ...prev,
+          currentMousePosition: canvasPos
+        };
+        connectionStateRef.current = nextState;
+        return nextState;
+      });
+    }
+
+    // Handle box selection
+    if (selectionBox?.isSelecting) {
+      const canvasPos = screenToCanvas(screenPos);
+      setSelectionBox(prev => prev ? {
+        ...prev,
+        currentPosition: canvasPos
+      } : null);
+
+      // Calculate which components are in the selection box
+      const minX = Math.min(selectionBox.startPosition.x, canvasPos.x);
+      const maxX = Math.max(selectionBox.startPosition.x, canvasPos.x);
+      const minY = Math.min(selectionBox.startPosition.y, canvasPos.y);
+      const maxY = Math.max(selectionBox.startPosition.y, canvasPos.y);
+
+      const selectedIds = new Set<string>();
+      circuitHook.circuitState.components.forEach((component: Component) => {
+        const compCenterX = component.position.x + component.size.width / 2;
+        const compCenterY = component.position.y + component.size.height / 2;
+        
+        if (compCenterX >= minX && compCenterX <= maxX &&
+            compCenterY >= minY && compCenterY <= maxY) {
+          selectedIds.add(component.id);
+        }
+      });
+      
+      setSelectedComponents(selectedIds);
+      return;
+    }
+
     // Handle component dragging
     if (dragState.isDragging && dragState.componentId) {
       const canvasPos = screenToCanvas(screenPos);
-      const newPosition = {
-        x: canvasPos.x - dragState.offset.x,
-        y: canvasPos.y - dragState.offset.y
-      };
       
-      circuitHook.moveComponent(dragState.componentId, newPosition);
-      // Update wire paths for the moved component
-      updateWirePathsForComponent(dragState.componentId);
+      // FIX: Add drag threshold to distinguish between click and drag
+      // Only start moving if user has moved at least 3 pixels (prevents accidental drags)
+      const DRAG_THRESHOLD = 3;
+      const distance = Math.sqrt(
+        Math.pow(canvasPos.x - dragState.startPosition.x, 2) +
+        Math.pow(canvasPos.y - dragState.startPosition.y, 2)
+      );
+      
+      // Only move component if past threshold
+      if (distance > DRAG_THRESHOLD || dragState.hasMoved) {
+        const newPosition = {
+          x: canvasPos.x - dragState.offset.x,
+          y: canvasPos.y - dragState.offset.y
+        };
+        
+        circuitHook.moveComponent(dragState.componentId, newPosition);
+        // Update wire paths for the moved component
+        updateWirePathsForComponent(dragState.componentId);
+        
+        // Mark that we've actually moved (so subsequent small movements still count)
+        if (!dragState.hasMoved) {
+          setDragState(prev => ({ ...prev, hasMoved: true }));
+          if (dragState.componentId) {
+            lastDragInfoRef.current = { componentId: dragState.componentId, timestamp: Date.now() };
+          }
+        }
+      }
     }
 
     // Handle panning
@@ -414,15 +752,22 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
         y: panState.startPan.y + deltaY
       });
     }
-  }, [dragState, panState, circuitHook, screenToCanvas]);
+  }, [dragState, panState, circuitHook, screenToCanvas, updateWirePathsForComponent, selectionBox]);
 
   // Handle mouse up
   const handleMouseUp = useCallback(() => {
+    // Finalize box selection
+    if (selectionBox?.isSelecting) {
+      setSelectionBox(null);
+      // Selection is already stored in selectedComponents
+    }
+
     setDragState({
       isDragging: false,
       componentId: null,
       startPosition: { x: 0, y: 0 },
-      offset: { x: 0, y: 0 }
+      offset: { x: 0, y: 0 },
+      hasMoved: false
     });
 
     setPanState({
@@ -430,7 +775,7 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
       startPosition: { x: 0, y: 0 },
       startPan: { x: 0, y: 0 }
     });
-  }, []);
+  }, [selectionBox]);
 
   // Handle wheel for zoom
   const handleWheel = useCallback((event: React.WheelEvent) => {
@@ -510,7 +855,8 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
   // Memoize component rendering to prevent unnecessary recalculations
   const renderedComponents = useMemo(() => {
     return circuitHook.circuitState.components.map((component: Component) => {
-      const isSelected = circuitHook.circuitState.selectedComponent === component.id;
+      const isSelected = circuitHook.circuitState.selectedComponent === component.id || selectedComponents.has(component.id);
+      const isBeingDeleted = deleteAnimation?.componentId === component.id;
       
       return (
         <div
@@ -522,36 +868,51 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
             width: component.size.width,
             height: component.size.height
           }}
+          className={isBeingDeleted ? 'animate-pulse opacity-50' : ''}
         >
           <ComponentRenderer
             component={component}
             isSelected={isSelected}
+            currentTool={toolbarState.selectedTool}
             onMouseDown={(event: React.MouseEvent) => {
-              // Handle component interaction based on tool
+              // CRITICAL FIX: Always handle mouseDown for dragging regardless of tool
+              // Connection points won't block this anymore
               if (toolbarState.selectedTool === 'select') {
                 handleComponentMouseDown(component.id, event);
               }
             }}
             onClick={(event: React.MouseEvent) => {
               // Handle interactive component clicks (switches, buttons, constants)
-              handleComponentClick(component.id, event);
+              if (toolbarState.selectedTool === 'select') {
+                handleComponentClick(component.id, event);
+              }
             }}
-            onConnectionPointClick={(connectionPointId: string) => {
-              // Create a mock event for compatibility
-              const mockEvent = new MouseEvent('click') as any;
-              handleConnectionPointClick(component.id, connectionPointId, mockEvent);
+            onConnectionPointClick={(connectionPointId: string, event: React.MouseEvent) => {
+              handleConnectionPointClick(component.id, connectionPointId, event);
             }}
           />
+          {/* Multi-selection highlight */}
+          {selectedComponents.has(component.id) && (
+            <div className="absolute inset-0 border-3 border-blue-400 bg-blue-100 bg-opacity-10 rounded-lg pointer-events-none">
+              <div className="absolute -top-2 -right-2 w-5 h-5 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                ✓
+              </div>
+            </div>
+          )}
+          {/* Delete highlight overlay */}
+          {isBeingDeleted && (
+            <div className="absolute inset-0 border-4 border-red-500 rounded-lg animate-ping pointer-events-none" />
+          )}
         </div>
       );
     });
-  }, [circuitHook.circuitState.components, circuitHook.circuitState.selectedComponent, zoom, pan, toolbarState.selectedTool, handleComponentMouseDown, handleComponentClick, handleConnectionPointClick]);
+  }, [circuitHook.circuitState.components, circuitHook.circuitState.selectedComponent, zoom, pan, toolbarState.selectedTool, handleComponentMouseDown, handleComponentClick, handleConnectionPointClick, deleteAnimation, selectedComponents]);
 
   // Enhanced connection renderer with removal and editing support
   const renderConnection = useCallback((connection: Connection) => {
     // Check if path exists
     if (!connection.path || connection.path.length === 0) {
-      console.warn('⚠️ Connection has no path:', connection.id);
+      console.warn('[renderConnection] Connection has no path:', connection.id);
       return null;
     }
 
@@ -561,8 +922,10 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
       y: point.y * zoom + pan.y
     }));
 
+    const isBeingDeleted = deleteAnimation?.connectionId === connection.id;
+
     return (
-      <div key={connection.id}>
+      <div key={connection.id} className={isBeingDeleted ? 'animate-pulse' : ''}>
         <ConnectionRenderer
           connection={{ ...connection, path: transformedPath }}
           isSelected={circuitHook.circuitState.selectedConnection === connection.id}
@@ -579,10 +942,48 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
         />
       </div>
     );
-  }, [circuitHook, zoom, pan]);
+  }, [circuitHook, zoom, pan, deleteAnimation]);
 
   return (
     <div className="relative w-full h-full overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
+      {/* Bulk Actions Toolbar - Shows when multiple components selected */}
+      {selectedComponents.size > 0 && (
+        <div className="absolute top-16 left-1/2 transform -translate-x-1/2 z-20 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-xl border-2 border-blue-600 flex items-center gap-4 animate-in slide-in-from-top duration-300">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 bg-white text-blue-600 rounded-full flex items-center justify-center font-bold text-sm">
+              {selectedComponents.size}
+            </div>
+            <span className="font-semibold">
+              {selectedComponents.size === 1 ? '1 component' : `${selectedComponents.size} components`} selected
+            </span>
+          </div>
+          <div className="h-6 w-px bg-blue-300" />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              // Delete all selected components
+              selectedComponents.forEach(compId => {
+                circuitHook.removeComponent(compId);
+              });
+              setSelectedComponents(new Set());
+            }}
+            className="h-8 bg-red-500 hover:bg-red-600 text-white"
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Delete All
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSelectedComponents(new Set())}
+            className="h-8 bg-white/20 hover:bg-white/30 text-white"
+          >
+            Clear Selection
+          </Button>
+        </div>
+      )}
+      
       {/* Tool Selection Buttons + Undo/Redo - Top Left */}
       <div className="absolute top-3 left-3 z-10 flex flex-row gap-0.5 p-1 bg-white/90 backdrop-blur-sm rounded-md shadow-lg border border-gray-200">
         {tools.map((tool) => (
@@ -737,14 +1138,141 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
         {/* Connections */}
         {circuitHook.circuitState.connections.map(renderConnection)}
 
+        {/* Wire Preview - Show temporary line while connecting */}
+        {connectionState.isConnecting && connectionState.startPosition && connectionState.currentMousePosition && (
+          <svg
+            className="absolute top-0 left-0 w-full h-full pointer-events-none"
+            style={{ zIndex: 15 }}
+          >
+            <defs>
+              <marker
+                id="preview-arrowhead"
+                markerWidth="6"
+                markerHeight="6"
+                refX="5"
+                refY="3"
+                orient="auto"
+                markerUnits="strokeWidth"
+              >
+                <polygon points="0 0, 6 3, 0 6" fill="#3b82f6" />
+              </marker>
+            </defs>
+            
+            {/* Glow effect */}
+            <line
+              x1={connectionState.startPosition.x * zoom + pan.x}
+              y1={connectionState.startPosition.y * zoom + pan.y}
+              x2={connectionState.currentMousePosition.x * zoom + pan.x}
+              y2={connectionState.currentMousePosition.y * zoom + pan.y}
+              stroke="rgba(59, 130, 246, 0.3)"
+              strokeWidth="8"
+              strokeLinecap="round"
+              className="animate-pulse"
+            />
+            
+            {/* Main preview line */}
+            <line
+              x1={connectionState.startPosition.x * zoom + pan.x}
+              y1={connectionState.startPosition.y * zoom + pan.y}
+              x2={connectionState.currentMousePosition.x * zoom + pan.x}
+              y2={connectionState.currentMousePosition.y * zoom + pan.y}
+              stroke="#3b82f6"
+              strokeWidth="3"
+              strokeDasharray="8 4"
+              strokeLinecap="round"
+              markerEnd="url(#preview-arrowhead)"
+            >
+              <animate
+                attributeName="stroke-dashoffset"
+                values="0;12"
+                dur="0.8s"
+                repeatCount="indefinite"
+              />
+            </line>
+            
+            {/* Start point indicator */}
+            <circle
+              cx={connectionState.startPosition.x * zoom + pan.x}
+              cy={connectionState.startPosition.y * zoom + pan.y}
+              r="6"
+              fill="#3b82f6"
+              stroke="white"
+              strokeWidth="2"
+              className="animate-pulse"
+            />
+            
+            {/* End point cursor */}
+            <circle
+              cx={connectionState.currentMousePosition.x * zoom + pan.x}
+              cy={connectionState.currentMousePosition.y * zoom + pan.y}
+              r="8"
+              fill="none"
+              stroke="#3b82f6"
+              strokeWidth="2"
+              className="animate-ping"
+            />
+            <circle
+              cx={connectionState.currentMousePosition.x * zoom + pan.x}
+              cy={connectionState.currentMousePosition.y * zoom + pan.y}
+              r="4"
+              fill="#3b82f6"
+            />
+          </svg>
+        )}
+
         {/* Components */}
         {renderedComponents}
 
+        {/* Box Selection Rectangle */}
+        {selectionBox?.isSelecting && (
+          <div
+            className="absolute border-2 border-blue-500 bg-blue-100 bg-opacity-20 pointer-events-none"
+            style={{
+              left: Math.min(selectionBox.startPosition.x, selectionBox.currentPosition.x) * zoom + pan.x,
+              top: Math.min(selectionBox.startPosition.y, selectionBox.currentPosition.y) * zoom + pan.y,
+              width: Math.abs(selectionBox.currentPosition.x - selectionBox.startPosition.x) * zoom,
+              height: Math.abs(selectionBox.currentPosition.y - selectionBox.startPosition.y) * zoom
+            }}
+          />
+        )}
+
+        {/* Connection instruction when in wire mode but not connecting */}
+        {toolbarState.selectedTool === 'wire' && !connectionState.isConnecting && (
+          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 pointer-events-none z-20">
+            <div className="text-center text-sm text-blue-700 bg-blue-50 rounded-lg px-4 py-2 shadow-lg border-2 border-blue-300 animate-pulse">
+              <div className="font-semibold">Wire Mode Active</div>
+              <div className="text-xs text-blue-600 mt-1">Click an output node (right side) to start wiring</div>
+            </div>
+          </div>
+        )}
+        
+        {/* Select mode instruction */}
+        {toolbarState.selectedTool === 'select' && !selectionBox?.isSelecting && selectedComponents.size === 0 && (
+          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 pointer-events-none z-20">
+            <div className="text-center text-sm text-purple-700 bg-purple-50 rounded-lg px-4 py-2 shadow-lg border-2 border-purple-300">
+              <div className="font-semibold">Select Mode Active</div>
+              <div className="text-xs text-purple-600 mt-1">Click components to select • Drag empty space for box select</div>
+            </div>
+          </div>
+        )}
+
+        {/* Pan mode instruction */}
+        {toolbarState.selectedTool === 'pan' && !panState.isPanning && (
+          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 pointer-events-none z-20">
+            <div className="text-center text-sm text-amber-700 bg-amber-50 rounded-lg px-4 py-2 shadow-lg border-2 border-amber-300">
+              <div className="font-semibold">Pan Mode Active</div>
+              <div className="text-xs text-amber-600 mt-1">Click and drag empty space to move the canvas • Scroll to zoom</div>
+            </div>
+          </div>
+        )}
+        
         {/* Connection preview line when connecting */}
         {connectionState.isConnecting && connectionState.startComponent && (
-          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 pointer-events-none">
-            <div className="text-center text-sm text-blue-600 bg-blue-100 rounded px-3 py-2 shadow-lg border border-blue-200">
-              🔗 Click on an input connection point to complete the wire
+          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 pointer-events-none z-20">
+            <div className="text-center text-sm text-green-700 bg-green-50 rounded-lg px-4 py-2 shadow-lg border-2 border-green-300 animate-bounce">
+              <div className="font-semibold">Connecting...</div>
+              <div className="text-xs text-green-600 mt-1">Click an input node (left side) to complete the wire</div>
+              <div className="text-xs text-gray-500 mt-1">or click empty space to cancel</div>
             </div>
           </div>
         )}

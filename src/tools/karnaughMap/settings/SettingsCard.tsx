@@ -32,11 +32,11 @@ const SettingsCard: React.FC<SettingsCardProps> = ({
       
       <CardContent className="space-y-6">
         {/* Variable Count Selection (Tabs) */}
-        <div className="space-y-3">
+        <div className="space-y-3" data-tour="variable-count">
           <p className="text-sm font-medium text-muted-foreground">Choose number of variables:</p>
           <Tabs value={String(variableCount)} onValueChange={(val) => onVariableCountChange(Number(val))}>
             <TabsList className='w-full'>
-              {['2', '3', '4'].map((v) => (
+              {['2', '3', '4', '5'].map((v) => (
                 <TabsTrigger key={v} value={v} className="px-3 py-1">
                   {v}
                 </TabsTrigger>
@@ -46,7 +46,7 @@ const SettingsCard: React.FC<SettingsCardProps> = ({
         </div>
 
         {/* Form Type Selection (Tabs) */}
-        <div className="space-y-3">
+        <div className="space-y-3" data-tour="form-type">
           <p className="text-sm font-medium text-muted-foreground">Form: {formType}</p>
           <Tabs value={formType} onValueChange={(val) => onFormTypeChange(val)}>
             <TabsList className='w-full'>
@@ -60,7 +60,7 @@ const SettingsCard: React.FC<SettingsCardProps> = ({
         </div>
 
         {/* Set All Cells */}
-        <div className="space-y-3">
+        <div className="space-y-3" data-tour="set-all">
           <p className="text-sm font-medium text-muted-foreground">Set all cells to:</p>
           <div className="flex gap-2">
             {[0, 1, 'X'].map((value) => (

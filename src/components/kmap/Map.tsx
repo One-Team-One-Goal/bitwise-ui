@@ -32,6 +32,12 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick }
         rowHeaders: ['AB', "AB'", "A'B'", "A'B"],
         cornerLabel: 'AB//CD'
       };
+    } else if (variableCount === 5) {
+      return {
+        colHeaders: ['CD', "CD'", "C'D'", "C'D"],
+        rowHeaders: ['AB', "AB'", "A'B'", "A'B"],
+        cornerLabel: 'AB//CD'
+      };
     }
     
     return { colHeaders: [], rowHeaders: [], cornerLabel: '' };
@@ -91,6 +97,150 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick }
     );
   }
 
+  // For 5 variables, render two separate 4x4 tables
+  if (variableCount === 5) {
+    return (
+      <div className="flex flex-col lg:flex-row gap-6 items-start">
+        {/* E = 0 Table */}
+        <div className="relative">
+          <div className="text-center mb-2">
+            <span className="inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-lg text-sm font-semibold">
+              E = 0
+            </span>
+          </div>
+          <div className="inline-block overflow-hidden">
+            {/* Column Headers */}
+            <div className="flex">
+              <div className="w-16 h-12 flex items-center justify-center relative text-xs text-gray-600">
+                <CornerLabel label={cornerLabel} />
+              </div>
+              {colHeaders.map((header, index) => (
+                <div
+                  key={index}
+                  className="w-16 h-12 flex items-center justify-center font-semibold text-sm text-gray-700"
+                >
+                  {header}
+                </div>
+              ))}
+            </div>
+
+            {/* Rows with data */}
+            {Array.from({ length: rows }).map((_, rowIndex) => (
+              <div key={rowIndex} className="flex">
+                {/* Row Header */}
+                <div className="w-16 h-16 flex items-center justify-center font-semibold text-sm text-gray-700">
+                  {rowHeaders[rowIndex]}
+                </div>
+                
+                {/* Data Cells */}
+                {Array.from({ length: cols }).map((_, colIndex) => {
+                  const cell = squares[rowIndex]?.[colIndex];
+                  const group = getCellGroup(rowIndex, colIndex);
+                  const connections = getGroupConnections(rowIndex, colIndex, group);
+                  
+                  if (!cell) return null;
+
+                  return (
+                    <Square
+                      key={`${rowIndex}-${colIndex}`}
+                      value={cell[0]}
+                      onClick={() => onCellClick(rowIndex, colIndex)}
+                      groupColor={group?.color}
+                      isGrouped={!!group}
+                      groupConnections={connections}
+                      className="w-16 h-16"
+                    />
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+
+          {/* Group Overlays for E=0 table */}
+          {groups.map((group) => (
+            <GroupOverlay
+              key={group.id}
+              group={group}
+              cellSize={64}
+              headerOffset={{ x: 64, y: 48 + 40 }} // Extra 40px for E=0 label
+              rows={rows}
+              cols={cols}
+            />
+          ))}
+        </div>
+
+        {/* E = 1 Table */}
+        <div className="relative">
+          <div className="text-center mb-2">
+            <span className="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-lg text-sm font-semibold">
+              E = 1
+            </span>
+          </div>
+          <div className="inline-block overflow-hidden">
+            {/* Column Headers */}
+            <div className="flex">
+              <div className="w-16 h-12 flex items-center justify-center relative text-xs text-gray-600">
+                <CornerLabel label={cornerLabel} />
+              </div>
+              {colHeaders.map((header, index) => (
+                <div
+                  key={index}
+                  className="w-16 h-12 flex items-center justify-center font-semibold text-sm text-gray-700"
+                >
+                  {header}
+                </div>
+              ))}
+            </div>
+
+            {/* Rows with data - These would be from the second half of the truth table */}
+            {Array.from({ length: rows }).map((_, rowIndex) => (
+              <div key={rowIndex} className="flex">
+                {/* Row Header */}
+                <div className="w-16 h-16 flex items-center justify-center font-semibold text-sm text-gray-700">
+                  {rowHeaders[rowIndex]}
+                </div>
+                
+                {/* Data Cells - For now, showing same data, will need backend update */}
+                {Array.from({ length: cols }).map((_, colIndex) => {
+                  const cell = squares[rowIndex]?.[colIndex];
+                  const group = getCellGroup(rowIndex, colIndex);
+                  const connections = getGroupConnections(rowIndex, colIndex, group);
+                  
+                  if (!cell) return null;
+
+                  return (
+                    <Square
+                      key={`e1-${rowIndex}-${colIndex}`}
+                      value={cell[0]}
+                      onClick={() => onCellClick(rowIndex, colIndex)}
+                      groupColor={group?.color}
+                      isGrouped={!!group}
+                      groupConnections={connections}
+                      className="w-16 h-16"
+                    />
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+
+          {/* Group Overlays for E=1 table */}
+          {groups.map((group) => (
+            <GroupOverlay
+              key={`e1-${group.id}`}
+              group={group}
+              cellSize={64}
+              headerOffset={{ x: 64, y: 48 + 40 }}
+              rows={rows}
+              cols={cols}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // For 2-4 variables, render single table
   return (
     <div className="relative">
       {/* K-Map Table */}

@@ -238,6 +238,12 @@ export const CircuitSimulator: React.FC = () => {
                       generatedComp.type,
                       generatedComp.position
                     );
+
+                    if (!newComp) {
+                      console.warn('[CircuitSimulator] Failed to add generated component', generatedComp);
+                      return;
+                    }
+
                     componentIdMap.set(generatedComp.id, newComp.id);
                     addedComponents.push(newComp);
                     

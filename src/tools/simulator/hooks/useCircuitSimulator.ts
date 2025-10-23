@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import type { CircuitState, Component, Connection, ComponentType, Position } from '../types';
 import { CircuitSimulator } from '../engine/simulator';
 import { ComponentFactory } from '../utils/componentFactory';
+import { CircuitTemplateFactory } from '../utils/circuitTemplates';
 
 export const useCircuitSimulator = () => {
   const [circuitState, setCircuitState] = useState<CircuitState>({
@@ -100,6 +101,78 @@ export const useCircuitSimulator = () => {
   }, []);
 
   const addComponent = useCallback((type: ComponentType, position: Position) => {
+    const definition = ComponentFactory.getComponentDefinition(type);
+
+    if (definition?.isTemplate) {
+      const templateResult = CircuitTemplateFactory.generateCircuitFromTemplate(type, position);
+
+      if (!templateResult) {
+        console.warn(`[addComponent] Unable to locate template for ${type}`);
+        return null;
+      }
+
+      const templateComponents = templateResult.components.map(component => ({
+        ...component,
+        inputs: component.inputs.map(input => ({ ...input })),
+        outputs: component.outputs.map(output => ({ ...output })),
+        properties: { ...component.properties }
+      }));
+
+      const componentMap = new Map<string, Component>();
+      templateComponents.forEach(component => {
+        componentMap.set(component.id, component);
+      });
+
+      const generatedConnections: Connection[] = [];
+
+      templateResult.connections.forEach(connection => {
+        const fromComponent = componentMap.get(connection.from.componentId);
+        const toComponent = componentMap.get(connection.to.componentId);
+
+        if (!fromComponent || !toComponent) {
+          console.warn('[addComponent] Skipping template connection with missing component reference', connection);
+          return;
+        }
+
+        const fromPoint = fromComponent.outputs.find(output => output.id === connection.from.connectionPointId);
+        const toPoint = toComponent.inputs.find(input => input.id === connection.to.connectionPointId);
+
+        if (!fromPoint || !toPoint) {
+          console.warn('[addComponent] Skipping template connection with missing connection point', connection);
+          return;
+        }
+
+        fromPoint.connected = true;
+        toPoint.connected = true;
+        toPoint.value = false;
+
+        generatedConnections.push({
+          id: connection.id,
+          from: { ...connection.from },
+          to: { ...connection.to },
+          path: connection.path.length ? connection.path.map(point => ({ ...point })) : [
+            {
+              x: fromComponent.position.x + fromPoint.position.x,
+              y: fromComponent.position.y + fromPoint.position.y
+            },
+            {
+              x: toComponent.position.x + toPoint.position.x,
+              y: toComponent.position.y + toPoint.position.y
+            }
+          ],
+          value: false
+        });
+      });
+
+      setCircuitState(prev => ({
+        ...prev,
+        components: [...prev.components, ...templateComponents],
+        connections: [...prev.connections, ...generatedConnections]
+      }));
+
+      return templateComponents[0] ?? null;
+    }
+
     const component = ComponentFactory.createComponent(type, position);
     setCircuitState(prev => ({ ...prev, components: [...prev.components, component] }));
     return component;
@@ -293,11 +366,12 @@ export const useCircuitSimulator = () => {
         }
         if (component.id === connection.to.componentId) {
           // Deep copy inputs array and update the specific input
+          // CRITICAL: Also reset value to false when disconnecting
           return {
             ...component,
             inputs: component.inputs.map(i => 
               i.id === connection.to.connectionPointId 
-                ? { ...i, connected: false } 
+                ? { ...i, connected: false, value: false } 
                 : { ...i }
             )
           };
@@ -307,12 +381,14 @@ export const useCircuitSimulator = () => {
       
       console.log('[removeConnection] Successfully removed connection');
       
-      return {
+      const newState = {
         ...prev,
         components: updatedComponents,
         connections: prev.connections.filter(c => c.id !== connectionId),
         selectedConnection: prev.selectedConnection === connectionId ? null : prev.selectedConnection
       };
+      
+      return newState;
     });
   }, []);
 

@@ -59,24 +59,28 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
 
   const renderComponentButton = (definition: any) => {
     const isSelected = selectedComponentType === definition.type;
+    const baseClasses = 'w-full justify-between h-10 px-2 flex-shrink-0 rounded-md transition-colors border';
+    const stateClasses = isSelected
+      ? 'border-primary/40 bg-primary/10 text-primary shadow-sm hover:bg-primary/15'
+      : 'border-transparent hover:bg-muted/60';
     
     return (
       <TooltipProvider key={definition.type}>
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              variant={isSelected ? "outline" : "ghost"}
+              variant="ghost"
               size="sm"
-              className="w-full justify-between h-10 p-2 flex-shrink-0"
+              className={`${baseClasses} ${stateClasses}`}
               onClick={() => onComponentSelect(definition.type)}
             >
               <div className="flex items-center gap-2 min-w-0">
-                <div className="text-sm font-mono bg-muted rounded px-1.5 py-0.5 min-w-[1.5rem] text-center flex-shrink-0">
+                <div className={`text-sm font-mono rounded px-1.5 py-0.5 min-w-[1.5rem] text-center flex-shrink-0 ${isSelected ? 'bg-primary/20 text-primary' : 'bg-muted/80 text-foreground'}`}>
                   {definition.icon}
                 </div>
-                <div className="text-xs font-medium truncate">{definition.name}</div>
+                <div className={`text-xs font-medium truncate ${isSelected ? 'text-primary' : 'text-foreground'}`}>{definition.name}</div>
               </div>
-              <Info className="h-3 w-3 text-muted-foreground flex-shrink-0 ml-1" />
+              <Info className={`h-3 w-3 flex-shrink-0 ml-1 ${isSelected ? 'text-primary' : 'text-muted-foreground'}`} />
             </Button>
           </TooltipTrigger>
           <TooltipContent side="right" className="max-w-xs">
@@ -184,19 +188,24 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
             const isExpanded = expandedCategories.has(category.id);
             const components = ComponentFactory.getDefinitionsByCategory(category.id as any);
             const IconComponent = category.icon;
+            const categoryButtonClasses = `w-full justify-between h-9 px-3 rounded-md transition-colors border ${
+              isExpanded ? 'bg-muted/80 text-foreground border-border/70 shadow-sm hover:bg-muted' : 'border-transparent hover:bg-muted/60'
+            }`;
 
             return (
               <div key={category.id} className="flex-shrink-0">
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="w-full justify-between h-8 px-2"
+                  className={categoryButtonClasses}
                   onClick={() => toggleCategory(category.id)}
                 >
                   <div className="flex items-center gap-2">
-                    <IconComponent className="h-4 w-4" />
-                    <span className="text-sm font-medium">{category.name}</span>
-                    <span className="text-xs text-muted-foreground">({components.length})</span>
+                    <div className={`flex items-center justify-center h-6 w-6 rounded-md ${isExpanded ? 'bg-primary/20 text-primary' : 'bg-muted/70 text-muted-foreground'}`}>
+                      <IconComponent className="h-4 w-4" />
+                    </div>
+                    <span className="text-sm font-semibold tracking-wide">{category.name}</span>
+                    <span className={`text-xs ${isExpanded ? 'text-primary' : 'text-muted-foreground'}`}>({components.length})</span>
                   </div>
                   {isExpanded ? (
                     <ChevronDown className="h-4 w-4" />
@@ -206,10 +215,10 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
                 </Button>
 
                 {isExpanded && (
-                  <div className="mt-2">
+                  <div className="mt-2 rounded-md border border-border/60 bg-muted/20 p-2 transition-colors">
                     {components.length > 6 ? (
-                      <ScrollArea className="h-64">
-                        <div className="space-y-1 pr-2">
+                      <ScrollArea className="h-64 pr-1">
+                        <div className="space-y-1">
                           {components.map(renderComponentButton)}
                         </div>
                       </ScrollArea>

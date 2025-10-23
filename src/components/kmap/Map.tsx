@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import Square from "./Square";
 import { type KMapMatrix, type KMapGroup, getDimensions } from "@/utils/karnaugh.utils";
 
@@ -11,7 +11,6 @@ interface MapProps {
 
 const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick }) => {
   const { rows, cols } = getDimensions(variableCount);
-  const [hoveredGroup, setHoveredGroup] = useState<number | null>(null);
   
   // Generate headers for the map
   const generateHeaders = () => {

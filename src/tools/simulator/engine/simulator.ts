@@ -77,12 +77,17 @@ export class CircuitSimulator {
   }
 
   private propagateSignals(): void {
-    // Run multiple iterations to ensure signals propagate through all layers
-    // For deep circuits, signals need to flow from inputs -> gates -> more gates -> LED
-    for (let iteration = 0; iteration < 10; iteration++) {
+    // IMPROVEMENT: Run multiple iterations to ensure signals propagate through all layers
+    // This simulates real digital circuit propagation delay
+    // For deep circuits, signals need to flow: inputs -> gates -> more gates -> outputs
+    // Maximum 20 iterations prevents infinite loops in feedback circuits
+    const MAX_ITERATIONS = 20;
+    
+    for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
       let changesOccurred = false;
       
-      // First propagate signals through connections
+      // PHASE 1: Propagate signals through connections (wire propagation)
+      // In real circuits, wires have near-instantaneous propagation
       this.connections.forEach(connection => {
         const fromComponent = this.components.get(connection.from.componentId);
         const toComponent = this.components.get(connection.to.componentId);
@@ -98,6 +103,7 @@ export class CircuitSimulator {
           if (fromOutput && toInput) {
             const oldValue = toInput.value;
             
+            // Wire carries the signal from output to input
             toInput.value = fromOutput.value;
             connection.value = fromOutput.value;
 
@@ -115,18 +121,26 @@ export class CircuitSimulator {
         }
       });
       
-      // Then update all components based on their inputs
+      // PHASE 2: Update all components based on their inputs (gate propagation delay)
+      // Each gate has a small propagation delay, simulated by the iteration loop
       this.components.forEach(component => {
         this.updateComponent(component);
       });
       
-      // If no changes occurred, we can stop iterating
+      // OPTIMIZATION: If no changes occurred and we've done at least one iteration,
+      // the circuit has reached steady state
       if (!changesOccurred && iteration > 0) {
+        // Circuit stabilized, no need for more iterations
         break;
+      }
+      
+      // SAFETY: If we hit max iterations, log a warning (possible feedback loop)
+      if (iteration === MAX_ITERATIONS - 1) {
+        console.warn('⚠️ Circuit simulation reached maximum iterations. Possible feedback loop or oscillation.');
       }
     }
     
-    // Limit simulation events to prevent memory issues
+    // MEMORY MANAGEMENT: Limit simulation events to prevent memory leaks
     if (this.simulationEvents.length > 1000) {
       this.simulationEvents = this.simulationEvents.slice(-500);
     }

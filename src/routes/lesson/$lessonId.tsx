@@ -1,7 +1,8 @@
-// Updated RouteComponent with improved content display
+// ...existing code...
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState, useEffect, useRef } from 'react'
 import LessonHeader from '@/components/LessonHeader'
+import useLesson from '@/hooks/useLesson'
 
 import { Button } from '@/components/ui/button'
 import { ChevronRight, ChevronLeft, Check } from 'lucide-react'
@@ -52,13 +53,6 @@ export interface Lesson {
   updatedAt: string
 }
 
-async function fetchLesson(lessonId: number): Promise<Lesson> {
-  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/lessons/${lessonId}`)
-  if (!response.ok) {
-    throw new Error('Failed to fetch lesson')
-  }
-  return await response.json()
-}
 
 export const Route = createFileRoute('/lesson/$lessonId')({
   component: RouteComponent,
@@ -67,24 +61,20 @@ export const Route = createFileRoute('/lesson/$lessonId')({
 function RouteComponent() {
   const { lessonId } = Route.useParams()
   const navigate = useNavigate()
-  const [lesson, setLesson] = useState<Lesson | null>(null)
-  const [loading, setLoading] = useState(true)
+  const lessonIdNum = lessonId ? Number(lessonId) : undefined
+
+  // useLesson hook (react-query) handles fetching and caching
+  const { data: lesson, isLoading, error } = useLesson(lessonIdNum)
+
   const [topicIdx, setTopicIdx] = useState(0)
   const [finished, setFinished] = useState(false)
   const confettiRef = useRef<ConfettiRef>(null)
 
+  // reset progress when lesson changes
   useEffect(() => {
-    setLoading(true)
-    setLesson(null)
     setTopicIdx(0)
     setFinished(false)
-    fetchLesson(Number(lessonId))
-      .then(data => {
-        setLesson(data)
-        setLoading(false)
-      })
-      .catch(() => setLoading(false))
-  }, [lessonId])
+  }, [lesson?.id])
 
   useEffect(() => {
     if (finished) {
@@ -92,7 +82,7 @@ function RouteComponent() {
     }
   }, [finished])
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="pt-36 max-w-4xl mx-auto flex flex-col items-center">
         <div className="animate-pulse">
@@ -103,10 +93,10 @@ function RouteComponent() {
     )
   }
 
-  if (!lesson) {
+  if (error || !lesson) {
     return (
       <div className="pt-36 max-w-4xl mx-auto flex flex-col items-center">
-        <p className="text-lg text-gray-500">Lesson not found.</p>
+        <p className="text-lg text-gray-500">{error ? error.message : 'Lesson not found.'}</p>
       </div>
     )
   }
@@ -274,3 +264,4 @@ function RouteComponent() {
     </div>
   )
 }
+// ...existing code...

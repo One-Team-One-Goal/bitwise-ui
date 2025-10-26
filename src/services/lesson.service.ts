@@ -26,28 +26,12 @@ export type Lesson = {
 }
 
 export const lessonService = {
-  async createLesson(title: string): Promise<Lesson> {
-    try {
-      return await apiService.post<Lesson>('/lessons', { title }, true)
-    } catch (err: any) {
-      throw new Error(err?.message ?? 'Failed to create lesson')
-    }
-  },
-
   async getLessons(): Promise<Lesson[]> {
-    try {
-      return await apiService.get<Lesson[]>('/lessons', false)
-    } catch (err: any) {
-      throw new Error(err?.message ?? 'Failed to fetch lessons')
-    }
+    return await apiService.get<Lesson[]>('/lessons')
   },
 
   async getLessonById(id: number): Promise<Lesson> {
-    try {
-      return await apiService.get<Lesson>(`/lessons/${id}`, false)
-    } catch (err: any) {
-      throw new Error(err?.message ?? `Failed to fetch lesson ${id}`)
-    }
+    return await apiService.get<Lesson>(`/lessons/${id}`)
   },
 
   async updateLesson(id: number, title: string): Promise<Lesson> {

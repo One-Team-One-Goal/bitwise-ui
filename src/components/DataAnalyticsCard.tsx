@@ -115,6 +115,7 @@ export default function DataAnalyticsCard({ lesson, user }: { lesson: any; user:
     fetchAnalytics()
   }, [user?.id])
 
+
   const getCurrentLessonAnalytics = () => {
     if (!analytics || !lesson) return null
     // Find analytics for the current lesson

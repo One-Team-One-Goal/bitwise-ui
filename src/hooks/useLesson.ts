@@ -5,13 +5,14 @@ export default function useLesson(
   lessonId?: number | null,
   opts?: { enabled?: boolean; staleTimeMs?: number }
 ): UseQueryResult<Lesson, Error> {
-  const enabled = !!lessonId && (opts?.enabled ?? true)
-  const staleTime = opts?.staleTimeMs ?? 1000 * 60 * 2 // 2 minutes
+  const validId = typeof lessonId === 'number' && !Number.isNaN(lessonId)
+  const enabled = validId && (opts?.enabled ?? true)
+  const staleTime = opts?.staleTimeMs ?? 1000 * 60 * 2
 
   return useQuery<Lesson, Error>({
-    queryKey: lessonId ? ['lessons', String(lessonId)] : ['lessons', 'null'],
+    queryKey: lessonId ? ['lesson', String(lessonId)] : ['lesson', 'null'],
     queryFn: async () => {
-      if (!lessonId) throw new Error('No lesson id provided')
+      if (!validId) throw new Error('No lesson id provided')
       return await lessonService.getLessonById(Number(lessonId))
     },
     enabled,

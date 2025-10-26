@@ -1,6 +1,6 @@
-// ...existing code...
-import axios, { type AxiosInstance, type AxiosRequestConfig } from 'axios'
+import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse } from 'axios'
 import { supabase } from '../utils/supabase'
+import { HTTP_STATUS } from '../constants/api'
 
 interface RequestOptions {
   requiresAuth?: boolean
@@ -8,87 +8,123 @@ interface RequestOptions {
 
 class ApiService {
   private api: AxiosInstance
-  private base: string
 
   constructor() {
-    const rawBase = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000/api').toString()
-    this.base = rawBase.replace(/\/+$/, '') // strip trailing slashes
-
+    // Create axios instance with base configuration
     this.api = axios.create({
-      baseURL: this.base,
-      timeout: 10000,
-      headers: { 'Content-Type': 'application/json' },
+      baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api',
+      timeout: 10000, // 10 seconds timeout
+      headers: {
+        'Content-Type': 'application/json',
+      },
     })
 
-    this.api.interceptors.request.use(async (config) => {
-      if (config.headers && (config.headers as any)['X-Requires-Auth']) {
-        const { data: { session } } = await supabase.auth.getSession()
-        const token = session?.access_token
-        if (token) {
-          if (config.headers) {
-            // set Authorization on the existing headers object without replacing it
-            (config.headers as Record<string, any>)['Authorization'] = `Bearer ${token}`
-          } else {
-            // ensure headers exist and assign Authorization
-            config.headers = { Authorization: `Bearer ${token}` } as any
+    // Setup request interceptor to add auth token
+    this.api.interceptors.request.use(
+      async (config) => {
+        // Get fresh token on each request if auth is required
+        if (config.headers['X-Requires-Auth']) {
+          const { data: { session } } = await supabase.auth.getSession()
+          const token = session?.access_token
+
+          if (token) {
+            config.headers.Authorization = `Bearer ${token}`
           }
+          
+          // Remove the custom header
+          delete config.headers['X-Requires-Auth']
         }
-        delete (config.headers as Record<string, any>)['X-Requires-Auth']
-      }
-      return config
-    })
-  }
 
-  // convert given path into a normalized relative path so axios baseURL + path never duplicate /api
-  private normalizePath(url: string) {
-    if (!url) return '/'
-    let path = url.toString().replace(/^\/+/, '') // remove leading slashes
-    if (this.base.toLowerCase().endsWith('/api')) {
-      path = path.replace(/^api\/?/i, '') // strip leading 'api' from path
-    }
-    
-    return path ? `/${path}` : '/'
+        return config
+      },
+      (error) => {
+        return Promise.reject(error)
+      }
+    )
+
+    // Setup response interceptor for global error handling
+    this.api.interceptors.response.use(
+      (response: AxiosResponse) => {
+        return response
+      },
+      (error) => {
+        // Handle common error scenarios
+        if (error.response?.status === HTTP_STATUS.UNAUTHORIZED) {
+          console.warn('Unauthorized request - token may be expired')
+          // Optionally trigger logout or token refresh here
+        }
+
+        // Transform error to have consistent structure
+        const errorMessage = error.response?.data?.message || error.message || 'Request failed'
+        const customError = new Error(errorMessage)
+        
+        // Add status code to error for handling
+        if (error.response) {
+          ;(customError as any).status = error.response.status
+          ;(customError as any).data = error.response.data
+        }
+
+        return Promise.reject(customError)
+      }
+    )
   }
 
   private createConfig(options: RequestOptions = {}): AxiosRequestConfig {
-    const cfg: AxiosRequestConfig = {}
-    if (options.requiresAuth) cfg.headers = { 'X-Requires-Auth': 'true' }
-    return cfg
+    const config: AxiosRequestConfig = {}
+
+    if (options.requiresAuth) {
+      // Add custom header to trigger auth interceptor
+      config.headers = {
+        'X-Requires-Auth': 'true',
+      }
+    }
+
+    return config
   }
 
-  async get<T = any>(url: string, requiresAuth = false): Promise<T> {
-    const normalized = this.normalizePath(url)
-    const res = await this.api.get<T>(normalized, this.createConfig({ requiresAuth }))
-    return res.data
+  async get<T>(url: string, requiresAuth = false): Promise<T> {
+    const config = this.createConfig({ requiresAuth })
+    const response = await this.api.get<T>(url, config)
+    return response.data
   }
 
-  async post<T = any>(url: string, data?: any, requiresAuth = false): Promise<T> {
-    const normalized = this.normalizePath(url)
-    const res = await this.api.post<T>(normalized, data, this.createConfig({ requiresAuth }))
-    return res.data
+  async post<T>(url: string, data?: any, requiresAuth = false): Promise<T> {
+    const config = this.createConfig({ requiresAuth })
+    const response = await this.api.post<T>(url, data, config)
+    return response.data
   }
 
-  async patch<T = any>(url: string, data?: any, requiresAuth = false): Promise<T> {
-    const normalized = this.normalizePath(url)
-    const res = await this.api.patch<T>(normalized, data, this.createConfig({ requiresAuth }))
-    return res.data
+  async put<T>(url: string, data?: any, requiresAuth = false): Promise<T> {
+    const config = this.createConfig({ requiresAuth })
+    const response = await this.api.put<T>(url, data, config)
+    return response.data
   }
 
-  async delete<T = any>(url: string, requiresAuth = false): Promise<T> {
-    const normalized = this.normalizePath(url)
-    const res = await this.api.delete<T>(normalized, this.createConfig({ requiresAuth }))
-    return res.data
+  async patch<T>(url: string, data?: any, requiresAuth = false): Promise<T> {
+    const config = this.createConfig({ requiresAuth })
+    const response = await this.api.patch<T>(url, data, config)
+    return response.data
   }
 
+  async delete<T>(url: string, requiresAuth = false): Promise<T> {
+    const config = this.createConfig({ requiresAuth })
+    const response = await this.api.delete<T>(url, config)
+    return response.data
+  }
+
+  // Utility method to manually set auth token (if needed)
   setAuthToken(token: string | null) {
-    if (token) this.api.defaults.headers.common['Authorization'] = `Bearer ${token}`
-    else delete this.api.defaults.headers.common['Authorization']
+    if (token) {
+      this.api.defaults.headers.common['Authorization'] = `Bearer ${token}`
+    } else {
+      delete this.api.defaults.headers.common['Authorization']
+    }
   }
 
-  getRawInstance() {
+  // Method to get the raw axios instance if needed for advanced usage
+  getRawInstance(): AxiosInstance {
     return this.api
   }
 }
 
 export const apiService = new ApiService()
-// ...existing code...

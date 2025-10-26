@@ -9,6 +9,10 @@ services:
         value: production
       - key: NPM_CONFIG_PRODUCTION
         value: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
     headers:
       - path: /*
         name: X-Frame-Options
@@ -16,7 +20,6 @@ services:
       - path: /*
         name: X-Content-Type-Options
         value: nosniff
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
+      - path: /*
+        name: Cache-Control
+        value: no-cache

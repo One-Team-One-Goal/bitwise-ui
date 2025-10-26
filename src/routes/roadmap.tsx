@@ -176,7 +176,7 @@ function RouteComponent() {
     setAssessmentError(null)
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/assessment/start-adaptive-practice`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/assessment/start-adaptive-practice`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ uid: user.id }),

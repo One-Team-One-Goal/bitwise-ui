@@ -53,7 +53,7 @@ export interface Lesson {
 }
 
 async function fetchLesson(lessonId: number): Promise<Lesson> {
-  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/lessons/${lessonId}`)
+  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/lessons/${lessonId}`)
   if (!response.ok) {
     throw new Error('Failed to fetch lesson')
   }

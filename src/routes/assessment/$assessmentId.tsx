@@ -8,7 +8,7 @@ import { CheckCircle2, XCircle, Brain, Target, TrendingUp, AlertCircle, Table, G
 import CircuitRenderer from '@/components/CircuitRenderer'
 
 async function fetchAttempt(attemptId: number) {
-  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/assessment/attempt/${attemptId}`)
+  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/assessment/attempt/${attemptId}`)
   const result = await response.json()
   if (!result.success) throw new Error(result.error || 'Failed to fetch attempt')
   return result.data
@@ -280,7 +280,7 @@ function RouteComponent() {
     setSubmitting(true)
     try {
       const endpoint = adaptiveInfo ? 'submit-adaptive-practice' : 'submit-practice'
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/assessment/${endpoint}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/assessment/${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

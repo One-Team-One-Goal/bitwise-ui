@@ -2,6 +2,12 @@ import React from 'react'
 import { motion } from 'framer-motion'
 import { calculatorService } from '../services/calculator.service'
 import { Button } from './ui/button';
+import { Switch } from './ui/switch';
+import { Label } from './ui/label';
+import RuleCard from './calculator/RuleCard';
+import StepNarration from './calculator/StepNarration';
+import ProgressTimeline from './calculator/ProgressTimeline';
+import ExamplesPanel from './calculator/ExamplesPanel';
 
 // Types
 export interface ScriptToken { id: string; text: string; kind?: 'var' | 'op' | 'paren' | 'other'; highlight?: boolean; isNew?: boolean }
@@ -9,20 +15,44 @@ export interface ScriptExpressionState { raw: string; tokens: ScriptToken[] }
 export interface ScriptStep { id: string; law: string; description?: string; before: ScriptExpressionState; after: ScriptExpressionState }
 export interface FactoringDirectionScript { defaultExpression: string; steps: ScriptStep[] }
 
-// Token component (forwardRef to capture DOM nodes)
+// Token component with enhanced visual styling
 const CharMotion = React.forwardRef(function CharMotion(
   { token, layoutIdOverride, onEnter, onLeave }: { token: ScriptToken; layoutIdOverride?: string; onEnter?: () => void; onLeave?: () => void },
   ref: React.Ref<HTMLSpanElement>
 ) {
-  const base = 'inline-block px-0 font-mono select-none rounded leading-none'
+  // Enhanced color-coding based on token state and type
+  const getTokenClass = () => {
+    const baseClasses = 'inline-block px-0.5 font-mono select-none rounded leading-none transition-all duration-300';
+    
+    // State-based highlighting
+    if (token.isNew) {
+      return `${baseClasses} text-emerald-600 font-bold scale-110 animate-pulse`;
+    }
+    if (token.highlight) {
+      return `${baseClasses} text-amber-600 font-semibold bg-amber-100 px-1`;
+    }
+    
+    // Type-based coloring
+    switch (token.kind) {
+      case 'var':
+        return `${baseClasses} text-violet-700 font-medium`;
+      case 'op':
+        return `${baseClasses} text-blue-600 font-bold`;
+      case 'paren':
+        return `${baseClasses} text-gray-500`;
+      default:
+        return `${baseClasses} text-gray-700`;
+    }
+  };
+
   return (
     <motion.span
       ref={ref}
       layout
       layoutId={layoutIdOverride ?? token.id}
       initial={false}
-      transition={{ duration: 0.28 }}
-      className={base}
+      transition={{ duration: 0.4, ease: 'easeInOut' }}
+      className={getTokenClass()}
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
     >
@@ -39,9 +69,16 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
   const [loadingRemote, setLoadingRemote] = React.useState<boolean>(false)
   const [errorRemote, setErrorRemote] = React.useState<string | null>(null)
   const [remoteScript, setRemoteScript] = React.useState<FactoringDirectionScript | null>(null)
+  
+  // UI control states
+  const [showRuleCard, setShowRuleCard] = React.useState<boolean>(true)
+  const [showNarration, setShowNarration] = React.useState<boolean>(true)
+  const [autoPlay, setAutoPlay] = React.useState<boolean>(false)
+  const [showExamples, setShowExamples] = React.useState<boolean>(false)
 
   // ref to the text input so we can insert symbols at the caret
   const inputRef = React.useRef<HTMLInputElement | null>(null)
+  const visualizationRef = React.useRef<HTMLDivElement | null>(null)
 
   const tokenRefs = React.useRef<Map<string, HTMLElement>>(new Map())
   const containerRef = React.useRef<HTMLDivElement | null>(null)
@@ -66,14 +103,54 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
       const beforeIds = new Set(step.before.tokens.map(t => t.id))
       const beforeTokens = step.before.tokens.map(t => ({ ...t }))
       const afterTokens = step.after.tokens.map(t => ({ ...t, isNew: !beforeIds.has(t.id) }))
-      if (idx === 0) arr.push({ key: `${step.id || idx}-before`, phase: 'before', step, tokens: beforeTokens, raw: step.before.raw, law: step.law })
-      arr.push({ key: `${step.id || idx}-after`, phase: 'after', step, tokens: afterTokens, raw: step.after.raw, law: step.law })
+      // Only add 'before' state for the very first step (original expression)
+      if (idx === 0) {
+        arr.push({ 
+          key: `${step.id || idx}-before`, 
+          phase: 'before', 
+          step, 
+          tokens: beforeTokens, 
+          raw: step.before.raw, 
+          law: step.law 
+        })
+      }
+      // Always add 'after' state (the result after applying the law)
+      arr.push({ 
+        key: `${step.id || idx}-after`, 
+        phase: 'after', 
+        step, 
+        tokens: afterTokens, 
+        raw: step.after.raw, 
+        law: step.law 
+      })
     })
+    console.log('Timeline built:', arr.map((t, i) => `[${i}] ${t.raw} (${t.law})`));
     return arr
   }, [remoteScript])
 
   const [index, setIndex] = React.useState(0)
   const maxIndex = timeline.length - 1
+
+  // Calculate which actual step we're viewing (0 = original, 1+ = steps)
+  const currentStepNumber = React.useMemo(() => {
+    // Timeline structure: [step0-before, step0-after, step1-after, step2-after, ...]
+    // index 0 = step 0 (START/original)
+    // index 1 = step 1 (after first law)
+    // index 2 = step 2 (after second law)
+    // index N = step N (after Nth law)
+    return index;
+  }, [index]);
+
+  // Auto-play functionality
+  React.useEffect(() => {
+    if (!autoPlay || !remoteScript || index >= maxIndex) return;
+    
+    const timer = setTimeout(() => {
+      animateToIndex(index + 1);
+    }, 2500); // 2.5 seconds between steps
+    
+    return () => clearTimeout(timer);
+  }, [autoPlay, index, maxIndex, remoteScript]);
 
   // fetch
   const fetchRemoteScript = async (e?: React.FormEvent) => {
@@ -84,7 +161,13 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
     try {
       const res = await calculatorService.simplify(expressionInput)
       if (!res || !res.success) setErrorRemote(res?.error || 'failed')
-      else setRemoteScript(res.result as FactoringDirectionScript)
+      else {
+        setRemoteScript(res.result as FactoringDirectionScript)
+        // Auto-scroll to visualization area after solving
+        setTimeout(() => {
+          visualizationRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        }, 100)
+      }
     } catch (err) {
       setErrorRemote(String(err))
     } finally { setLoadingRemote(false) }
@@ -191,70 +274,233 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
   }
 
   return (
-    <div className="p-6 rounded-xl w-full max-w-5xl mx-auto">
-      <div className="mb-6 space-y-2">
-        <form onSubmit={fetchRemoteScript} className="flex flex-col gap-2">
-          <div className="flex gap-1 items-center">
+    <div className="p-6 rounded-xl w-full max-w-7xl mx-auto space-y-6">
+      {/* Examples Panel */}
+      <ExamplesPanel
+        isOpen={showExamples}
+        onClose={() => setShowExamples(false)}
+        onSelectExample={(expression) => {
+          setExpressionInput(expression);
+          setShowExamples(false);
+        }}
+      />
+
+      {/* Input Section */}
+      <div className="bg-white rounded-lg border-2 border-gray-200 p-5 space-y-3">
+        <form onSubmit={fetchRemoteScript} className="flex flex-col gap-3">
+          <div className="flex gap-2 items-center">
             <input
               ref={inputRef}
               value={expressionInput}
               onChange={(e) => setExpressionInput(e.target.value)}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md"
+              className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg text-lg font-mono focus:border-blue-500 focus:outline-none transition-colors"
               placeholder="Enter boolean expression (e.g. A ∧ B ∨ ¬A)"
-                aria-label="Boolean expression"
-              />
-            <Button variant={"default"} type="submit" className="px-4 py-2 h-10" disabled={loadingRemote}>
-              {loadingRemote ? 'Loading...' : 'Solve'}
+              aria-label="Boolean expression"
+            />
+            <Button variant={"default"} type="submit" className="px-6 py-3 h-auto text-base" disabled={loadingRemote}>
+              {loadingRemote ? 'Solving...' : 'Solve'}
             </Button>
-            <Button variant={"outline"} onClick={handleReset} className="px-4 py-2 h-10 border rounded-md text-sm hover:bg-gray-50">
-              Reset
+            <Button 
+              variant={"secondary"} 
+              type="button"
+              onClick={() => setShowExamples(true)} 
+              className="px-6 py-3 h-auto text-base"
+            >
+              Examples
+            </Button>
+            <Button variant={"outline"} onClick={handleReset} className="px-6 py-3 h-auto border-2 text-base hover:bg-gray-50">
+              ↺ Reset
             </Button>
           </div>
 
-          {/* quick operator buttons */}
-          <div className="flex flex-wrap gap-2 mt-1">
+          {/* Quick operator buttons */}
+          <div className="flex flex-wrap gap-2">
+            <span className="text-sm text-gray-600 font-medium self-center mr-2">Quick insert:</span>
             {['∧','∨','¬','⊕','→','↔','(',')'].map(sym => (
               <button
                 key={sym}
                 type="button"
                 onClick={() => insertOperator(sym)}
-                className="px-2 py-1 border border-gray-300 h-8 w-8 rounded text-sm bg-white hover:bg-gray-50"
+                className="px-3 py-1.5 border-2 border-gray-300 rounded-md text-base bg-white hover:bg-blue-50 hover:border-blue-400 transition-colors font-mono font-bold"
                 aria-label={`Insert ${sym}`}>
                 {sym}
               </button>
             ))}
           </div>
+
+          {/* Display Options - Compact */}
+          <div className="flex flex-wrap items-center gap-4 text-sm bg-gray-50 rounded-lg p-3 border">
+            <span className="text-xs font-semibold text-gray-600 uppercase">Display:</span>
+            <div className="flex items-center gap-2">
+              <Switch
+                id="rulecard-toggle"
+                checked={showRuleCard}
+                onCheckedChange={setShowRuleCard}
+              />
+              <Label htmlFor="rulecard-toggle" className="cursor-pointer text-sm">Rule Card</Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch
+                id="narration-toggle"
+                checked={showNarration}
+                onCheckedChange={setShowNarration}
+              />
+              <Label htmlFor="narration-toggle" className="cursor-pointer text-sm">Explanation</Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch
+                id="autoplay-toggle"
+                checked={autoPlay}
+                onCheckedChange={setAutoPlay}
+              />
+              <Label htmlFor="autoplay-toggle" className="cursor-pointer text-sm">Auto-play</Label>
+            </div>
+          </div>
         </form>
-        {errorRemote && <div className="text-sm text-red-600 mt-2">{errorRemote}</div>}
+        {errorRemote && (
+          <div className="bg-red-50 border-2 border-red-200 rounded-lg p-3 text-red-700">
+            <span className="font-semibold">Error:</span> {errorRemote}
+          </div>
+        )}
       </div>
 
-      <div className=" rounded-lg border p-4 relative" ref={containerRef}>
+
+      {/* Main Visualization Area */}
+      <div ref={visualizationRef} className="bg-white rounded-lg border-2 border-gray-200 p-6 relative min-h-[400px]">
+        <div ref={containerRef} className="relative">
         {remoteScript == null ? (
-          <div className="text-sm text-gray-600">No steps loaded. Enter an expression and click Simplify.</div>
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="text-6xl mb-4 font-bold text-gray-300">∅</div>
+            <h3 className="text-xl font-semibold text-gray-700 mb-2">Ready to Simplify!</h3>
+            <p className="text-gray-600">Enter a Boolean expression above and click Solve to see step-by-step simplification.</p>
+          </div>
         ) : (
-          <div>
-            <div className="mb-3 text-sm text-gray-700">Expression: <span className="font-mono">{remoteScript.defaultExpression}</span></div>
+          <div className="space-y-6">
+            {/* Rule Card */}
+            {showRuleCard && timeline[index] && (
+              <RuleCard
+                lawId={timeline[index].law}
+                isVisible={true}
+                beforeExpression={timeline[index].step?.before?.raw}
+                afterExpression={timeline[index].step?.after?.raw}
+                compact={false}
+              />
+            )}
 
-            <div className="mb-4">
-              <button onClick={() => animateToIndex(index - 1)} disabled={index <= 0} className="px-3 py-1 mr-2 border rounded disabled:opacity-50">Prev</button>
-              <button onClick={() => animateToIndex(index + 1)} disabled={index >= maxIndex} className="px-3 py-1 border rounded disabled:opacity-50">Next</button>
-              <span className="ml-4 text-sm text-gray-600">Step {Math.max(1, index + 1)} / {Math.max(1, timeline.length)}</span>
-            </div>
-
-            <div className="space-y-4">
-              {timeline.slice(0, index + 1).map((tstate) => (
-                <div key={tstate.key} className="border rounded p-3">
-                  <div className="text-xs text-gray-500 mb-2">{tstate.law}</div>
-                  <div className="flex flex-wrap items-center gap-0">
-                    {tstate.tokens.map((tok) => (
-                      <CharMotion key={tok.id} ref={setTokenRef(tok.id)} token={tok} />
+            {/* Expression Display with Timeline & Controls - All in One */}
+            <div className="bg-white rounded-lg border-2 border-gray-200 overflow-hidden">
+              {/* Header */}
+              <div className="bg-linear-to-r from-blue-600 to-purple-600 text-white px-4 py-2">
+                <h4 className="text-sm font-semibold uppercase tracking-wide">Current Expression</h4>
+              </div>
+              
+              {/* Expression */}
+              <div className="p-8">
+                <div className="bg-linear-to-br from-blue-50 to-purple-50 rounded-lg p-8 border border-blue-200 min-h-24 flex items-center justify-center">
+                  <div className="flex flex-wrap items-center justify-center gap-1 text-3xl font-mono">
+                    {/* Force re-render with index-based keys to prevent animation conflicts */}
+                    {timeline[index]?.tokens.map((tok, tokIdx) => (
+                      <CharMotion 
+                        key={`step${index}-token${tokIdx}-${tok.id}`} 
+                        ref={setTokenRef(tok.id)} 
+                        token={tok}
+                      />
                     ))}
                   </div>
                 </div>
-              ))}
+                {/* Debug info */}
+                {process.env.NODE_ENV === 'development' && (
+                  <div className="mt-2 text-center text-xs text-gray-400 font-mono">
+                    Index: {index} | Step: {currentStepNumber} | Raw: {timeline[index]?.raw}
+                  </div>
+                )}
+              </div>
+
+              {/* Timeline & Navigation Controls */}
+              <div className="border-t">
+                <ProgressTimeline
+                  steps={remoteScript.steps}
+                  currentStepIndex={currentStepNumber}
+                  onStepClick={(stepIdx) => {
+                    // Direct 1:1 mapping between step index and timeline index
+                    animateToIndex(stepIdx);
+                  }}
+                  originalExpression={remoteScript.defaultExpression}
+                  onNavigate={(direction) => {
+                    switch (direction) {
+                      case 'first':
+                        animateToIndex(0);
+                        break;
+                      case 'prev':
+                        animateToIndex(index - 1);
+                        break;
+                      case 'next':
+                        animateToIndex(index + 1);
+                        break;
+                      case 'last':
+                        animateToIndex(maxIndex);
+                        break;
+                    }
+                  }}
+                  canGoPrev={index > 0}
+                  canGoNext={index < maxIndex}
+                />
+              </div>
             </div>
+
+            {/* Step Narration */}
+            {showNarration && timeline[index] && timeline[index].step && (
+              <StepNarration
+                step={timeline[index].step}
+                stepNumber={currentStepNumber}
+                totalSteps={remoteScript.steps.length}
+                nextStepPreview={timeline[index + 1]?.step}
+              />
+            )}
+
+            {/* History View */}
+            <details className="group">
+              <summary className="cursor-pointer text-sm font-semibold text-gray-700 hover:text-blue-600 flex items-center gap-2">
+                <span className="group-open:rotate-90 transition-transform">▶</span>
+                View Full Simplification History ({remoteScript.steps.length} steps)
+              </summary>
+              <div className="mt-4 space-y-3 pl-6 border-l-4 border-gray-200">
+                {timeline.slice(0, index + 1).map((tstate, idx) => (
+                  <div key={tstate.key} className="relative">
+                    <button
+                      onClick={() => animateToIndex(idx)}
+                      className={`w-full text-left rounded-lg p-4 border-2 transition-all ${
+                        idx === index
+                          ? 'bg-blue-50 border-blue-300 shadow-md'
+                          : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-semibold text-gray-500">
+                          {idx === 0 ? 'Original' : `Step ${idx}`}
+                        </span>
+                        <span className="text-xs px-2 py-0.5 bg-white rounded border border-gray-300">
+                          {tstate.law}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-1 font-mono text-sm">
+                        {tstate.tokens.map((tok) => (
+                          <span key={tok.id} className="text-gray-700">
+                            {tok.text}
+                          </span>
+                        ))}
+                      </div>
+                    </button>
+                    {idx < index && (
+                      <div className="absolute left-0 top-1/2 w-1 h-full bg-linear-to-b from-blue-300 to-transparent -ml-6"></div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </details>
           </div>
         )}
+        </div>
       </div>
     </div>
   )

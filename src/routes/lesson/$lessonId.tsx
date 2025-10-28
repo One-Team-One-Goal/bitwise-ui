@@ -1,7 +1,7 @@
-// Updated RouteComponent with improved content display
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState, useEffect, useRef } from 'react'
 import LessonHeader from '@/components/LessonHeader'
+import { useGetLesson } from '@/hooks/useLesson'
 
 import { Button } from '@/components/ui/button'
 import { ChevronRight, ChevronLeft, Check } from 'lucide-react'
@@ -9,7 +9,7 @@ import { Confetti, type ConfettiRef } from '@/components/magicui/confetti'
 import bitbotRightPoint from '@/assets/bitbot/right-point.svg'
 import ContentDisplay from '@/components/ContentDisplay'
 
-// Updated interfaces
+// Local content types (keeps file self-contained)
 interface ContentBlock {
   type: 'text' | 'inlineCode' | 'codeBlock' | 'image' | 'list' | 'table' | 'formula' | 'callout' | 'divider' | 'custom';
   text?: string;
@@ -52,14 +52,6 @@ export interface Lesson {
   updatedAt: string
 }
 
-async function fetchLesson(lessonId: number): Promise<Lesson> {
-  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/lessons/${lessonId}`)
-  if (!response.ok) {
-    throw new Error('Failed to fetch lesson')
-  }
-  return await response.json()
-}
-
 export const Route = createFileRoute('/lesson/$lessonId')({
   component: RouteComponent,
 })
@@ -67,24 +59,20 @@ export const Route = createFileRoute('/lesson/$lessonId')({
 function RouteComponent() {
   const { lessonId } = Route.useParams()
   const navigate = useNavigate()
-  const [lesson, setLesson] = useState<Lesson | null>(null)
-  const [loading, setLoading] = useState(true)
+  const lessonIdNum = lessonId ? Number(lessonId) : undefined
+
+  // useGetLesson from useLessonQueries (react-query)
+  const { data: lesson, isLoading, error } = useGetLesson(lessonIdNum)
+
   const [topicIdx, setTopicIdx] = useState(0)
   const [finished, setFinished] = useState(false)
   const confettiRef = useRef<ConfettiRef>(null)
 
+  // reset progress when lesson changes
   useEffect(() => {
-    setLoading(true)
-    setLesson(null)
     setTopicIdx(0)
     setFinished(false)
-    fetchLesson(Number(lessonId))
-      .then(data => {
-        setLesson(data)
-        setLoading(false)
-      })
-      .catch(() => setLoading(false))
-  }, [lessonId])
+  }, [lesson?.id])
 
   useEffect(() => {
     if (finished) {
@@ -92,7 +80,7 @@ function RouteComponent() {
     }
   }, [finished])
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="pt-36 max-w-4xl mx-auto flex flex-col items-center">
         <div className="animate-pulse">
@@ -103,10 +91,10 @@ function RouteComponent() {
     )
   }
 
-  if (!lesson) {
+  if (error || !lesson) {
     return (
       <div className="pt-36 max-w-4xl mx-auto flex flex-col items-center">
-        <p className="text-lg text-gray-500">Lesson not found.</p>
+        <p className="text-lg text-gray-500">{error ? (error as Error).message : 'Lesson not found.'}</p>
       </div>
     )
   }
@@ -137,7 +125,7 @@ function RouteComponent() {
               style={{ transition: 'top 0.3s, left 0.3s' }}
               draggable="false"
             />
-            
+
             {/* Topic Header */}
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -185,7 +173,7 @@ function RouteComponent() {
                   {lesson.title}
                 </p>
               </div>
-              
+
               <div className="bg-gray-50 rounded-lg p-6 mb-8">
                 <p className="text-lg text-gray-700 mb-2">
                   Topics completed: {lesson.topics.length}
@@ -199,7 +187,7 @@ function RouteComponent() {
                 </div>
               </div>
             </div>
-            
+
             <div className="flex gap-4 relative z-10">
               <Button
                 variant="outline"
@@ -242,11 +230,11 @@ function RouteComponent() {
                 <div className="w-24"></div>
               )}
             </div>
-            
+
             <div className="text-sm text-gray-500">
               {topicIdx + 1} / {lesson.topics.length}
             </div>
-            
+
             <div>
               {topicIdx < lesson.topics.length - 1 ? (
                 <Button

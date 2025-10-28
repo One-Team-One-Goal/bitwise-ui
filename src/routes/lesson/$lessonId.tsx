@@ -107,12 +107,20 @@ function RouteComponent() {
     )
   }
 
-  const topic = lesson.topics[topicIdx]
+  const topic = lesson.topics?.[topicIdx]
+  
+  if (!topic) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <p className="text-lg text-gray-500">Topic not found.</p>
+      </div>
+    )
+  }
 
   return (
     <div>
       <LessonHeader
-        progress={finished ? 100 : (topicIdx / lesson.topics.length) * 100}
+        progress={finished ? 100 : (topicIdx / (lesson.topics?.length || 1)) * 100}
         title={lesson.title}
       />
       <div className="pt-24 max-w-4xl mx-auto flex flex-col">
@@ -132,10 +140,10 @@ function RouteComponent() {
                 {topic.title}
               </h1>
               <div className="flex items-center text-sm text-gray-500 space-x-4">
-                <span>Topic {topicIdx + 1} of {lesson.topics.length}</span>
-                {topic.tags.length > 0 && (
+                <span>Topic {topicIdx + 1} of {lesson.topics?.length || 0}</span>
+                {(topic.tags?.length || 0) > 0 && (
                   <div className="flex space-x-1">
-                    {topic.tags.map((tag, i) => (
+                    {topic.tags?.map((tag, i) => (
                       <span key={i} className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs">
                         {tag}
                       </span>
@@ -147,7 +155,7 @@ function RouteComponent() {
 
             {/* Content Display */}
             {Array.isArray(topic.displayContent) ? (
-              <ContentDisplay blocks={topic.displayContent} />
+              <ContentDisplay blocks={topic.displayContent as any} />
             ) : (
               <div className="text-gray-500 italic">No content available</div>
             )}
@@ -176,10 +184,10 @@ function RouteComponent() {
 
               <div className="bg-gray-50 rounded-lg p-6 mb-8">
                 <p className="text-lg text-gray-700 mb-2">
-                  Topics completed: {lesson.topics.length}
+                  Topics completed: {lesson.topics?.length || 0}
                 </p>
                 <div className="flex flex-wrap justify-center gap-2">
-                  {lesson.topics.map((t, i) => (
+                  {lesson.topics?.map((t, i) => (
                     <span key={i} className="text-sm bg-green-100 text-green-700 px-2 py-1 rounded">
                       ✓ {t.title}
                     </span>
@@ -232,15 +240,15 @@ function RouteComponent() {
             </div>
 
             <div className="text-sm text-gray-500">
-              {topicIdx + 1} / {lesson.topics.length}
+              {topicIdx + 1} / {lesson.topics?.length || 0}
             </div>
 
             <div>
-              {topicIdx < lesson.topics.length - 1 ? (
+              {topicIdx < (lesson.topics?.length || 0) - 1 ? (
                 <Button
                   className="flex items-center space-x-2"
                   onClick={() =>
-                    setTopicIdx((i) => Math.min(i + 1, lesson.topics.length - 1))
+                    setTopicIdx((i) => Math.min(i + 1, (lesson.topics?.length || 1) - 1))
                   }
                 >
                   <span>Next</span>

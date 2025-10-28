@@ -1,6 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
-import { lessonService, type Lesson, type Topic } from '@/services/lesson.service'
+import { useQuery } from '@tanstack/react-query'
+import { lessonService } from '@/services/lesson.service'
 
 export const LESSON_QUERY_KEYS = {
   list: ['lessons'] as const,

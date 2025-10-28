@@ -199,7 +199,7 @@ const CircuitRenderer = ({ circuit }: { circuit: Circuit }) => {
         )}
 
         {/* Draw explicit connections if present */}
-        {(circuit.connections || []).map((c, idx) => drawConnection(c.from, c.to, 0, 1))}
+        {(circuit.connections || []).map((c) => drawConnection(c.from, c.to, 0, 1))}
 
         {/* Draw connections from gates -> outputs (if mapping exists) */}
         {outputSignals.map(output => {
@@ -254,7 +254,7 @@ const CircuitRenderer = ({ circuit }: { circuit: Circuit }) => {
               </text>
 
               {/* Input terminal dots (visual anchors) */}
-              {gate.inputs.map((inp, i) => {
+              {gate.inputs.map((_inp, i) => {
                 const spacing = 60 / (gate.inputs.length + 1)
                 const terminalY = pos.y - gateHeight / 2 + spacing * (i + 1)
                 const terminalX = pos.x - gateWidth / 2 + 10

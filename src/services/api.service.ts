@@ -1,6 +1,5 @@
 import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse } from 'axios'
 import { supabase } from '../utils/supabase'
-import { HTTP_STATUS } from '../constants/api'
 
 interface RequestOptions {
   requiresAuth?: boolean

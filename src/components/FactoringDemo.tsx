@@ -1,5 +1,5 @@
 import React from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { calculatorService } from '../services/calculator.service'
 import { Button } from './ui/button';
 import { Switch } from './ui/switch';
@@ -8,7 +8,7 @@ import RuleCard from './calculator/RuleCard';
 import StepNarration from './calculator/StepNarration';
 import ProgressTimeline from './calculator/ProgressTimeline';
 import ExamplesPanel from './calculator/ExamplesPanel';
-import { getLawAnimation, getAnimationVariants } from '@/constants/lawAnimations';
+import { getLawAnimation } from '@/constants/lawAnimations';
 import introJs from 'intro.js';
 import 'intro.js/introjs.css';
 import { HelpCircle } from 'lucide-react';
@@ -36,14 +36,14 @@ const CharMotion = React.forwardRef(function CharMotion(
     
     // State-based highlighting with law-specific colors
     if (token.isNew && lawId) {
-      const lawAnim = getLawAnimation(lawId);
+      // Law-specific animation exists
       return `${baseClasses} font-bold scale-110`;
     }
     if (token.isNew) {
       return `${baseClasses} text-emerald-600 font-bold scale-110 animate-pulse`;
     }
     if (token.highlight && lawId) {
-      const lawAnim = getLawAnimation(lawId);
+      // Law-specific highlighting
       return `${baseClasses} font-semibold px-1`;
     }
     if (token.highlight) {
@@ -62,9 +62,6 @@ const CharMotion = React.forwardRef(function CharMotion(
         return `${baseClasses} text-gray-700`;
     }
   };
-
-  // Get law-specific animation variants if lawId is provided
-  const animationVariants = lawId ? getAnimationVariants(lawId) : undefined;
 
   return (
     <motion.span

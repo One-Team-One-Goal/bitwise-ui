@@ -7,10 +7,6 @@ import {
   type CalculatorExample 
 } from '@/constants/calculatorExamples';
 import { Button } from '../ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { Badge } from '../ui/badge';
-import { ScrollArea } from '../ui/scroll-area';
-import { Separator } from '../ui/separator';
 
 interface ExamplesPanelProps {
   onSelectExample: (expression: string) => void;

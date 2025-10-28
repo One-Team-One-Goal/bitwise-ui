@@ -1,10 +1,12 @@
 export type CellValue = 0 | 1 | 'X';
-export type KMapMatrix = CellValue[][][]; // [row][col][value, colCoord, rowCoord]
+export type KMapMatrix = CellValue[][][]; // [row][col][value, colCoord, rowCoord, eCoord?]
 export type PermMatrix = string[][];
 
+// For 5-variable K-Maps, we need to track which table (E=0 or E=1)
 export interface GroupCell {
   riga: number;
   col: number;
+  table?: number; // 0 for E=0 table, 1 for E=1 table (only for 5-variable)
 }
 
 export interface KMapGroup {
@@ -75,8 +77,11 @@ export const getMatrixSquare = (dim: number): KMapMatrix => {
     col = 4;
   } else if (dim === 5) {
     // 5 variables: Two 4x4 maps (AB on rows, CD on columns, E splits the tables)
+    // We'll store this as a 4x8 matrix internally:
+    // - Columns 0-3: E=0 table
+    // - Columns 4-7: E=1 table
     row = 4;
-    col = 4;
+    col = 8; // DOUBLED to accommodate both E=0 and E=1 tables
   }
 
   const matrix: CellValue[][][] = [];
@@ -104,8 +109,8 @@ export const setCoordinates = (
     c = 4;
     r = 2;
   } else if (typeMap === 5) {
-    // 5 variables: 4x4 map (same as 4 variables)
-    c = 4;
+    // 5 variables: 4x8 map (4 rows, 8 cols split into two 4x4 tables)
+    c = 8;
     r = 4;
   }
 
@@ -114,14 +119,17 @@ export const setCoordinates = (
   const grayCode4 = [0, 1, 3, 2]; // 00, 01, 11, 10
 
   for (let i = 0; i < c; i++) {
-    // Gray code mapping for columns
-    let l = i;
-    if (c === 4) {
-      l = grayCode4[i];
+    // For 5 variables, determine which table (E=0 or E=1)
+    let tableIndex = 0;
+    let colInTable = i;
+    
+    if (typeMap === 5) {
+      tableIndex = i < 4 ? 0 : 1; // First 4 cols = E=0, Last 4 cols = E=1
+      colInTable = i % 4; // Column within the table (0-3)
     }
 
     for (let j = 0; j < r; j++) {
-      // Gray code mapping for rows
+      // Gray code mapping for rows and columns
       let k = j;
       if (r === 4) {
         k = grayCode4[j];
@@ -129,29 +137,48 @@ export const setCoordinates = (
         k = grayCode2[j];
       }
 
-      // Set column coordinates
+      // Calculate the truth table index
+      let truthTableIndex: number;
+      if (typeMap === 5) {
+        // For 5 variables: ABCDE
+        // E is the table index (bit 4)
+        // AB are rows (bits 2-3)
+        // CD are columns (bits 0-1)
+        const cdBits = colInTable; // Column in table (0-3)
+        const abBits = j; // Row (0-3)
+        truthTableIndex = tableIndex * 16 + abBits * 4 + cdBits;
+      } else {
+        truthTableIndex = i * r + j;
+      }
+
+      // Set column coordinates (CD for 4-5 vars, BC for 3 vars, B for 2 vars)
       let val = "";
       let t = typeMap;
       let p = 0;
 
       const colBits = Math.ceil(t / 2);
       do {
-        val += perm[i * r + j][p];
+        val += perm[truthTableIndex][p];
         p++;
       } while (p < colBits);
       
-      squares[k][l][1] = val as CellValue;
+      squares[k][i][1] = val as CellValue;
 
-      // Set row coordinates
+      // Set row coordinates (AB for 4-5 vars, A for 2-3 vars)
       val = "";
       p = colBits;
       
       do {
-        val += perm[i * r + j][p];
+        val += perm[truthTableIndex][p];
         p++;
       } while (p < t);
       
-      squares[k][l][2] = val as CellValue;
+      squares[k][i][2] = val as CellValue;
+      
+      // For 5 variables, add E coordinate
+      if (typeMap === 5) {
+        squares[k][i][3] = String(tableIndex) as CellValue;
+      }
     }
   }
 
@@ -165,7 +192,7 @@ export const cycleCellValue = (currentValue: CellValue): CellValue => {
 };
 
 export const getDimensions = (typeMap: number) => {
-  if (typeMap === 5) return { rows: 4, cols: 4 }; // Two 4x4 tables
+  if (typeMap === 5) return { rows: 4, cols: 8 }; // 4x8 (two 4x4 tables side by side)
   if (typeMap === 4) return { rows: 4, cols: 4 };
   if (typeMap === 3) return { rows: 2, cols: 4 };
   return { rows: 2, cols: 2 };
@@ -225,12 +252,23 @@ const findAllGroups = (
   // Find all possible groups starting from largest size
   const maxGroupSize = rows * cols;
   
+  // For 5 variables, we can have cross-table groups
+  const canHaveCrossTableGroups = typeMap === 5;
+  
   for (let groupSize = maxGroupSize; groupSize >= 1; groupSize = Math.floor(groupSize / 2)) {
     if (!isPowerOfTwo(2, groupSize)) continue;
     
     // Find all groups of this size without marking as covered yet
     const tempCovered: boolean[][] = Array(rows).fill(null).map(() => Array(cols).fill(false));
     const groupsOfSize: GroupCell[][] = [];
+    
+    if (canHaveCrossTableGroups && groupSize >= 2) {
+      // For 5 variables, try to find cross-table groups (E varies)
+      // These groups have identical patterns in both E=0 (cols 0-3) and E=1 (cols 4-7) tables
+      findCrossTableGroups(squares, rows, targetValue, groupSize / 2, groupsOfSize, typeMap);
+    }
+    
+    // Find groups within each table
     findGroupsOfExactSize(squares, rows, cols, targetValue, groupSize, tempCovered, groupsOfSize, typeMap);
     
     // Add all found groups to possible groups
@@ -264,6 +302,63 @@ const getEssentialMinterms = (
   return minterms;
 };
 
+// Find groups that span across E=0 and E=1 tables (for 5 variables)
+// These groups have the same AB/CD pattern in both tables, meaning E varies
+const findCrossTableGroups = (
+  squares: KMapMatrix,
+  rows: number,
+  targetValue: CellValue,
+  sizePerTable: number, // Size in each table (total group size = sizePerTable * 2)
+  groups: GroupCell[][],
+  typeMap: number
+) => {
+  if (typeMap !== 5) return; // Only for 5-variable maps
+  
+  // Try to find matching patterns in columns 0-3 (E=0) and 4-7 (E=1)
+  const factors = getFactors(sizePerTable);
+  
+  for (const [height, width] of factors) {
+    // Try all possible positions in the 4x4 sub-map
+    for (let startRow = 0; startRow < rows; startRow++) {
+      for (let startCol = 0; startCol < 4; startCol++) {
+        // Check if the same pattern exists in both E=0 and E=1 tables
+        const e0Group: GroupCell[] = [];
+        const e1Group: GroupCell[] = [];
+        let valid = true;
+        
+        // Use wraparound for both horizontal and vertical
+        for (let r = 0; r < height && valid; r++) {
+          const row = (startRow + r) % rows;
+          for (let c = 0; c < width && valid; c++) {
+            const col = (startCol + c) % 4;
+            
+            const e0Col = col; // E=0 table: columns 0-3
+            const e1Col = col + 4; // E=1 table: columns 4-7
+            
+            const e0Cell = squares[row]?.[e0Col]?.[0];
+            const e1Cell = squares[row]?.[e1Col]?.[0];
+            
+            // Both cells must have target value or be don't care
+            if ((e0Cell !== targetValue && e0Cell !== 'X') ||
+                (e1Cell !== targetValue && e1Cell !== 'X')) {
+              valid = false;
+              break;
+            }
+            
+            e0Group.push({ riga: row, col: e0Col, table: 0 });
+            e1Group.push({ riga: row, col: e1Col, table: 1 });
+          }
+        }
+        
+        if (valid && e0Group.length === sizePerTable && e1Group.length === sizePerTable) {
+          // Found a valid cross-table group
+          groups.push([...e0Group, ...e1Group]);
+        }
+      }
+    }
+  }
+};
+
 // Select minimal set of groups that covers all essential minterms
 const selectMinimalGroupSet = (
   allGroups: GroupCell[][],
@@ -283,7 +378,7 @@ const selectMinimalGroupSet = (
     
     // Check if this group covers any uncovered essential minterms
     for (const cell of group) {
-      const key = `${cell.riga},${cell.col}`;
+      const key = `${cell.riga},${cell.col},${cell.table ?? ''}`;
       const isEssential = essentialMinterms.some(m => m.row === cell.riga && m.col === cell.col);
       
       if (isEssential && !coveredMinterms.has(key)) {
@@ -297,7 +392,7 @@ const selectMinimalGroupSet = (
       
       // Mark all minterms covered by this group
       for (const cell of group) {
-        const key = `${cell.riga},${cell.col}`;
+        const key = `${cell.riga},${cell.col},${cell.table ?? ''}`;
         const isEssential = essentialMinterms.some(m => m.row === cell.riga && m.col === cell.col);
         if (isEssential) {
           coveredMinterms.add(key);
@@ -472,7 +567,7 @@ const generateSolution = (
     };
   }
 
-  const variables = ["A", "B", "C", "D"];
+  const variables = ["A", "B", "C", "D", "E"];
   const terms: string[] = [];
   let literalCost = 0;
 
@@ -576,13 +671,31 @@ const generateSolution = (
           literalCost++;
         }
       }
-    } else {
-      // 4-variable K-Map: AB\CD
+    } else if (typeMap === 4 || typeMap === 5) {
+      // 4 & 5-variable K-Map: AB\CD (+ E for 5-var)
       // Get all coordinates for this group
       const groupCoords = group.map(cell => ({
         colCoord: squares[cell.riga][cell.col][1] as string, // CD coordinates
-        rowCoord: squares[cell.riga][cell.col][2] as string  // AB coordinates
+        rowCoord: squares[cell.riga][cell.col][2] as string, // AB coordinates
+        eCoord: typeMap === 5 ? (squares[cell.riga][cell.col][3] as string) : undefined // E coordinate for 5-var
       }));
+
+      // For 5 variables, check E coordinate first
+      if (typeMap === 5) {
+        const eBits = groupCoords.map(coord => coord.eCoord).filter(e => e !== undefined);
+        const uniqueEBits = [...new Set(eBits)];
+        
+        // Only include E if it's constant across the group
+        if (uniqueEBits.length === 1) {
+          const eBit = uniqueEBits[0];
+          if (formType === "SOP") {
+            term += eBit === "0" ? "E'" : "E";
+          } else {
+            term += eBit === "0" ? "E" : "E'";
+          }
+          literalCost++;
+        }
+      }
 
       // Analyze column coordinates (CD variables - variables C,D)
       const colLength = groupCoords[0].colCoord.length;

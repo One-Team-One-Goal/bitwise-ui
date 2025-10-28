@@ -45,10 +45,65 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick }
 
   const { colHeaders, rowHeaders, cornerLabel } = generateHeaders();
 
-  // Get the group for a specific cell
-  const getCellGroup = (row: number, col: number): KMapGroup | undefined => {
+  // Get coordinate information for a cell
+  const getCellCoordinates = (row: number, col: number) => {
+    const cell = squares[row]?.[col];
+    if (!cell) return undefined;
+
+    const colCoord = cell[1] as string;
+    const rowCoord = cell[2] as string;
+    const eCoord = variableCount === 5 ? (cell[3] as string) : undefined;
+
+    let binary: string;
+    let variables: string;
+
+    if (variableCount === 2) {
+      binary = rowCoord + colCoord;
+      const a = rowCoord === "0" ? "A'" : "A";
+      const b = colCoord === "0" ? "B'" : "B";
+      variables = `${a}${b}`;
+    } else if (variableCount === 3) {
+      binary = rowCoord + colCoord;
+      const a = rowCoord === "0" ? "A'" : "A";
+      const b = colCoord[0] === "0" ? "B'" : "B";
+      const c = colCoord[1] === "0" ? "C'" : "C";
+      variables = `${a}${b}${c}`;
+    } else if (variableCount === 4) {
+      binary = rowCoord + colCoord;
+      const a = rowCoord[0] === "0" ? "A'" : "A";
+      const b = rowCoord[1] === "0" ? "B'" : "B";
+      const c = colCoord[0] === "0" ? "C'" : "C";
+      const d = colCoord[1] === "0" ? "D'" : "D";
+      variables = `${a}${b}${c}${d}`;
+    } else if (variableCount === 5) {
+      binary = (eCoord || "0") + rowCoord + colCoord;
+      const e = eCoord === "0" ? "E'" : "E";
+      const a = rowCoord[0] === "0" ? "A'" : "A";
+      const b = rowCoord[1] === "0" ? "B'" : "B";
+      const c = colCoord[0] === "0" ? "C'" : "C";
+      const d = colCoord[1] === "0" ? "D'" : "D";
+      variables = `${e}${a}${b}${c}${d}`;
+    } else {
+      binary = "";
+      variables = "";
+    }
+
+    const minterm = parseInt(binary, 2);
+
+    return { binary, minterm, variables };
+  };
+
+  // Get the group for a specific cell (with table support for 5 variables)
+  const getCellGroup = (row: number, col: number, table?: number): KMapGroup | undefined => {
     return groups.find(group => 
-      group.cells.some(cell => cell.riga === row && cell.col === col)
+      group.cells.some(cell => {
+        const matchesPosition = cell.riga === row && cell.col === col;
+        // For 5-variable, also check table if specified
+        if (variableCount === 5 && table !== undefined && cell.table !== undefined) {
+          return matchesPosition && cell.table === table;
+        }
+        return matchesPosition;
+      })
     );
   };
 
@@ -101,7 +156,7 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick }
   if (variableCount === 5) {
     return (
       <div className="flex flex-col lg:flex-row gap-6 items-start">
-        {/* E = 0 Table */}
+        {/* E = 0 Table (columns 0-3) */}
         <div className="relative">
           <div className="text-center mb-2">
             <span className="inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-lg text-sm font-semibold">
@@ -124,7 +179,7 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick }
               ))}
             </div>
 
-            {/* Rows with data */}
+            {/* Rows with data - E=0 table (columns 0-3) */}
             {Array.from({ length: rows }).map((_, rowIndex) => (
               <div key={rowIndex} className="flex">
                 {/* Row Header */}
@@ -132,22 +187,24 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick }
                   {rowHeaders[rowIndex]}
                 </div>
                 
-                {/* Data Cells */}
-                {Array.from({ length: cols }).map((_, colIndex) => {
-                  const cell = squares[rowIndex]?.[colIndex];
-                  const group = getCellGroup(rowIndex, colIndex);
+                {/* Data Cells - columns 0-3 for E=0 */}
+                {Array.from({ length: 4 }).map((_, colIndex) => {
+                  const cell = squares[rowIndex]?.[colIndex]; // Access columns 0-3
+                  const group = getCellGroup(rowIndex, colIndex, 0);
                   const connections = getGroupConnections(rowIndex, colIndex, group);
+                  const coordinates = getCellCoordinates(rowIndex, colIndex);
                   
                   if (!cell) return null;
 
                   return (
                     <Square
-                      key={`${rowIndex}-${colIndex}`}
+                      key={`e0-${rowIndex}-${colIndex}`}
                       value={cell[0]}
                       onClick={() => onCellClick(rowIndex, colIndex)}
                       groupColor={group?.color}
                       isGrouped={!!group}
                       groupConnections={connections}
+                      coordinates={coordinates}
                       className="w-16 h-16"
                     />
                   );
@@ -157,19 +214,22 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick }
           </div>
 
           {/* Group Overlays for E=0 table */}
-          {groups.map((group) => (
+          {groups.filter(g => g.cells.some(c => c.table === 0 || c.table === undefined)).map((group) => (
             <GroupOverlay
               key={group.id}
-              group={group}
+              group={{
+                ...group,
+                cells: group.cells.filter(c => c.table === 0 || c.table === undefined)
+              }}
               cellSize={64}
               headerOffset={{ x: 64, y: 48 + 40 }} // Extra 40px for E=0 label
               rows={rows}
-              cols={cols}
+              cols={4}
             />
           ))}
         </div>
 
-        {/* E = 1 Table */}
+        {/* E = 1 Table (columns 4-7) */}
         <div className="relative">
           <div className="text-center mb-2">
             <span className="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-lg text-sm font-semibold">
@@ -192,7 +252,7 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick }
               ))}
             </div>
 
-            {/* Rows with data - These would be from the second half of the truth table */}
+            {/* Rows with data - E=1 table (columns 4-7) */}
             {Array.from({ length: rows }).map((_, rowIndex) => (
               <div key={rowIndex} className="flex">
                 {/* Row Header */}
@@ -200,11 +260,13 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick }
                   {rowHeaders[rowIndex]}
                 </div>
                 
-                {/* Data Cells - For now, showing same data, will need backend update */}
-                {Array.from({ length: cols }).map((_, colIndex) => {
-                  const cell = squares[rowIndex]?.[colIndex];
-                  const group = getCellGroup(rowIndex, colIndex);
+                {/* Data Cells - columns 4-7 for E=1 */}
+                {Array.from({ length: 4 }).map((_, colIndex) => {
+                  const actualCol = colIndex + 4; // Offset by 4 to access columns 4-7
+                  const cell = squares[rowIndex]?.[actualCol];
+                  const group = getCellGroup(rowIndex, colIndex, 1);
                   const connections = getGroupConnections(rowIndex, colIndex, group);
+                  const coordinates = getCellCoordinates(rowIndex, actualCol);
                   
                   if (!cell) return null;
 
@@ -212,10 +274,11 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick }
                     <Square
                       key={`e1-${rowIndex}-${colIndex}`}
                       value={cell[0]}
-                      onClick={() => onCellClick(rowIndex, colIndex)}
+                      onClick={() => onCellClick(rowIndex, actualCol)}
                       groupColor={group?.color}
                       isGrouped={!!group}
                       groupConnections={connections}
+                      coordinates={coordinates}
                       className="w-16 h-16"
                     />
                   );
@@ -225,14 +288,17 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick }
           </div>
 
           {/* Group Overlays for E=1 table */}
-          {groups.map((group) => (
+          {groups.filter(g => g.cells.some(c => c.table === 1)).map((group) => (
             <GroupOverlay
               key={`e1-${group.id}`}
-              group={group}
+              group={{
+                ...group,
+                cells: group.cells.filter(c => c.table === 1).map(c => ({ ...c, col: c.col % 4 }))
+              }}
               cellSize={64}
               headerOffset={{ x: 64, y: 48 + 40 }}
               rows={rows}
-              cols={cols}
+              cols={4}
             />
           ))}
         </div>
@@ -273,6 +339,7 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick }
               const cell = squares[rowIndex]?.[colIndex];
               const group = getCellGroup(rowIndex, colIndex);
               const connections = getGroupConnections(rowIndex, colIndex, group);
+              const coordinates = getCellCoordinates(rowIndex, colIndex);
               
               if (!cell) return null;
 
@@ -284,6 +351,7 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick }
                   groupColor={group?.color}
                   isGrouped={!!group}
                   groupConnections={connections}
+                  coordinates={coordinates}
                   className="w-16 h-16"
                 />
               );

@@ -127,7 +127,15 @@ export const useKMaps = () => {
         if (newMatrix[i] && newMatrix[i][j]) {
           const colCoord = newMatrix[i][j][1] as string;
           const rowCoord = newMatrix[i][j][2] as string;
-          const binaryString = colCoord + rowCoord;
+          
+          let binaryString: string;
+          if (variableCount === 5) {
+            // For 5 variables, include E coordinate
+            const eCoord = newMatrix[i][j][3] as string;
+            binaryString = eCoord + rowCoord + colCoord; // EABCD
+          } else {
+            binaryString = colCoord + rowCoord;
+          }
           
           const truthTableIndex = parseInt(binaryString, 2);
           if (truthTableData[truthTableIndex]) {
@@ -150,7 +158,15 @@ export const useKMaps = () => {
         if (matrixData[i] && matrixData[i][j]) {
           const colCoord = matrixData[i][j][1] as string;
           const rowCoord = matrixData[i][j][2] as string;
-          const binaryString = colCoord + rowCoord;
+          
+          let binaryString: string;
+          if (variableCount === 5) {
+            // For 5 variables, include E coordinate
+            const eCoord = matrixData[i][j][3] as string;
+            binaryString = eCoord + rowCoord + colCoord; // EABCD
+          } else {
+            binaryString = colCoord + rowCoord;
+          }
           
           const truthTableIndex = parseInt(binaryString, 2);
           if (newTruthTable[truthTableIndex]) {

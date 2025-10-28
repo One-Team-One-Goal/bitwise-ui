@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { type CellValue } from "@/utils/karnaugh.utils";
 
 interface SquareProps {
@@ -13,6 +13,11 @@ interface SquareProps {
     bottom?: boolean;
     left?: boolean;
   };
+  coordinates?: {
+    binary: string;
+    minterm?: number;
+    variables?: string;
+  };
 }
 
 const Square: React.FC<SquareProps> = ({ 
@@ -21,8 +26,10 @@ const Square: React.FC<SquareProps> = ({
   groupColor, 
   className = "", 
   isGrouped = false,
-  groupConnections = {}
+  groupConnections = {},
+  coordinates
 }) => {
+  const [isHovered, setIsHovered] = useState(false);
   const getValueStyle = () => {
     if (value === 1) return {
       color: '#16a34a',
@@ -90,24 +97,45 @@ const Square: React.FC<SquareProps> = ({
   };
 
   return (
-    <div
-      className={`
-        flex items-center justify-center 
-        cursor-pointer transition-all duration-200
-        text-lg font-mono
-        hover:scale-105 hover:shadow-lg hover:z-10
-        active:scale-95
-        ${className}
-      `}
-      onClick={onClick}
-      title="Click to cycle: X → 0 → 1 → X"
-      style={{
-        ...valueStyle,
-        ...getBorderStyle(),
-        outline: 'none',
-      }}
-    >
-      {value}
+    <div className="relative group">
+      <div
+        className={`
+          flex items-center justify-center 
+          cursor-pointer transition-all duration-200
+          text-lg font-mono
+          hover:scale-105 hover:shadow-lg hover:z-10
+          active:scale-95
+          ${className}
+        `}
+        onClick={onClick}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        style={{
+          ...valueStyle,
+          ...getBorderStyle(),
+          outline: 'none',
+        }}
+      >
+        {value}
+      </div>
+      
+      {/* Coordinate Tooltip on Hover */}
+      {isHovered && coordinates && (
+        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg shadow-xl whitespace-nowrap z-50 pointer-events-none">
+          <div className="flex flex-col gap-1">
+            <div className="font-semibold text-center">{coordinates.variables || coordinates.binary}</div>
+            <div className="text-gray-300">Binary: {coordinates.binary}</div>
+            {coordinates.minterm !== undefined && (
+              <div className="text-gray-300">Minterm: m{coordinates.minterm}</div>
+            )}
+            <div className="text-xs text-gray-400 mt-1 text-center">Click to cycle value</div>
+          </div>
+          {/* Arrow pointing down */}
+          <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
+            <div className="border-4 border-transparent border-t-gray-900"></div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import React from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { calculatorService } from '../services/calculator.service'
 import { Button } from './ui/button';
 import { Switch } from './ui/switch';
@@ -8,6 +8,10 @@ import RuleCard from './calculator/RuleCard';
 import StepNarration from './calculator/StepNarration';
 import ProgressTimeline from './calculator/ProgressTimeline';
 import ExamplesPanel from './calculator/ExamplesPanel';
+import { getLawAnimation, getAnimationVariants } from '@/constants/lawAnimations';
+import introJs from 'intro.js';
+import 'intro.js/introjs.css';
+import { HelpCircle } from 'lucide-react';
 
 // Types
 export interface ScriptToken { id: string; text: string; kind?: 'var' | 'op' | 'paren' | 'other'; highlight?: boolean; isNew?: boolean }
@@ -15,18 +19,32 @@ export interface ScriptExpressionState { raw: string; tokens: ScriptToken[] }
 export interface ScriptStep { id: string; law: string; description?: string; before: ScriptExpressionState; after: ScriptExpressionState }
 export interface FactoringDirectionScript { defaultExpression: string; steps: ScriptStep[] }
 
-// Token component with enhanced visual styling
+// Token component with enhanced visual styling and law-specific animations
 const CharMotion = React.forwardRef(function CharMotion(
-  { token, layoutIdOverride, onEnter, onLeave }: { token: ScriptToken; layoutIdOverride?: string; onEnter?: () => void; onLeave?: () => void },
+  { token, lawId, layoutIdOverride, onEnter, onLeave }: { 
+    token: ScriptToken; 
+    lawId?: string;
+    layoutIdOverride?: string; 
+    onEnter?: () => void; 
+    onLeave?: () => void 
+  },
   ref: React.Ref<HTMLSpanElement>
 ) {
   // Enhanced color-coding based on token state and type
   const getTokenClass = () => {
     const baseClasses = 'inline-block px-0.5 font-mono select-none rounded leading-none transition-all duration-300';
     
-    // State-based highlighting
+    // State-based highlighting with law-specific colors
+    if (token.isNew && lawId) {
+      const lawAnim = getLawAnimation(lawId);
+      return `${baseClasses} font-bold scale-110`;
+    }
     if (token.isNew) {
       return `${baseClasses} text-emerald-600 font-bold scale-110 animate-pulse`;
+    }
+    if (token.highlight && lawId) {
+      const lawAnim = getLawAnimation(lawId);
+      return `${baseClasses} font-semibold px-1`;
     }
     if (token.highlight) {
       return `${baseClasses} text-amber-600 font-semibold bg-amber-100 px-1`;
@@ -45,16 +63,25 @@ const CharMotion = React.forwardRef(function CharMotion(
     }
   };
 
+  // Get law-specific animation variants if lawId is provided
+  const animationVariants = lawId ? getAnimationVariants(lawId) : undefined;
+
   return (
     <motion.span
       ref={ref}
       layout
       layoutId={layoutIdOverride ?? token.id}
       initial={false}
-      transition={{ duration: 0.4, ease: 'easeInOut' }}
+      animate={false}
+      transition={{ 
+        layout: { duration: lawId ? getLawAnimation(lawId).duration : 0.4, ease: 'easeInOut' }
+      }}
       className={getTokenClass()}
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
+      style={{
+        color: token.isNew && lawId ? getLawAnimation(lawId).highlightColor : undefined
+      }}
     >
       {token.text}
     </motion.span>
@@ -83,7 +110,7 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
   const tokenRefs = React.useRef<Map<string, HTMLElement>>(new Map())
   const containerRef = React.useRef<HTMLDivElement | null>(null)
 
-  const [clones, setClones] = React.useState<Array<{ key: string; text: string; from: DOMRectLike; to: DOMRectLike }>>([])
+  const [clones, setClones] = React.useState<Array<{ key: string; text: string; from: DOMRectLike; to: DOMRectLike; lawId?: string }>>([])
   type DOMRectLike = { left: number; top: number; width: number; height: number }
 
   const pendingFromRects = React.useRef<Map<string, DOMRectLike>>(new Map())
@@ -124,7 +151,18 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
         law: step.law 
       })
     })
-    console.log('Timeline built:', arr.map((t, i) => `[${i}] ${t.raw} (${t.law})`));
+    
+    // Debug: Log the timeline structure
+    if (arr.length > 0) {
+      console.log('📊 Timeline structure:', arr.map((t, i) => ({
+        index: i,
+        raw: t.raw,
+        law: t.law,
+        tokenCount: t.tokens.length,
+        tokens: t.tokens.map(tok => tok.text).join(' ')
+      })));
+    }
+    
     return arr
   }, [remoteScript])
 
@@ -222,14 +260,22 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
       // determine text from previous state or current
       const prevState = timeline[Math.max(0, index - 1)]
       const text = (prevState?.tokens.find(t => t.id === srcId)?.text) ?? state.tokens.find(t => t.id === destId)?.text ?? ''
-      toSpawn.push({ key: `${srcId}-${Date.now()}`, text, from: fromRect, to: toRect })
+      toSpawn.push({ 
+        key: `${srcId}-${Date.now()}`, 
+        text, 
+        from: fromRect, 
+        to: toRect,
+        lawId: state.law  // Include law for animation styling
+      })
     }
 
     if (toSpawn.length > 0) {
       setClones(prev => prev.concat(toSpawn))
       pendingFromRects.current = new Map()
       pendingMappings.current = new Map()
-      setTimeout(() => { setClones(prev => prev.slice(toSpawn.length)) }, 450)
+      // Adjust timeout based on law animation duration
+      const lawDuration = state.law ? getLawAnimation(state.law).duration * 1000 : 450
+      setTimeout(() => { setClones(prev => prev.slice(toSpawn.length)) }, lawDuration + 100)
     } else {
       pendingFromRects.current = new Map()
       pendingMappings.current = new Map()
@@ -237,6 +283,18 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
   }, [index, timeline])
 
   const setTokenRef = (id: string) => (el: HTMLElement | null) => { if (el) tokenRefs.current.set(id, el); else tokenRefs.current.delete(id) }
+
+  // Debug: Log what's being displayed
+  React.useEffect(() => {
+    if (timeline[index]) {
+      console.log(`🎯 Displaying step ${index}:`, {
+        raw: timeline[index].raw,
+        law: timeline[index].law,
+        tokenCount: timeline[index].tokens.length,
+        tokens: timeline[index].tokens.map(t => `${t.text}(${t.id})`).join(' ')
+      });
+    }
+  }, [index, timeline]);
 
   // insert operator at caret position
   const insertOperator = (symbol: string) => {
@@ -273,8 +331,93 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
     pendingMappings.current = new Map()
   }
 
+  // Start the intro.js tutorial
+  const startTutorial = () => {
+    const intro = introJs();
+    intro.setOptions({
+      steps: [
+        {
+          title: '👋 Welcome to Boolean Simplifier!',
+          intro: 'This interactive tool helps you simplify Boolean algebra expressions step-by-step with beautiful animations. Let me show you around!'
+        },
+        {
+          element: '.input-section',
+          title: '📝 Input Expression',
+          intro: 'Type your Boolean expression here using variables (A, B, C...) and operators. You can type them directly or use the quick insert buttons below.',
+          position: 'bottom'
+        },
+        {
+          element: '.quick-insert',
+          title: '⚡ Quick Insert Buttons',
+          intro: 'Click these buttons to quickly insert Boolean operators: ∧ (AND), ∨ (OR), ¬ (NOT), ⊕ (XOR), → (IMPLIES), ↔ (IFF), and parentheses.',
+          position: 'bottom'
+        },
+        {
+          element: '.examples-button',
+          title: '💡 Example Expressions',
+          intro: 'Not sure what to try? Click here to see example expressions you can use to get started.',
+          position: 'bottom'
+        },
+        {
+          element: '.simplify-button',
+          title: '🚀 Simplify',
+          intro: 'Once you\'ve entered an expression, click here to simplify it! The tool will break down each step using Boolean algebra laws.',
+          position: 'bottom'
+        },
+        {
+          element: '.display-options',
+          title: '⚙️ Display Options',
+          intro: 'Toggle these options to show/hide the Rule Card (details about each law), Explanation (step description), and Auto-play (automatic progression through steps).',
+          position: 'top'
+        },
+        {
+          element: '.expression-display',
+          title: '🎨 Expression Display',
+          intro: 'Your expression appears here with animated transitions! Each step is color-coded by the law being applied. New tokens appear in the law\'s highlight color.',
+          position: 'bottom'
+        },
+        {
+          element: '.progress-timeline',
+          title: '📊 Timeline Navigation',
+          intro: 'Navigate through simplification steps here. Each dot represents a step. Click any dot to jump to that step, or use the arrow buttons to move forward/backward.',
+          position: 'top'
+        },
+        {
+          title: '✨ Law-Specific Animations',
+          intro: 'Each Boolean law has its own color and animation style! Watch as tokens smoothly transition between steps, making it easy to see what changed and why.'
+        },
+        {
+          title: '🎓 Ready to Simplify!',
+          intro: 'You\'re all set! Try entering an expression like "A ∧ A" or "¬(A ∨ B)" and watch the magic happen. Click the help button (?) anytime to see this tutorial again.'
+        }
+      ],
+      showProgress: true,
+      showBullets: true,
+      exitOnOverlayClick: false,
+      doneLabel: 'Got it!',
+      nextLabel: 'Next →',
+      prevLabel: '← Back',
+      skipLabel: 'Skip'
+    });
+    intro.start();
+  };
+
   return (
     <div className="p-6 rounded-xl w-full max-w-7xl mx-auto space-y-6">
+      {/* Header with Help Button */}
+      <div className="flex justify-end">
+        <Button
+          type="button"
+          onClick={startTutorial}
+          variant="outline"
+          size="icon"
+          className="rounded-full w-10 h-10 shadow-sm hover:shadow-md hover:bg-blue-50 hover:border-blue-400 transition-all"
+          title="Show Tutorial"
+        >
+          <HelpCircle className="h-5 w-5 text-blue-600" />
+        </Button>
+      </div>
+
       {/* Examples Panel */}
       <ExamplesPanel
         isOpen={showExamples}
@@ -288,7 +431,7 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
       {/* Input Section */}
       <div className="bg-white rounded-lg border-2 border-gray-200 p-5 space-y-3">
         <form onSubmit={fetchRemoteScript} className="flex flex-col gap-3">
-          <div className="flex gap-2 items-center">
+          <div className="flex gap-2 items-center input-section">
             <input
               ref={inputRef}
               value={expressionInput}
@@ -297,14 +440,14 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
               placeholder="Enter boolean expression (e.g. A ∧ B ∨ ¬A)"
               aria-label="Boolean expression"
             />
-            <Button variant={"default"} type="submit" className="px-6 py-3 h-auto text-base" disabled={loadingRemote}>
+            <Button variant={"default"} type="submit" className="simplify-button px-6 py-3 h-auto text-base" disabled={loadingRemote}>
               {loadingRemote ? 'Solving...' : 'Solve'}
             </Button>
             <Button 
               variant={"secondary"} 
               type="button"
               onClick={() => setShowExamples(true)} 
-              className="px-6 py-3 h-auto text-base"
+              className="examples-button px-6 py-3 h-auto text-base"
             >
               Examples
             </Button>
@@ -314,7 +457,7 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
           </div>
 
           {/* Quick operator buttons */}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 quick-insert">
             <span className="text-sm text-gray-600 font-medium self-center mr-2">Quick insert:</span>
             {['∧','∨','¬','⊕','→','↔','(',')'].map(sym => (
               <button
@@ -329,7 +472,7 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
           </div>
 
           {/* Display Options - Compact */}
-          <div className="flex flex-wrap items-center gap-4 text-sm bg-gray-50 rounded-lg p-3 border">
+          <div className="flex flex-wrap items-center gap-4 text-sm bg-gray-50 rounded-lg p-3 border display-options">
             <span className="text-xs font-semibold text-gray-600 uppercase">Display:</span>
             <div className="flex items-center gap-2">
               <Switch
@@ -395,29 +538,47 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
               </div>
               
               {/* Expression */}
-              <div className="p-8">
-                <div className="bg-linear-to-br from-blue-50 to-purple-50 rounded-lg p-8 border border-blue-200 min-h-24 flex items-center justify-center">
-                  <div className="flex flex-wrap items-center justify-center gap-1 text-3xl font-mono">
-                    {/* Force re-render with index-based keys to prevent animation conflicts */}
+              <div className="p-8 expression-display">
+                <div className="bg-linear-to-br from-blue-50 to-purple-50 rounded-lg p-8 border-2 min-h-24 flex items-center justify-center relative overflow-hidden"
+                  style={{
+                    borderColor: timeline[index]?.law && index > 0 
+                      ? getLawAnimation(timeline[index].law).highlightColor 
+                      : '#bfdbfe'
+                  }}
+                >
+                  {/* Law color indicator bar */}
+                  {timeline[index]?.law && index > 0 && (
+                    <div
+                      className="absolute top-0 left-0 right-0 h-1"
+                      style={{ backgroundColor: getLawAnimation(timeline[index].law).highlightColor }}
+                    />
+                  )}
+                  
+                  <div className="flex flex-wrap items-center justify-center gap-1 text-3xl font-mono relative z-10">
+                    {/* Display current timeline state tokens */}
                     {timeline[index]?.tokens.map((tok, tokIdx) => (
                       <CharMotion 
-                        key={`step${index}-token${tokIdx}-${tok.id}`} 
+                        key={`${index}-${tok.id}-${tokIdx}`} 
                         ref={setTokenRef(tok.id)} 
                         token={tok}
+                        lawId={timeline[index]?.law}
                       />
                     ))}
                   </div>
                 </div>
-                {/* Debug info */}
-                {process.env.NODE_ENV === 'development' && (
-                  <div className="mt-2 text-center text-xs text-gray-400 font-mono">
-                    Index: {index} | Step: {currentStepNumber} | Raw: {timeline[index]?.raw}
+                
+                {/* Law animation description */}
+                {timeline[index]?.law && index > 0 && (
+                  <div className="mt-3 text-center text-sm italic"
+                    style={{ color: getLawAnimation(timeline[index].law).highlightColor }}
+                  >
+                    {getLawAnimation(timeline[index].law).description}
                   </div>
                 )}
               </div>
 
               {/* Timeline & Navigation Controls */}
-              <div className="border-t">
+              <div className="border-t progress-timeline">
                 <ProgressTimeline
                   steps={remoteScript.steps}
                   currentStepIndex={currentStepNumber}

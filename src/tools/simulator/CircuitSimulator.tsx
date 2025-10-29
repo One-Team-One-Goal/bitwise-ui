@@ -6,10 +6,12 @@ import { PropertiesPanel } from './components/PropertiesPanel';
 import { BooleanExpressionInput } from './components/BooleanExpressionInput';
 import { useCircuitSimulator } from './hooks/useCircuitSimulator';
 import { Card, CardContent } from '@/components/ui/card';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
 import { parseExpression } from './utils/expressionParser';
 import { generateCircuitFromExpression } from './utils/circuitGenerator';
 import type { ComponentType, ToolbarState, Connection } from './types';
-import { MousePointer, Hand, Cable, Cpu } from 'lucide-react';
+import { MousePointer, Hand, Cable, Cpu, Boxes, Settings } from 'lucide-react';
 
 export const CircuitSimulator: React.FC = () => {
   // Undo/redo state
@@ -64,6 +66,10 @@ export const CircuitSimulator: React.FC = () => {
   });
   const [showBooleanExpression, setShowBooleanExpression] = useState(false);
   const [currentBooleanExpression, setCurrentBooleanExpression] = useState<string>('');
+  
+  // Mobile drawer states
+  const [showComponentDrawer, setShowComponentDrawer] = useState(false);
+  const [showPropertiesDrawer, setShowPropertiesDrawer] = useState(false);
 
   // Monitor circuit state and clear expression when circuit is empty
   React.useEffect(() => {
@@ -167,34 +173,58 @@ export const CircuitSimulator: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobile & Tablet Component Palette - Fixed at bottom */}
-      <div className="lg:hidden">
-        {toolbarState.selectedTool === 'component' && 
-         !circuitHook.circuitState.selectedComponent && 
-         !circuitHook.circuitState.selectedConnection && (
-          <div className="fixed bottom-0 left-0 right-0 z-30 bg-background border-t-2 border-border shadow-2xl max-h-[60vh] overflow-y-auto">
+      {/* Mobile Side Drawer Buttons - Fixed Bottom Right */}
+      <div className="lg:hidden fixed bottom-4 right-4 z-30 flex flex-col gap-2">
+        <Button
+          variant="default"
+          size="sm"
+          onClick={() => setShowComponentDrawer(true)}
+          className="h-12 w-12 rounded-full shadow-lg"
+        >
+          <Boxes className="h-5 w-5" />
+        </Button>
+        {(circuitHook.circuitState.selectedComponent || circuitHook.circuitState.selectedConnection) && (
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => setShowPropertiesDrawer(true)}
+            className="h-12 w-12 rounded-full shadow-lg"
+          >
+            <Settings className="h-5 w-5" />
+          </Button>
+        )}
+      </div>
+
+      {/* Mobile Component Palette Drawer */}
+      <Sheet open={showComponentDrawer} onOpenChange={setShowComponentDrawer}>
+        <SheetContent side="left" className="w-[280px] sm:w-[320px] p-0 overflow-y-auto">
+          <SheetHeader className="px-4 py-3 border-b">
+            <SheetTitle>Components</SheetTitle>
+          </SheetHeader>
+          <div className="h-full">
             <ComponentPalette
-              onComponentSelect={handleComponentTypeSelect}
+              onComponentSelect={(type) => {
+                handleComponentTypeSelect(type);
+                setShowComponentDrawer(false);
+              }}
               selectedComponentType={toolbarState.selectedComponentType}
               isMobile={true}
             />
           </div>
-        )}
-      </div>
+        </SheetContent>
+      </Sheet>
 
-      {/* Mobile & Tablet Properties Panel - Slide-up overlay */}
-      <div className="xl:hidden">
-        {(circuitHook.circuitState.selectedComponent || circuitHook.circuitState.selectedConnection) && (
-          <div className="fixed bottom-0 left-0 right-0 z-30 bg-background border-t-2 border-border shadow-2xl rounded-t-2xl animate-slide-up">
-            <div className="flex justify-center py-2">
-              <div className="w-12 h-1 bg-muted-foreground/30 rounded-full" />
-            </div>
-            <div className="max-h-[50vh] overflow-hidden">
-              <PropertiesPanel circuitHook={circuitHook} />
-            </div>
+      {/* Mobile Properties Panel Drawer */}
+      <Sheet open={showPropertiesDrawer} onOpenChange={setShowPropertiesDrawer}>
+        <SheetContent side="right" className="w-[280px] sm:w-[320px] p-0 overflow-y-auto">
+          <SheetHeader className="px-4 py-3 border-b">
+            <SheetTitle>Properties</SheetTitle>
+          </SheetHeader>
+          <div className="h-full">
+            <PropertiesPanel circuitHook={circuitHook} />
           </div>
-        )}
-      </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Boolean Expression Input Overlay */}
       {showBooleanExpression && (

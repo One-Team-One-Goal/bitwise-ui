@@ -50,20 +50,20 @@ function ProfilePage() {
   const providerId = md.provider_id ?? md.sub ?? backendProfile?.id ?? 'N/A'
 
   return (
-    <div className="container mx-auto p-4">
-      <div className="max-w-3xl mx-auto bg-background dark:bg-gray-800 rounded-lg shadow p-6">
+    <div className="container mx-auto p-4 md:p-6 lg:p-8 mt-20">
+      <div className="max-w-3xl mx-auto bg-background dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-2xl font-bold">Profile</p>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-xl sm:text-2xl font-bold">Profile</p>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
               Account details and connected provider metadata
             </p>
           </div>
         </div>
 
-        <div className="mt-6 flex gap-10 items-center">
-          <div className="flex-shrink-0 ml-4 mb-14">
-            <Avatar className="h-24 w-24">
+        <div className="mt-6 flex flex-col sm:flex-row gap-6 sm:gap-10 items-center sm:items-start">
+          <div className="shrink-0">
+            <Avatar className="h-20 w-20 sm:h-24 sm:w-24">
               {avatar ? (
                 <AvatarImage
                   src={avatar}
@@ -71,20 +71,20 @@ function ProfilePage() {
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <AvatarFallback className="text-xl text-gray-500">
+                <AvatarFallback className="text-lg sm:text-xl text-gray-500">
                   {(displayName || '?').charAt(0)}
                 </AvatarFallback>
               )}
             </Avatar>
           </div>
 
-          <div className="flex-1">
-            <p className="text-xl font-semibold">{displayName}</p>
-            <p className="text-sm text-muted-foreground">
+          <div className="flex-1 w-full text-center sm:text-left">
+            <p className="text-lg sm:text-xl font-semibold">{displayName}</p>
+            <p className="text-sm text-muted-foreground break-all">
               {backendProfile?.email ?? user?.email}
             </p>
 
-            <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
               <div>
                 <div className="text-xs text-muted-foreground">Provider</div>
                 <div className="font-medium">
@@ -94,7 +94,7 @@ function ProfilePage() {
 
               <div>
                 <div className="text-xs text-muted-foreground">Provider ID</div>
-                <div className="font-medium">{providerId}</div>
+                <div className="font-medium break-all">{providerId}</div>
               </div>
 
               <div>

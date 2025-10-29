@@ -204,3 +204,11 @@ body.dark .introjs-overlay,
   transform: translateY(-50%) !important;
   z-index: 10000 !important;
 }
+
+.intro-bitbot-right {
+  position: absolute !important;
+  right: -150px !important;
+  bottom: -200px !important;
+  transform: translateY(-50%) !important;
+  z-index: 10000 !important;
+}

@@ -139,8 +139,11 @@ function RouteComponent() {
   const [loadingAssessment, setLoadingAssessment] = useState(false)
   const [assessmentError, setAssessmentError] = useState<string | null>(null)
   const navigate = useNavigate()
-  const { user } = useAuthContext()
-  const [hovered, setHovered] = useState<typeof timelineItems[0] | null>(null)
+  const { user } = useAuthContext() || { }
+    const ALLOW_ANON = import.meta.env.VITE_ALLOW_ANON_ASSESSMENT === 'true'
+const FALLBACK_USER_ID = import.meta.env.VITE_FALLBACK_USER_ID ?? '5ed45890-4804-46fd-bfa1-5695515375ea'
+const effectiveUser = user ?? (ALLOW_ANON ? { id: FALLBACK_USER_ID } : null)
+   const [hovered, setHovered] = useState<typeof timelineItems[0] | null>(null)
 
   // Flatten lessons and sublessons for the timeline
   const timelineItems = lessons.flatMap((lesson) => [
@@ -170,7 +173,7 @@ function RouteComponent() {
 
   // Handle adaptive assessment start
   const handleStartAdaptiveAssessment = async () => {
-    if (!user) return
+    if (!effectiveUser) return
 
     setLoadingAssessment(true)
     setAssessmentError(null)
@@ -179,7 +182,7 @@ function RouteComponent() {
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/assessment/start-adaptive-practice`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uid: user.id }),
+        body: JSON.stringify({ uid: effectiveUser.id }),
       })
 
       const result = await response.json()
@@ -234,7 +237,7 @@ function RouteComponent() {
   const displayItem = hovered || selected
 
   return (
-    <div className="m-auto mt-12 flex flex-col md:flex-row w-2/3 min-h-[80vh] gap-4 p-4">
+    <div className="m-auto mt-12 flex flex-col md:flex-row w-2/3 min-h-[80vh] gap-4 pt-24">
       {/* Left: Lesson Details */}
       <div className='flex flex-col gap-4 mr-4 flex-shrink-0'>
         {/* Lesson Details Card */}
@@ -267,7 +270,7 @@ function RouteComponent() {
               </p>
             </div>
 
-            {!user && (
+            {!user && !effectiveUser && (
               <div className="flex items-center gap-2 text-xs text-red-500 bg-red-50 p-2 rounded">
                 <AlertCircle className="w-4 h-4" />
                 You need to login before taking the assessment.

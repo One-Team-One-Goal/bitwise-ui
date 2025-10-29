@@ -50,17 +50,17 @@ const lessonNames: Record<number, string> = {
 // Component to render truth tables
 const TruthTableRenderer = ({ tableData }: { tableData: any }) => {
   return (
-    <div className="my-4 p-4 bg-gray-50 rounded-lg border">
+    <div className="my-4 p-4 rounded-lg border bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-700">
       <div className="flex items-center gap-2 mb-3">
-        <Table className="w-5 h-5 text-blue-600" />
-        <h4 className="font-semibold text-gray-800">{tableData.caption || 'Truth Table'}</h4>
+        <Table className="w-5 h-5 text-blue-600 dark:text-blue-300" />
+        <h4 className="font-semibold text-gray-800 dark:text-gray-100">{tableData.caption || 'Truth Table'}</h4>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse border border-gray-300 bg-white">
+        <table className="w-full border-collapse border border-gray-300 dark:border-gray-700">
           <thead>
-            <tr className="bg-blue-100">
+            <tr className="bg-blue-100 dark:bg-blue-900">
               {(tableData.headers || tableData.rows[0] || []).map((header: string, idx: number) => (
-                <th key={idx} className="border border-gray-300 px-3 py-2 text-center font-semibold text-blue-900">
+                <th key={idx} className="border border-gray-300 dark:border-gray-700 px-3 py-2 text-center font-semibold text-blue-900 dark:text-blue-200">
                   {header}
                 </th>
               ))}
@@ -68,15 +68,15 @@ const TruthTableRenderer = ({ tableData }: { tableData: any }) => {
           </thead>
           <tbody>
             {tableData.rows.slice(tableData.headers ? 0 : 1).map((row: string[], rowIdx: number) => (
-              <tr key={rowIdx} className={rowIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+              <tr key={rowIdx} className={rowIdx % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50 dark:bg-gray-800'}>
                 {row.map((cell: string, cellIdx: number) => (
-                  <td key={cellIdx} className="border border-gray-300 px-3 py-2 text-center">
+                  <td key={cellIdx} className="border border-gray-300 dark:border-gray-700 px-3 py-2 text-center">
                     {cell === '0' || cell === '1' ? (
-                      <span className={`font-mono font-bold ${cell === '1' ? 'text-green-600' : 'text-red-600'}`}>
+                      <span className={`font-mono font-bold ${cell === '1' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                         {cell}
                       </span>
                     ) : (
-                      <span className="text-gray-700">{cell}</span>
+                      <span className="text-gray-700 dark:text-gray-200">{cell}</span>
                     )}
                   </td>
                 ))}
@@ -92,37 +92,37 @@ const TruthTableRenderer = ({ tableData }: { tableData: any }) => {
 // Component to render Karnaugh maps
 const KarnaughMapRenderer = ({ kMapData }: { kMapData: any }) => {
   return (
-    <div className="my-4 p-4 bg-gray-50 rounded-lg border">
+    <div className="my-4 p-4 rounded-lg border bg-gray-50 dark:bg-gray-800 border-gray-300 dark:border-gray-700">
       <div className="flex items-center gap-2 mb-3">
-        <Grid3X3 className="w-5 h-5 text-purple-600" />
-        <h4 className="font-semibold text-gray-800">{kMapData.caption || 'Karnaugh Map'}</h4>
+        <Grid3X3 className="w-5 h-5 text-purple-600 dark:text-purple-300" />
+        <h4 className="font-semibold text-gray-800 dark:text-gray-100">{kMapData.caption || 'Karnaugh Map'}</h4>
       </div>
       <div className="flex justify-center">
         <div className="inline-block">
           <div className="flex mb-2">
-            <div className="w-16"></div>
+            <div className="w-16" />
             {(kMapData.headers || []).map((header: string, idx: number) => (
-              <div key={idx} className="w-16 text-center font-semibold text-purple-700 text-sm">
+              <div key={idx} className="w-16 text-center font-semibold text-purple-700 dark:text-purple-300 text-sm">
                 {header}
               </div>
             ))}
           </div>
           {kMapData.rows.map((row: string[], rowIdx: number) => (
             <div key={rowIdx} className="flex items-center mb-1">
-              <div className="w-16 text-center font-semibold text-purple-700 text-sm pr-2">
+              <div className="w-16 text-center font-semibold text-purple-700 dark:text-purple-300 text-sm pr-2">
                 {kMapData.sideLabels ? kMapData.sideLabels[rowIdx] : `Row ${rowIdx}`}
               </div>
               {row.map((cell: string, cellIdx: number) => (
                 <div 
                   key={cellIdx} 
-                  className="w-16 h-12 border-2 border-purple-300 bg-white flex items-center justify-center font-mono font-bold text-sm hover:bg-purple-50 transition-colors"
+                  className="w-16 h-12 border-2 border-purple-300 dark:border-purple-700 bg-white dark:bg-gray-900 flex items-center justify-center font-mono font-bold text-sm hover:bg-purple-50 dark:hover:bg-purple-900 transition-colors"
                 >
                   {cell === '0' || cell === '1' ? (
-                    <span className={cell === '1' ? 'text-green-600' : 'text-red-600'}>
+                    <span className={cell === '1' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
                       {cell}
                     </span>
                   ) : (
-                    <span className="text-gray-700">{cell}</span>
+                    <span className="text-gray-700 dark:text-gray-200">{cell}</span>
                   )}
                 </div>
               ))}
@@ -137,13 +137,13 @@ const KarnaughMapRenderer = ({ kMapData }: { kMapData: any }) => {
 // Component to render question stem with embedded tables/maps
 const QuestionStemRenderer = ({ stem }: { stem: any }) => {
   if (typeof stem === 'string') {
-    return <h2 className="text-xl font-semibold mb-3">{stem}</h2>
+    return <h2 className="text-xl font-semibold mb-3 text-gray-900 dark:text-gray-100">{stem}</h2>
   }
   if (typeof stem === 'object' && stem !== null) {
     if (stem.type === 'table' && stem.table) {
       return (
         <div>
-          <h2 className="text-xl font-semibold mb-3">Analyze the following truth table:</h2>
+          <h2 className="text-xl font-semibold mb-3 text-gray-900 dark:text-gray-100">Analyze the following truth table:</h2>
           <TruthTableRenderer tableData={stem.table} />
         </div>
       )
@@ -151,7 +151,7 @@ const QuestionStemRenderer = ({ stem }: { stem: any }) => {
     if (stem.type === 'karnaughMap' && stem.karnaughMap) {
       return (
         <div>
-          <h2 className="text-xl font-semibold mb-3">Analyze the following Karnaugh map:</h2>
+          <h2 className="text-xl font-semibold mb-3 text-gray-900 dark:text-gray-100">Analyze the following Karnaugh map:</h2>
           <KarnaughMapRenderer kMapData={stem.karnaughMap} />
         </div>
       )
@@ -159,16 +159,16 @@ const QuestionStemRenderer = ({ stem }: { stem: any }) => {
     if (stem.type === 'circuit' && stem.circuit) {
       return (
         <div>
-          <h2 className="text-xl font-semibold mb-3">Analyze the following circuit:</h2>
+          <h2 className="text-xl font-semibold mb-3 text-gray-900 dark:text-gray-100">Analyze the following circuit:</h2>
           <CircuitRenderer circuit={stem.circuit} />
         </div>
       )
     }
     if (stem.text) {
-      return <h2 className="text-xl font-semibold mb-3">{stem.text}</h2>
+      return <h2 className="text-xl font-semibold mb-3 text-gray-900 dark:text-gray-100">{stem.text}</h2>
     }
   }
-  return <h2 className="text-xl font-semibold mb-3">{JSON.stringify(stem)}</h2>
+  return <h2 className="text-xl font-semibold mb-3 text-gray-900 dark:text-gray-100">{JSON.stringify(stem)}</h2>
 }
 
 export const Route = createFileRoute('/assessment/$assessmentId')({
@@ -222,15 +222,15 @@ function RouteComponent() {
     return (
       <div className="pt-36 max-w-4xl mx-auto flex flex-col items-center">
         <div className="animate-pulse space-y-4 w-full">
-          <div className="h-8 bg-gray-200 rounded w-64 mx-auto"></div>
-          <div className="h-4 bg-gray-200 rounded w-48 mx-auto"></div>
+          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-64 mx-auto"></div>
+          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-48 mx-auto"></div>
           <Card className="w-full">
             <CardContent className="p-6 space-y-4">
-              <div className="h-6 bg-gray-200 rounded"></div>
+              <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded"></div>
               <div className="space-y-2">
-                <div className="h-4 bg-gray-200 rounded"></div>
-                <div className="h-4 bg-gray-200 rounded"></div>
-                <div className="h-4 bg-gray-200 rounded"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
               </div>
             </CardContent>
           </Card>
@@ -245,8 +245,8 @@ function RouteComponent() {
         <Card className="w-full">
           <CardContent className="p-6 text-center">
             <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Assessment Not Found</h2>
-            <p className="text-gray-500 mb-4">The assessment you're looking for doesn't exist or has been removed.</p>
+            <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100">Assessment Not Found</h2>
+            <p className="text-gray-500 dark:text-gray-300 mb-4">The assessment you're looking for doesn't exist or has been removed.</p>
             <Button onClick={() => navigate({ to: '/roadmap' })}>
               Back to Roadmap
             </Button>
@@ -323,18 +323,18 @@ function RouteComponent() {
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
-      case 'easy': return 'bg-green-100 text-green-700'
-      case 'medium': return 'bg-yellow-100 text-yellow-700'
-      case 'hard': return 'bg-red-100 text-red-700'
-      default: return 'bg-gray-100 text-gray-700'
+      case 'easy': return 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
+      case 'medium': return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300'
+      case 'hard': return 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
+      default: return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200'
     }
   }
 
   const getScoreColor = (score: number, total: number) => {
     const percentage = (score / total) * 100
-    if (percentage >= 80) return 'text-green-600'
-    if (percentage >= 60) return 'text-yellow-600'
-    return 'text-red-600'
+    if (percentage >= 80) return 'text-green-600 dark:text-green-300'
+    if (percentage >= 60) return 'text-yellow-600 dark:text-yellow-300'
+    return 'text-red-600 dark:text-red-300'
   }
 
   const formatTagName = (tag: string) => {
@@ -358,39 +358,39 @@ function RouteComponent() {
 
   return (
     <div>
-      <div className={`pt-8 ${hasVisualElements() ? 'max-w-4xl' : 'max-w-2xl'} mx-auto flex flex-col items-center`}>
+      <div className={`pt-24 ${hasVisualElements() ? 'max-w-4xl' : 'max-w-2xl'} mx-auto flex flex-col items-center`}>
         {/* Header Card */}
-        <Card className="w-full mb-6">
+        <Card className="w-full mb-6 bg-white dark:bg-gray-900">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h1 className="text-2xl font-bold flex items-center gap-2">
+                <h1 className="text-2xl font-bold flex items-center gap-2 text-gray-900 dark:text-gray-100">
                   {adaptiveInfo ? (
                     <>
-                      <Brain className="w-6 h-6 text-purple-600" />
+                      <Brain className="w-6 h-6 text-purple-600 dark:text-purple-300" />
                       Adaptive Assessment
                     </>
                   ) : (
                     <>
-                      <Target className="w-6 h-6 text-blue-600" />
+                      <Target className="w-6 h-6 text-blue-600 dark:text-blue-300" />
                       Practice Assessment
                     </>
                   )}
                 </h1>
                 {adaptiveInfo && (
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="text-sm text-gray-600">Difficulty:</span>
+                  <div className="flex items-center gap-2 mt-2 text-gray-600 dark:text-gray-300">
+                    <span className="text-sm">Difficulty:</span>
                     <span className={`px-2 py-1 rounded text-xs font-medium capitalize ${getDifficultyColor(adaptiveInfo.recommendedDifficulty)}`}>
                       {adaptiveInfo.recommendedDifficulty}
                     </span>
-                    <span className="text-sm text-gray-600 ml-2">
+                    <span className="text-sm ml-2">
                       Mastery: {Math.round(adaptiveInfo.overallMastery * 100)}%
                     </span>
                   </div>
                 )}
               </div>
               <div className="text-right">
-                <div className="text-sm text-gray-500 mb-1">
+                <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">
                   Question {showResult ? total : current + 1} of {total}
                 </div>
                 <Progress value={progress} className="w-32 h-2" />
@@ -400,15 +400,15 @@ function RouteComponent() {
         </Card>
 
         {!showResult ? (
-          <Card className="w-full mb-8 shadow-lg">
+          <Card className="w-full mb-8 shadow-lg bg-white dark:bg-gray-900">
             <CardContent className="p-6">
               <div className="mb-6">
                 <QuestionStemRenderer stem={question.stem} />
-                <div className="flex items-center flex-wrap gap-2 text-xs text-gray-500 mb-4">
-                  <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                <div className="flex items-center flex-wrap gap-2 text-xs text-gray-500 dark:text-gray-300 mb-4">
+                  <span className="bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 px-2 py-1 rounded">
                     Lesson {question.lessonId}
                   </span>
-                  <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded">
+                  <span className="bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-200 px-2 py-1 rounded">
                     Topic {question.topicId}
                   </span>
                   {question.difficulty && (
@@ -417,7 +417,7 @@ function RouteComponent() {
                     </span>
                   )}
                   {hasVisualElements() && (
-                    <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded flex items-center gap-1">
+                    <span className="bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-200 px-2 py-1 rounded flex items-center gap-1">
                       {typeof question.stem === 'object' && question.stem?.type === 'table' ? (
                         <>
                           <Table className="w-3 h-3" />
@@ -447,30 +447,30 @@ function RouteComponent() {
                         ${isAnswered
                           ? isSelected
                             ? isCorrect
-                              ? 'bg-green-50 border-green-400 text-green-900 shadow-md'
-                              : 'bg-red-50 border-red-400 text-red-900 shadow-md'
+                              ? 'bg-green-50 border-green-400 text-green-900 shadow-md dark:bg-green-900 dark:border-green-700 dark:text-green-200'
+                              : 'bg-red-50 border-red-400 text-red-900 shadow-md dark:bg-red-900 dark:border-red-700 dark:text-red-200'
                             : isCorrect
-                              ? 'bg-green-50 border-green-300 text-green-800'
-                              : 'bg-gray-50 border-gray-200 text-gray-500'
-                          : 'bg-white border-gray-200 hover:bg-blue-50 hover:border-blue-300 hover:shadow-sm'}
+                              ? 'bg-green-50 border-green-300 text-green-800 dark:bg-gray-800 dark:border-green-700 dark:text-green-200'
+                              : 'bg-gray-50 border-gray-200 text-gray-500 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300'
+                          : 'bg-white border-gray-200 hover:bg-blue-50 hover:border-blue-300 hover:shadow-sm dark:bg-gray-900 dark:border-gray-700 dark:hover:bg-blue-900'}
                         ${isAnswered ? 'cursor-not-allowed' : 'cursor-pointer'}
                         font-medium
                       `}
                       disabled={isAnswered}
                       onClick={() => handleAnswer(opt.id)}
                     >
-                      <span className="flex-1">{opt.text}</span>
+                      <span className="flex-1 text-gray-900 dark:text-gray-100">{opt.text}</span>
                       {isAnswered && (
                         <>
                           {isSelected && (
                             isCorrect ? (
-                              <CheckCircle2 className="ml-2 w-5 h-5 text-green-500" />
+                              <CheckCircle2 className="ml-2 w-5 h-5 text-green-500 dark:text-green-300" />
                             ) : (
-                              <XCircle className="ml-2 w-5 h-5 text-red-500" />
+                              <XCircle className="ml-2 w-5 h-5 text-red-500 dark:text-red-300" />
                             )
                           )}
                           {!isSelected && isCorrect && (
-                            <CheckCircle2 className="ml-2 w-5 h-5 text-green-400" />
+                            <CheckCircle2 className="ml-2 w-5 h-5 text-green-400 dark:text-green-300" />
                           )}
                         </>
                       )}
@@ -480,9 +480,9 @@ function RouteComponent() {
               </div>
               {answers[question.id ?? current] && (
                 <>
-                  <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                    <h4 className="font-semibold text-blue-900 mb-2">Explanation:</h4>
-                    <p className="text-sm text-blue-800">
+                  <div className="mt-6 p-4 rounded-lg bg-blue-50 dark:bg-blue-900 border border-blue-100 dark:border-blue-800">
+                    <h4 className="font-semibold text-blue-900 dark:text-blue-200 mb-2">Explanation:</h4>
+                    <p className="text-sm text-blue-800 dark:text-blue-100">
                       {
                         question.options.find(
                           (o: any) => o.id === answers[question.id ?? current]
@@ -493,17 +493,17 @@ function RouteComponent() {
                   {!question.options.find(
                     (o: any) => o.id === answers[question.id ?? current] && o.isCorrect
                   ) && (
-                    <div className="mt-4 p-4 bg-red-50 rounded-lg">
-                      <h4 className="font-semibold text-red-900 mb-2">Solution Steps:</h4>
-                      <ul className="list-disc ml-6 text-sm text-red-800 space-y-1">
+                    <div className="mt-4 p-4 rounded-lg bg-red-50 dark:bg-red-900 border border-red-100 dark:border-red-800">
+                      <h4 className="font-semibold text-red-900 dark:text-red-200 mb-2">Solution Steps:</h4>
+                      <ul className="list-disc ml-6 text-sm text-red-800 dark:text-red-100 space-y-1">
                         {question.solutionSteps?.map((step: string, i: number) => (
                           <li key={i}>{step}</li>
                         ))}
                       </ul>
                       {question.sourcePassages?.length > 0 && (
                         <>
-                          <h4 className="font-semibold text-red-900 mt-3 mb-2">Reference:</h4>
-                          <ul className="list-disc ml-6 text-sm text-red-800 space-y-1">
+                          <h4 className="font-semibold text-red-900 dark:text-red-200 mt-3 mb-2">Reference:</h4>
+                          <ul className="list-disc ml-6 text-sm text-red-800 dark:text-red-100 space-y-1">
                             {question.sourcePassages.map((passage: string, i: number) => (
                               <li key={i}>{passage}</li>
                             ))}
@@ -544,22 +544,22 @@ function RouteComponent() {
             </CardContent>
           </Card>
         ) : processingResults ? (
-          <Card className="w-full mb-8">
+          <Card className="w-full mb-8 bg-white dark:bg-gray-900">
             <CardContent className="p-8 text-center flex flex-col items-center justify-center">
-              <Loader2 className="w-12 h-12 text-blue-500 animate-spin mb-4" />
-              <h2 className="text-2xl font-semibold mb-2">Processing your assessment results...</h2>
-              <p className="text-gray-500">Analyzing your answers and generating personalized feedback. Please wait.</p>
+              <Loader2 className="w-12 h-12 text-blue-500 dark:text-blue-300 animate-spin mb-4" />
+              <h2 className="text-2xl font-semibold mb-2 text-gray-900 dark:text-gray-100">Processing your assessment results...</h2>
+              <p className="text-gray-500 dark:text-gray-300">Analyzing your answers and generating personalized feedback. Please wait.</p>
             </CardContent>
           </Card>
         ) : (
-          <Card className="w-full mb-8">
+          <Card className="w-full mb-8 bg-white dark:bg-gray-900">
             <CardContent className="p-8 text-center">
               <div className="mb-6">
-                <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                <h2 className="text-3xl font-bold mb-2">Assessment Complete!</h2>
+                <CheckCircle2 className="w-16 h-16 text-green-500 dark:text-green-300 mx-auto mb-4" />
+                <h2 className="text-3xl font-bold mb-2 text-gray-900 dark:text-gray-100">Assessment Complete!</h2>
               </div>
               <div className="mb-6">
-                <p className="text-2xl mb-2">
+                <p className="text-2xl mb-2 text-gray-900 dark:text-gray-100">
                   Your Score: 
                   <span className={`font-bold ml-2 ${getScoreColor(score ?? localScore, total)}`}>
                     {score ?? localScore} / {total}
@@ -569,9 +569,9 @@ function RouteComponent() {
                   </span>
                 </p>
                 {adaptiveInfo && (
-                  <div className="flex justify-center items-center gap-4 mt-4">
-                    <TrendingUp className="w-5 h-5 text-blue-500" />
-                    <span className="text-sm text-gray-600">
+                  <div className="flex justify-center items-center gap-4 mt-4 text-gray-700 dark:text-gray-300">
+                    <TrendingUp className="w-5 h-5 text-blue-500 dark:text-blue-300" />
+                    <span className="text-sm">
                       Completed at {adaptiveInfo.recommendedDifficulty} difficulty
                     </span>
                   </div>
@@ -579,18 +579,18 @@ function RouteComponent() {
               </div>
               {/* Immediate Attempt Feedback */}
               {attemptFeedback && (
-                <div className="mb-6 p-4 bg-blue-50 rounded-lg">
-                  <h3 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                <div className="mb-6 p-4 rounded-lg bg-blue-50 dark:bg-blue-900 border border-blue-100 dark:border-blue-800">
+                  <h3 className="font-semibold text-blue-900 dark:text-blue-200 mb-2 flex items-center gap-2">
                     <Target className="w-5 h-5" />
                     This Assessment Results
                   </h3>
-                  <p className="text-sm text-blue-800">{attemptFeedback}</p>
+                  <p className="text-sm text-blue-800 dark:text-blue-100">{attemptFeedback}</p>
                 </div>
               )}
               {/* Weak Areas */}
               {weakestAreas.length > 0 && (
-                <div className="mb-4 p-4 bg-red-50 rounded-lg">
-                  <h4 className="font-semibold text-red-900 mb-2 flex items-center gap-2">
+                <div className="mb-4 p-4 rounded-lg bg-red-50 dark:bg-red-900 border border-red-100 dark:border-red-800">
+                  <h4 className="font-semibold text-red-900 dark:text-red-200 mb-2 flex items-center gap-2">
                     <AlertCircle className="w-4 h-4" />
                     Areas for Improvement:
                   </h4>
@@ -600,7 +600,7 @@ function RouteComponent() {
                         key={idx}
                         to="/lesson/$lessonId"
                         params={{ lessonId: String(topicToLessonId[area] || 1) }}
-                        className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm underline hover:bg-red-200 transition"
+                        className="px-3 py-1 bg-red-100 dark:bg-red-800 text-red-700 dark:text-red-200 rounded-full text-sm underline hover:bg-red-200 dark:hover:bg-red-700 transition"
                         title={`Go to ${lessonNames[topicToLessonId[area] || 1]}`}
                       >
                         {formatTagName(area)}
@@ -611,14 +611,14 @@ function RouteComponent() {
               )}
               {/* Strong Areas */}
               {strongestAreas.length > 0 && (
-                <div className="mb-4 p-4 bg-green-50 rounded-lg">
-                  <h4 className="font-semibold text-green-900 mb-2 flex items-center gap-2">
+                <div className="mb-4 p-4 rounded-lg bg-green-50 dark:bg-green-900 border border-green-100 dark:border-green-800">
+                  <h4 className="font-semibold text-green-900 dark:text-green-200 mb-2 flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4" />
                     Your Strengths:
                   </h4>
                   <div className="flex flex-wrap gap-2 justify-center">
                     {strongestAreas.map((area, idx) => (
-                      <span key={idx} className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">
+                      <span key={idx} className="px-3 py-1 bg-green-100 dark:bg-green-800 text-green-700 dark:text-green-200 rounded-full text-sm">
                         {formatTagName(area)}
                       </span>
                     ))}
@@ -627,28 +627,28 @@ function RouteComponent() {
               )}
               {/* Recommendations */}
               {recommendations.length > 0 && (
-                <div className="mb-6 p-4 bg-yellow-50 rounded-lg">
-                  <h4 className="font-semibold text-yellow-900 mb-2 flex items-center gap-2">
+                <div className="mb-6 p-4 rounded-lg bg-yellow-50 dark:bg-yellow-900 border border-yellow-100 dark:border-yellow-800">
+                  <h4 className="font-semibold text-yellow-900 dark:text-yellow-200 mb-2 flex items-center gap-2">
                     <Lightbulb className="w-4 h-4" />
                     Study Recommendations:
                   </h4>
-                  <ul className="text-sm text-yellow-800 space-y-1 text-left max-w-2xl mx-auto">
+                  <ul className="text-sm text-yellow-800 dark:text-yellow-100 space-y-1 text-left max-w-2xl mx-auto">
                     {recommendations.map((rec, idx) => {
                       const tag = extractTagFromRecommendation(rec)
                       return (
                         <li key={idx} className="flex items-start gap-2">
-                          <span className="text-yellow-600 mt-1">•</span>
+                          <span className="text-yellow-600 dark:text-yellow-300 mt-1">•</span>
                           {tag ? (
                             <Link
                               to="/lesson/$lessonId"
                               params={{ lessonId: String(topicToLessonId[tag]) }}
-                              className="underline text-yellow-900 hover:text-yellow-700"
+                              className="underline text-yellow-900 dark:text-yellow-200 hover:text-yellow-700 dark:hover:text-yellow-300"
                               title={`Go to ${lessonNames[topicToLessonId[tag]]}`}
                             >
                               {rec}
                             </Link>
                           ) : (
-                            rec
+                            <span className="dark:text-yellow-100">{rec}</span>
                           )}
                         </li>
                       )
@@ -658,25 +658,25 @@ function RouteComponent() {
               )}
               {/* Long-term Adaptive Feedback */}
               {feedback && (
-                <div className="mb-6 p-4 bg-purple-50 rounded-lg">
-                  <h3 className="font-semibold text-purple-900 mb-2 flex items-center gap-2">
+                <div className="mb-6 p-4 rounded-lg bg-purple-50 dark:bg-purple-900 border border-purple-100 dark:border-purple-800">
+                  <h3 className="font-semibold text-purple-900 dark:text-purple-200 mb-2 flex items-center gap-2">
                     <Brain className="w-5 h-5" />
                     Overall Progress Feedback
                   </h3>
-                  <p className="text-sm text-purple-800">{feedback}</p>
+                  <p className="text-sm text-purple-800 dark:text-purple-100">{feedback}</p>
                 </div>
               )}
               {/* Topic Performance Breakdown */}
               {topicPerformance.length > 0 && (
-                <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                  <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                <div className="mb-6 p-4 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
+                  <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
                     <BookOpen className="w-5 h-5" />
                     Performance by Topic:
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
                     {topicPerformance.map((perf, idx) => (
-                      <div key={idx} className="flex justify-between items-center p-2 bg-white rounded">
-                        <span>Topic {perf.topicId}</span>
+                      <div key={idx} className="flex justify-between items-center p-2 bg-white dark:bg-gray-900 rounded">
+                        <span className="dark:text-gray-100">Topic {perf.topicId}</span>
                         <span className={`font-medium ${getScoreColor(perf.correct, perf.total)}`}>
                           {perf.correct}/{perf.total} ({Math.round((perf.correct / perf.total) * 100)}%)
                         </span>

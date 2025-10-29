@@ -113,7 +113,7 @@ export const ProgressTimeline: React.FC<ProgressTimelineProps> = ({
                               isActive
                                 ? 'bg-primary text-primary-foreground'
                                 : isPast
-                                ? 'bg-(--color-greenz) text-white dark:text-black'
+                                ? 'bg-emerald-600 dark:bg-emerald-500 text-white'
                                 : 'bg-muted-foreground/50 text-white'
                             }`}
                           >
@@ -122,8 +122,8 @@ export const ProgressTimeline: React.FC<ProgressTimelineProps> = ({
 
                           {/* Checkmark for completed */}
                           {isPast && (
-                            <div className="absolute -bottom-1.5 -left-1.5 w-4 h-4 bg-(--color-greenz) rounded-full flex items-center justify-center shadow-sm">
-                              <svg className="w-2.5 h-2.5 text-white dark:text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <div className="absolute -bottom-1.5 -left-1.5 w-4 h-4 bg-emerald-600 dark:bg-emerald-500 rounded-full flex items-center justify-center shadow-sm">
+                              <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                               </svg>
                             </div>
@@ -137,12 +137,12 @@ export const ProgressTimeline: React.FC<ProgressTimelineProps> = ({
                       <div className="flex items-center">
                         <div
                           className={`w-6 h-0.5 ${
-                            isPast ? 'bg-(--color-greenz)' : isFuture ? 'bg-muted-foreground/20 dark:bg-muted-foreground/10' : 'bg-primary'
+                            isPast ? 'bg-emerald-600 dark:bg-emerald-500' : isFuture ? 'bg-muted-foreground/20 dark:bg-muted-foreground/10' : 'bg-primary'
                           }`}
                         ></div>
                         <div
                           className={`w-0 h-0 border-t-[3px] border-b-[3px] border-l-[6px] border-transparent ${
-                            isPast ? 'border-l-(--color-greenz)' : isFuture ? 'border-l-muted-foreground/20 dark:border-l-muted-foreground/10' : 'border-l-primary'
+                            isPast ? 'border-l-emerald-600 dark:border-l-emerald-500' : isFuture ? 'border-l-muted-foreground/20 dark:border-l-muted-foreground/10' : 'border-l-primary'
                           }`}
                         ></div>
                       </div>
@@ -157,12 +157,12 @@ export const ProgressTimeline: React.FC<ProgressTimelineProps> = ({
                   <div className="flex items-center">
                     <div
                       className={`w-6 h-0.5 ${
-                        currentStepIndex === steps.length ? 'bg-(--color-greenz)' : 'bg-muted-foreground/20 dark:bg-muted-foreground/10'
+                        currentStepIndex === steps.length ? 'bg-emerald-600 dark:bg-emerald-500' : 'bg-muted-foreground/20 dark:bg-muted-foreground/10'
                       }`}
                     ></div>
                     <div
                       className={`w-0 h-0 border-t-[3px] border-b-[3px] border-l-[6px] border-transparent ${
-                        currentStepIndex === steps.length ? 'border-l-(--color-greenz)' : 'border-l-muted-foreground/20 dark:border-l-muted-foreground/10'
+                        currentStepIndex === steps.length ? 'border-l-emerald-600 dark:border-l-emerald-500' : 'border-l-muted-foreground/20 dark:border-l-muted-foreground/10'
                     }`}
                   ></div>
                 </div>
@@ -173,7 +173,7 @@ export const ProgressTimeline: React.FC<ProgressTimelineProps> = ({
                     variant={currentStepIndex === steps.length ? "default" : "outline"}
                     className={`cursor-pointer px-4 py-2 transition-all ${
                       currentStepIndex === steps.length
-                        ? 'bg-(--color-greenz) hover:bg-(--color-greenz)/90 shadow-lg scale-110'
+                        ? 'bg-emerald-600 dark:bg-emerald-500 hover:bg-emerald-700 dark:hover:bg-emerald-600 shadow-lg scale-110'
                         : 'hover:bg-accent opacity-80'
                     }`}
                     onClick={() => onStepClick(steps.length)}

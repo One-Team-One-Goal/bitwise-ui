@@ -81,11 +81,11 @@ const TruthTable: React.FC<TruthTableProps> = ({
   }
 
   return (
-    // Make the truth table take page height (below header) and not be internally scrollable.
-    <div className="w-full max-w-md mx-auto min-h-[calc(100vh-5rem)] mb-20">
-      <div className="border lg:overflow-visible" data-tour="truth-table">
+    // Make truth table scrollable with fixed height
+    <div className="w-full max-w-md mx-auto mb-20">
+      <div className="border overflow-auto max-h-[600px]" data-tour="truth-table">
         <Table className="w-full">
-          <TableHeader>
+          <TableHeader className="sticky top-0 z-10 bg-background">
             <TableRow className="bg-muted hover:bg-muted/80 transition-colors">
               {variables.map((variable) => (
                 <TableHead

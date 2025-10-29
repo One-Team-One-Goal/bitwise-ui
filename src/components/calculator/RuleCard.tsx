@@ -65,7 +65,7 @@ export const RuleCard: React.FC<RuleCardProps> = ({
                         {law.title}
                       </Badge>
                     </div>
-                    <code className="block font-mono text-sm text-(--color-greenz) font-semibold bg-(--color-greenz)/10 dark:bg-(--color-greenz)/20 px-3 py-2 rounded border border-(--color-greenz)/30">
+                    <code className="block font-mono text-sm text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-500/10 dark:bg-emerald-500/20 px-3 py-2 rounded border border-emerald-500/30 dark:border-emerald-500/40">
                       {afterExpression}
                     </code>
                   </div>
@@ -96,7 +96,7 @@ export const RuleCard: React.FC<RuleCardProps> = ({
                         {pattern.before}
                       </code>
                       <span className="text-muted-foreground">→</span>
-                      <code className="font-mono text-(--color-greenz) bg-(--color-greenz)/10 dark:bg-(--color-greenz)/20 px-2 py-1 rounded">
+                      <code className="font-mono text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 dark:bg-emerald-500/20 px-2 py-1 rounded">
                         {pattern.after}
                       </code>
                     </div>

@@ -232,7 +232,7 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick }
         {/* E = 1 Table (columns 4-7) */}
         <div className="relative">
           <div className="text-center mb-2">
-            <span className="inline-block bg-(--color-greenz)/10 dark:bg-(--color-greenz)/20 text-(--color-greenz) px-3 py-1 rounded-lg text-sm font-semibold">
+            <span className="inline-block bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 px-3 py-1 rounded-lg text-sm font-semibold">
               E = 1
             </span>
           </div>

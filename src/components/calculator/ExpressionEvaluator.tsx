@@ -65,12 +65,12 @@ export const ExpressionEvaluator: React.FC<ExpressionEvaluatorProps> = ({
 
   return (
     <Card className={className}>
-      <CardHeader className="border-b bg-linear-to-r from-purple-600 to-indigo-600 text-white">
+      <CardHeader className="border-b bg-primary dark:bg-primary text-white">
         <div className="flex items-center gap-3">
           <Calculator className="h-5 w-5" />
-          <div>
+            <div>
             <CardTitle>Expression Evaluator</CardTitle>
-            <CardDescription className="text-purple-100">
+            <CardDescription className="text-primary-foreground/80">
               Set variable values and evaluate the result
             </CardDescription>
           </div>
@@ -98,11 +98,11 @@ export const ExpressionEvaluator: React.FC<ExpressionEvaluatorProps> = ({
               {varNames.map((varName) => (
                 <div 
                   key={varName}
-                  className="flex items-center justify-between p-3 border rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+                  className="flex items-center justify-between p-3 border rounded-lg bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="font-mono font-bold text-lg text-violet-700">{varName}</span>
-                    <span className="text-xs text-gray-500">=</span>
+                    <span className="font-mono font-bold text-lg text-violet-700 dark:text-violet-400">{varName}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">=</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Switch
@@ -112,7 +112,7 @@ export const ExpressionEvaluator: React.FC<ExpressionEvaluatorProps> = ({
                     />
                     <Badge 
                       variant={variables[varName] ? "default" : "outline"}
-                      className={variables[varName] ? "bg-emerald-500" : "bg-red-500 text-white"}
+                      className={variables[varName] ? "bg-emerald-500 dark:bg-emerald-600" : "bg-red-500 dark:bg-red-600 text-white"}
                     >
                       {variables[varName] ? 'T' : 'F'}
                     </Badge>
@@ -138,23 +138,23 @@ export const ExpressionEvaluator: React.FC<ExpressionEvaluatorProps> = ({
         {result !== null && (
           <div className={`p-6 rounded-lg border-2 flex items-center justify-center gap-4 ${
             result 
-              ? 'bg-emerald-50 border-emerald-300' 
-              : 'bg-red-50 border-red-300'
+              ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-300 dark:border-emerald-700' 
+              : 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700'
           }`}>
             {result ? (
               <>
-                <Check className="h-8 w-8 text-emerald-600" />
+                <Check className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
                 <div>
-                  <div className="text-2xl font-bold text-emerald-700">TRUE</div>
-                  <div className="text-sm text-emerald-600">Expression evaluates to true</div>
+                  <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">TRUE</div>
+                  <div className="text-sm text-emerald-600 dark:text-emerald-500">Expression evaluates to true</div>
                 </div>
               </>
             ) : (
               <>
-                <X className="h-8 w-8 text-red-600" />
+                <X className="h-8 w-8 text-red-600 dark:text-red-400" />
                 <div>
-                  <div className="text-2xl font-bold text-red-700">FALSE</div>
-                  <div className="text-sm text-red-600">Expression evaluates to false</div>
+                  <div className="text-2xl font-bold text-red-700 dark:text-red-400">FALSE</div>
+                  <div className="text-sm text-red-600 dark:text-red-500">Expression evaluates to false</div>
                 </div>
               </>
             )}
@@ -163,7 +163,7 @@ export const ExpressionEvaluator: React.FC<ExpressionEvaluatorProps> = ({
 
         {/* Error Display */}
         {error && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg text-red-700 dark:text-red-400 text-sm">
             {error}
           </div>
         )}

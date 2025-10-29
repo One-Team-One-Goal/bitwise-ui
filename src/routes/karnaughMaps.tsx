@@ -7,10 +7,42 @@ import Map from "@/components/kmap/Map"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import introJs from 'intro.js'
 import 'intro.js/introjs.css'
-import { HelpCircle, Calculator } from 'lucide-react'
+import { HelpCircle, Calculator, Shuffle } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { calculatorService } from "@/services/calculator.service"
+
+// Random example expressions for quick testing - properly mapped to K-map variables (A, B, C, D, E)
+const RANDOM_EXPRESSIONS = [
+  // 2-variable examples (A, B)
+  { expr: "A∧B", vars: 2, desc: "Simple AND" },
+  { expr: "A∨B", vars: 2, desc: "Simple OR" },
+  { expr: "¬A∧B", vars: 2, desc: "Negation AND" },
+  { expr: "A⊕B", vars: 2, desc: "XOR" },
+  { expr: "A∧B∨¬A∧¬B", vars: 2, desc: "XNOR" },
+  
+  // 3-variable examples (A, B, C)
+  { expr: "A∧B∨C", vars: 3, desc: "Mixed operations" },
+  { expr: "(A∨B)∧C", vars: 3, desc: "Grouped OR-AND" },
+  { expr: "A∧B∨B∧C∨A∧C", vars: 3, desc: "Majority function" },
+  { expr: "¬A∧B∨A∧¬B", vars: 3, desc: "XOR pattern" },
+  { expr: "(A∨B)∧(B∨C)", vars: 3, desc: "Overlapping groups" },
+  { expr: "A∧B∧C∨¬A∧¬B∧¬C", vars: 3, desc: "Corners" },
+  
+  // 4-variable examples (A, B, C, D)
+  { expr: "A∧B∨C∧D", vars: 4, desc: "Two groups" },
+  { expr: "(A∨B)∧(C∨D)", vars: 4, desc: "Product of sums" },
+  { expr: "A∧B∧C∨D", vars: 4, desc: "Mixed complexity" },
+  { expr: "A⊕B⊕C⊕D", vars: 4, desc: "4-bit XOR" },
+  { expr: "(A∧B)∨(C∧D)∨(A∧D)", vars: 4, desc: "Multiple products" },
+  { expr: "A∧C∨B∧D", vars: 4, desc: "Diagonal pattern" },
+  
+  // 5-variable examples (A, B, C, D, E)
+  { expr: "A∧B∨C∧D∨E", vars: 5, desc: "Five-way OR" },
+  { expr: "(A∨B)∧(C∨D)∧E", vars: 5, desc: "Complex POS" },
+  { expr: "A∧B∧C∨D∧E", vars: 5, desc: "Grouped products" },
+  { expr: "A∧E∨B∧C∨D", vars: 5, desc: "Cross-table groups" },
+];
 
 export const Route = createFileRoute("/karnaughMaps")({
   component: RouteComponent,
@@ -38,6 +70,13 @@ function RouteComponent() {
   const [expressionError, setExpressionError] = useState<string | null>(null);
   const [isProcessingExpression, setIsProcessingExpression] = useState(false);
 
+  // Generate a random expression
+  const handleRandomExpression = () => {
+    const randomExample = RANDOM_EXPRESSIONS[Math.floor(Math.random() * RANDOM_EXPRESSIONS.length)];
+    setExpression(randomExample.expr);
+    setExpressionError(null);
+  };
+
   // Handle expression input and conversion to truth table
   const handleExpressionSubmit = async () => {
     if (!expression.trim()) {
@@ -52,13 +91,25 @@ function RouteComponent() {
       // Generate truth table from expression
       const response = await calculatorService.generateTruthTable(expression);
 
+      console.log('Truth table response:', response); // Debug log
+
       if (!response.success || !response.result) {
-        setExpressionError(response.error || "Failed to parse expression");
+        const errorMsg = response.error || "Failed to parse expression";
+        console.error('Truth table error:', errorMsg);
+        setExpressionError(errorMsg);
         setIsProcessingExpression(false);
         return;
       }
 
-      const { variables: varNames, rows } = response.result;
+      const { variables: varNames, table } = response.result;
+
+      console.log('Parsed variables:', varNames, 'Table rows:', table?.length); // Debug log
+
+      if (!table || !Array.isArray(table)) {
+        setExpressionError("Invalid truth table format received");
+        setIsProcessingExpression(false);
+        return;
+      }
 
       // Validate variable count (2-5 variables)
       if (varNames.length < 2 || varNames.length > 5) {
@@ -73,7 +124,7 @@ function RouteComponent() {
       // Wait a bit for state to update
       setTimeout(() => {
         // Convert truth table rows to the K-Map format
-        const newTruthTable = rows.map((row: any) => (row.result ? 1 : 0) as 0 | 1);
+        const newTruthTable = table.map((row: any) => (row.result ? 1 : 0) as 0 | 1);
         
         // Update each cell in the truth table
         newTruthTable.forEach((value: 0 | 1, index: number) => {
@@ -161,17 +212,28 @@ function RouteComponent() {
   return (
     <TooltipProvider>
       <div className="relative">
-        {/* Help Button - Top Right */}
-        <div className="absolute top-4 right-4 z-10">
+        {/* Floating Action Buttons - Top Right */}
+        <div className="fixed top-20 right-4 z-50 flex flex-col gap-2">
           <Button
             type="button"
             onClick={startTutorial}
             variant="outline"
             size="icon"
-            className="rounded-full w-10 h-10 shadow-sm hover:shadow-md hover:bg-primary/10 hover:border-primary transition-all"
+            className="rounded-full w-12 h-12 shadow-lg hover:shadow-xl hover:bg-primary/10 hover:border-primary transition-all bg-background dark:bg-gray-800 border-2"
             title="Show Tutorial"
           >
             <HelpCircle className="h-5 w-5 text-primary" />
+          </Button>
+          
+          <Button
+            onClick={handleRandomExpression}
+            variant="outline"
+            size="icon"
+            disabled={isProcessingExpression}
+            title="Generate random example"
+            className="rounded-full w-12 h-12 shadow-lg hover:shadow-xl hover:bg-primary/10 hover:border-primary transition-all bg-background dark:bg-gray-800 border-2"
+          >
+            <Shuffle className="h-5 w-5 text-primary" />
           </Button>
         </div>
 
@@ -186,13 +248,13 @@ function RouteComponent() {
         )}
 
         {/* Title Section */}
-        <div className="mb-4 mt-8">
+        <div className="mb-10 mt-30">
           <p className="font-semibold text-center text-3xl">Karnaugh Map Solver</p>
         </div>
 
         {/* Expression Input Section */}
         <div className="max-w-2xl mx-auto mb-6 expression-input">
-          <div className="bg-card dark:bg-card rounded-lg shadow-md p-4 border border-border">
+          <div className="bg-card dark:bg-gray-800 rounded-lg shadow-md p-4 border border-border">
             <label className="block text-sm font-semibold text-foreground mb-2">
               Import Boolean Expression
             </label>
@@ -216,7 +278,7 @@ function RouteComponent() {
               <Button
                 onClick={handleExpressionSubmit}
                 disabled={isProcessingExpression || !expression.trim()}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground px-6"
               >
                 <Calculator className="h-4 w-4 mr-2" />
                 {isProcessingExpression ? 'Processing...' : 'Generate'}
@@ -243,7 +305,7 @@ function RouteComponent() {
         </div>
 
         {/* Karnaugh Map Section */}
-        <div className="space-y-4 mt-20 p-4 kmap-container">
+        <div className="space-y-4 mt-4 p-4 kmap-container">
           <Map
             squares={squares}
             groups={solution?.groups || []}

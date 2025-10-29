@@ -36,6 +36,8 @@ const Square: React.FC<SquareProps> = ({
       : false
   )
   const [isHovered, setIsHovered] = useState(false)
+  const [tooltipPosition, setTooltipPosition] = useState<'top' | 'bottom'>('top')
+  const cellRef = React.useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -49,14 +51,29 @@ const Square: React.FC<SquareProps> = ({
     return () => obs.disconnect()
   }, [])
 
+  // Determine if tooltip should appear above or below based on cell position
+  useEffect(() => {
+    if (isHovered && cellRef.current) {
+      const rect = cellRef.current.getBoundingClientRect()
+      const viewportHeight = window.innerHeight
+      
+      // If cell is in top 40% of viewport, show tooltip below
+      if (rect.top < viewportHeight * 0.4) {
+        setTooltipPosition('bottom')
+      } else {
+        setTooltipPosition('top')
+      }
+    }
+  }, [isHovered])
+
   const valueClass = useMemo(() => {
-    // base visual classes using CSS variables for theme support
+    // base visual classes using Tailwind dark mode support
     const base = 'text-center'
     if (value === 1)
-      return `${base} font-bold ${!groupColor ? 'bg-(--color-greenz)/10 dark:bg-(--color-greenz)/20 text-(--color-greenz) dark:text-(--color-greenz2)' : 'text-(--color-greenz)'}`
+      return `${base} font-bold ${!groupColor ? 'bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'text-emerald-600 dark:text-emerald-400'}`
     if (value === 0)
       return `${base} text-muted-foreground font-normal ${!groupColor ? 'bg-muted/30 dark:bg-muted/20' : ''}`
-    return `${base} font-bold ${!groupColor ? 'bg-(--color-redz)/10 dark:bg-(--color-redz)/20 text-(--color-redz)' : 'text-(--color-redz)'}`
+    return `${base} font-bold ${!groupColor ? 'bg-red-500/10 dark:bg-red-500/20 text-red-600 dark:text-red-400' : 'text-red-600 dark:text-red-400'}`
   }, [value, groupColor])
 
   // Create border style based on group connections
@@ -108,7 +125,7 @@ const Square: React.FC<SquareProps> = ({
     !isGrouped || !groupColor ? 'border border-border' : 'relative rounded-md'
 
   return (
-    <div className="relative group">
+    <div className="relative group" ref={cellRef}>
       <div
         className={`
           flex items-center justify-center 
@@ -135,18 +152,18 @@ const Square: React.FC<SquareProps> = ({
       
       {/* Coordinate Tooltip on Hover */}
       {isHovered && coordinates && (
-        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-popover border border-border text-popover-foreground text-xs rounded-lg shadow-xl whitespace-nowrap z-50 pointer-events-none">
+        <div className={`absolute ${tooltipPosition === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'} left-1/2 transform -translate-x-1/2 px-3 py-2 bg-popover dark:bg-gray-800 border border-border text-popover-foreground dark:text-gray-100 text-xs rounded-lg shadow-xl whitespace-nowrap z-50 pointer-events-none`}>
           <div className="flex flex-col gap-1">
             <div className="font-semibold text-center">{coordinates.variables || coordinates.binary}</div>
-            <div className="text-muted-foreground">Binary: {coordinates.binary}</div>
+            <div className="text-muted-foreground dark:text-gray-400">Binary: {coordinates.binary}</div>
             {coordinates.minterm !== undefined && (
-              <div className="text-muted-foreground">Minterm: m{coordinates.minterm}</div>
+              <div className="text-muted-foreground dark:text-gray-400">Minterm: m{coordinates.minterm}</div>
             )}
-            <div className="text-xs text-muted-foreground/70 mt-1 text-center">Click to cycle value</div>
+            <div className="text-xs text-muted-foreground/70 dark:text-gray-500 mt-1 text-center">Click to cycle value</div>
           </div>
-          {/* Arrow pointing down */}
-          <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">
-            <div className="border-4 border-transparent border-t-gray-900 dark:border-t-gray-800"></div>
+          {/* Arrow pointing in appropriate direction */}
+          <div className={`absolute ${tooltipPosition === 'top' ? 'top-full' : 'bottom-full'} left-1/2 transform -translate-x-1/2 ${tooltipPosition === 'top' ? '-mt-1' : '-mb-1'}`}>
+            <div className={`border-4 border-transparent ${tooltipPosition === 'top' ? 'border-t-gray-900 dark:border-t-gray-800' : 'border-b-gray-900 dark:border-b-gray-800'}`}></div>
           </div>
         </div>
       )}

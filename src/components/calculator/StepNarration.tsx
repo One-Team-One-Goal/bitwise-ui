@@ -41,7 +41,7 @@ export const StepNarration: React.FC<StepNarrationProps> = ({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
     >
-      <Card className="bg-linear-to-br from-primary/5 to-accent/5 dark:from-primary/10 dark:to-accent/10 border-2 border-primary/30 dark:border-primary/50">
+      <Card className="bg-primary/5 dark:bg-primary/10 border-2 border-primary/30 dark:border-primary/50">
         {/* Header */}
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
@@ -80,19 +80,19 @@ export const StepNarration: React.FC<StepNarrationProps> = ({
             <>
               <Separator />
               <div className="flex items-start gap-3">
-                <Badge className="w-6 h-6 rounded-full bg-(--color-greenz) flex items-center justify-center p-0 text-xs">
+                <Badge className="w-6 h-6 rounded-full bg-emerald-600 dark:bg-emerald-500 flex items-center justify-center p-0 text-xs">
                   2
                 </Badge>
                 <div className="flex-1 space-y-2">
-                  <p className="text-xs font-semibold text-(--color-greenz)">What changed:</p>
+                  <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-500">What changed:</p>
                   <div className="bg-background dark:bg-muted/30 rounded-md p-3 border border-border space-y-1">
                     <div className="flex items-center gap-2 text-sm font-mono">
                       <span className="text-muted-foreground">Before:</span>
                       <code className="text-foreground">{step.before.raw}</code>
                     </div>
                     <div className="flex items-center gap-2 text-sm font-mono">
-                      <span className="text-(--color-greenz)">After:</span>
-                      <code className="text-(--color-greenz) font-semibold">{step.after.raw}</code>
+                      <span className="text-emerald-600 dark:text-emerald-500">After:</span>
+                      <code className="text-emerald-600 dark:text-emerald-500 font-semibold">{step.after.raw}</code>
                     </div>
                   </div>
                 </div>

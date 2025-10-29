@@ -426,14 +426,14 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
       />
 
       {/* Input Section */}
-      <div className="bg-white rounded-lg border-2 border-gray-200 p-5 space-y-3">
+      <div className="bg-white dark:bg-gray-800 rounded-lg border-2 border-gray-200 dark:border-gray-700 p-5 space-y-3">
         <form onSubmit={fetchRemoteScript} className="flex flex-col gap-3">
           <div className="flex gap-2 items-center input-section">
             <input
               ref={inputRef}
               value={expressionInput}
               onChange={(e) => setExpressionInput(e.target.value)}
-              className="flex-1 px-4 py-3 border-2 border-input rounded-lg text-lg font-mono focus:border-primary focus:outline-none transition-colors bg-background text-foreground"
+              className="flex-1 px-4 py-3 border-2 border-input dark:border-gray-600 rounded-lg text-lg font-mono focus:border-primary focus:outline-none transition-colors bg-background dark:bg-gray-900 text-foreground"
               placeholder="Enter boolean expression (e.g. A ∧ B ∨ ¬A)"
               aria-label="Boolean expression"
             />
@@ -448,7 +448,7 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
             >
               Examples
             </Button>
-            <Button variant={"outline"} onClick={handleReset} className="px-6 py-3 h-auto border-2 text-base hover:bg-muted/50">
+            <Button variant={"outline"} onClick={handleReset} className="px-6 py-3 h-auto border-2 text-base hover:bg-muted/50 dark:hover:bg-muted/30">
               ↺ Reset
             </Button>
           </div>
@@ -461,7 +461,7 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
                 key={sym}
                 type="button"
                 onClick={() => insertOperator(sym)}
-                className="px-3 py-1.5 border-2 border-border rounded-md text-base bg-background hover:bg-primary/10 hover:border-primary dark:hover:bg-primary/20 transition-colors font-mono font-bold text-foreground"
+                className="px-3 py-1.5 border-2 border-border dark:border-gray-600 rounded-md text-base bg-background dark:bg-gray-900 hover:bg-primary/10 hover:border-primary dark:hover:bg-primary/20 dark:hover:border-primary transition-colors font-mono font-bold text-foreground"
                 aria-label={`Insert ${sym}`}>
                 {sym}
               </button>
@@ -469,7 +469,7 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
           </div>
 
           {/* Display Options - Compact */}
-          <div className="flex flex-wrap items-center gap-4 text-sm bg-muted/30 dark:bg-muted/20 rounded-lg p-3 border border-border display-options">
+          <div className="flex flex-wrap items-center gap-4 text-sm bg-muted/30 dark:bg-muted/20 rounded-lg p-3 border border-border dark:border-gray-600 display-options">
             <span className="text-xs font-semibold text-muted-foreground uppercase">Display:</span>
             <div className="flex items-center gap-2">
               <Switch
@@ -506,7 +506,7 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
 
 
       {/* Main Visualization Area */}
-      <div ref={visualizationRef} className="bg-card dark:bg-card rounded-lg border-2 border-border p-6 relative min-h-[400px]">
+      <div ref={visualizationRef} className="bg-card dark:bg-gray-800 rounded-lg border-2 border-border dark:border-gray-700 p-6 relative min-h-[400px]">
         <div ref={containerRef} className="relative">
         {remoteScript == null ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -528,15 +528,15 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
             )}
 
             {/* Expression Display with Timeline & Controls - All in One */}
-            <div className="bg-card rounded-lg border-2 border-border overflow-hidden">
+            <div className="bg-card dark:bg-gray-800 rounded-lg border-2 border-border dark:border-gray-700 overflow-hidden">
               {/* Header */}
-              <div className="bg-linear-to-r from-primary to-accent text-primary-foreground px-4 py-2">
+              <div className="bg-primary dark:bg-primary text-primary-foreground px-4 py-2">
                 <h4 className="text-sm font-semibold uppercase tracking-wide">Current Expression</h4>
               </div>
               
               {/* Expression */}
               <div className="p-8 expression-display">
-                <div className="bg-linear-to-br from-primary/5 to-accent/5 dark:from-primary/10 dark:to-accent/10 rounded-lg p-8 border-2 min-h-24 flex items-center justify-center relative overflow-hidden"
+                <div className="bg-primary/5 dark:bg-primary/10 rounded-lg p-8 border-2 dark:border-gray-600 min-h-24 flex items-center justify-center relative overflow-hidden"
                   style={{
                     borderColor: timeline[index]?.law && index > 0 
                       ? getLawAnimation(timeline[index].law).highlightColor 
@@ -622,7 +622,7 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
                 <span className="group-open:rotate-90 transition-transform">▶</span>
                 View Full Simplification History ({remoteScript.steps.length} steps)
               </summary>
-              <div className="mt-4 space-y-3 pl-6 border-l-4 border-border dark:border-border">
+              <div className="mt-4 space-y-3 pl-6 border-l-4 border-border dark:border-gray-600">
                 {timeline.slice(0, index + 1).map((tstate, idx) => (
                   <div key={tstate.key} className="relative">
                     <button
@@ -630,14 +630,14 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
                       className={`w-full text-left rounded-lg p-4 border-2 transition-all ${
                         idx === index
                           ? 'bg-primary/10 dark:bg-primary/20 border-primary shadow-md'
-                          : 'bg-muted/30 dark:bg-muted/20 border-border hover:bg-muted/50 dark:hover:bg-muted/30'
+                          : 'bg-muted/30 dark:bg-muted/20 border-border dark:border-gray-600 hover:bg-muted/50 dark:hover:bg-muted/30'
                       }`}
                     >
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-xs font-semibold text-muted-foreground">
                           {idx === 0 ? 'Original' : `Step ${idx}`}
                         </span>
-                        <span className="text-xs px-2 py-0.5 bg-background dark:bg-muted/30 rounded border border-border">
+                        <span className="text-xs px-2 py-0.5 bg-background dark:bg-muted/30 rounded border border-border dark:border-gray-600">
                           {tstate.law}
                         </span>
                       </div>

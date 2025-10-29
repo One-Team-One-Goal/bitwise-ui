@@ -52,15 +52,15 @@ export const ExamplesPanel: React.FC<ExamplesPanelProps> = ({
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed right-0 top-0 h-full w-full max-w-2xl bg-white shadow-2xl z-50 overflow-hidden flex flex-col"
+            className="fixed right-0 top-0 h-full w-full max-w-2xl bg-white dark:bg-gray-900 shadow-2xl z-50 overflow-hidden flex flex-col"
           >
             {/* Header */}
-            <div className="bg-linear-to-r from-blue-600 to-purple-600 text-white p-6">
+            <div className="bg-primary dark:bg-primary text-white p-6">
               <div className="flex items-center justify-between mb-2">
                 <h2 className="text-2xl font-bold">Challenge Examples</h2>
                 <button
                   onClick={onClose}
-                  className="text-white hover:bg-white/20 rounded-full p-2 transition-colors"
+                  className="text-white hover:bg-white/20 dark:hover:bg-white/30 rounded-full p-2 transition-colors"
                   aria-label="Close"
                 >
                   <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -68,16 +68,16 @@ export const ExamplesPanel: React.FC<ExamplesPanelProps> = ({
                   </svg>
                 </button>
               </div>
-              <p className="text-blue-100">
+              <p className="text-primary-foreground/80">
                 Can't think of an expression? Try these pre-built challenges!
               </p>
             </div>
 
             {/* Filters */}
-            <div className="border-b bg-gray-50 p-4 space-y-3">
+            <div className="border-b bg-gray-50 dark:bg-gray-800 dark:border-gray-700 p-4 space-y-3">
               {/* Difficulty Filter */}
               <div>
-                <label className="text-xs font-semibold text-gray-600 mb-2 block">
+                <label className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-2 block">
                   DIFFICULTY
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -87,8 +87,8 @@ export const ExamplesPanel: React.FC<ExamplesPanelProps> = ({
                       onClick={() => setSelectedDifficulty(diff)}
                       className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                         selectedDifficulty === diff
-                          ? 'bg-blue-600 text-white shadow-md scale-105'
-                          : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-100'
+                          ? 'bg-blue-600 dark:bg-blue-700 text-white shadow-md scale-105'
+                          : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600'
                       }`}
                     >
                       {diff === 'all' ? 'All Levels' : `${getDifficultyIcon(diff)} ${diff.charAt(0).toUpperCase() + diff.slice(1)}`}
@@ -99,7 +99,7 @@ export const ExamplesPanel: React.FC<ExamplesPanelProps> = ({
 
               {/* Category Filter */}
               <div>
-                <label className="text-xs font-semibold text-gray-600 mb-2 block">
+                <label className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-2 block">
                   CATEGORY
                 </label>
                 <div className="flex flex-wrap gap-2">
@@ -109,8 +109,8 @@ export const ExamplesPanel: React.FC<ExamplesPanelProps> = ({
                       onClick={() => setSelectedCategory(cat)}
                       className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                         selectedCategory === cat
-                          ? 'bg-purple-600 text-white shadow-md scale-105'
-                          : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-100'
+                          ? 'bg-purple-600 dark:bg-purple-700 text-white shadow-md scale-105'
+                          : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600'
                       }`}
                     >
                       {cat.charAt(0).toUpperCase() + cat.slice(1)}
@@ -120,15 +120,15 @@ export const ExamplesPanel: React.FC<ExamplesPanelProps> = ({
               </div>
 
               {/* Results count */}
-              <div className="text-xs text-gray-600 pt-2 border-t">
-                Showing <span className="font-semibold text-blue-600">{filteredExamples.length}</span> examples
+              <div className="text-xs text-gray-600 dark:text-gray-400 pt-2 border-t dark:border-gray-700">
+                Showing <span className="font-semibold text-blue-600 dark:text-blue-400">{filteredExamples.length}</span> examples
               </div>
             </div>
 
             {/* Examples List */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {filteredExamples.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+                <div className="flex flex-col items-center justify-center py-16 text-gray-400 dark:text-gray-500">
                   <div className="text-6xl mb-4">∅</div>
                   <p>No examples match your filters</p>
                 </div>
@@ -161,7 +161,7 @@ const ExampleCard: React.FC<{
   return (
     <motion.div
       layout
-      className="bg-white border-2 border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
+      className="bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
     >
       <div className="p-4">
         {/* Header */}
@@ -171,19 +171,19 @@ const ExampleCard: React.FC<{
               <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-bold border ${difficultyColor}`}>
                 {difficultyIcon} {example.difficulty.toUpperCase()}
               </span>
-              <span className="text-xs px-2 py-1 bg-gray-100 rounded text-gray-600">
+              <span className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-300">
                 ~{example.estimatedSteps} steps
               </span>
             </div>
-            <h3 className="text-lg font-bold text-gray-900">{example.title}</h3>
-            <p className="text-sm text-gray-600 mt-1">{example.description}</p>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{example.title}</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{example.description}</p>
           </div>
         </div>
 
         {/* Expression Preview */}
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-3">
-          <div className="text-xs text-gray-500 mb-1 font-semibold">EXPRESSION:</div>
-          <div className="font-mono text-base text-gray-800 break-all">
+        <div className="bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3 mb-3">
+          <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 font-semibold">EXPRESSION:</div>
+          <div className="font-mono text-base text-gray-800 dark:text-gray-200 break-all">
             {example.expression}
           </div>
         </div>
@@ -199,7 +199,7 @@ const ExampleCard: React.FC<{
           </Button>
           <button
             onClick={() => setExpanded(!expanded)}
-            className="px-3 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium"
+            className="px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-200"
           >
             {expanded ? '▲' : '▼'} Info
           </button>
@@ -218,18 +218,18 @@ const ExampleCard: React.FC<{
               <div className="mt-4 pt-4 border-t space-y-3">
                 {/* Learning Focus */}
                 <div>
-                  <div className="text-xs font-semibold text-gray-600 mb-1">LEARNING FOCUS:</div>
-                  <div className="text-sm text-gray-700">{example.learningFocus}</div>
+                  <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">LEARNING FOCUS:</div>
+                  <div className="text-sm text-gray-700 dark:text-gray-300">{example.learningFocus}</div>
                 </div>
 
                 {/* Laws Used */}
                 <div>
-                  <div className="text-xs font-semibold text-gray-600 mb-1">LAWS USED:</div>
+                  <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">LAWS USED:</div>
                   <div className="flex flex-wrap gap-1">
                     {example.lawsUsed.map(law => (
                       <span
                         key={law}
-                        className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded border border-blue-200"
+                        className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded border border-blue-200 dark:border-blue-700"
                       >
                         {law}
                       </span>
@@ -240,12 +240,12 @@ const ExampleCard: React.FC<{
                 {/* Tags */}
                 {example.tags.length > 0 && (
                   <div>
-                    <div className="text-xs font-semibold text-gray-600 mb-1">TAGS:</div>
+                    <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">TAGS:</div>
                     <div className="flex flex-wrap gap-1">
                       {example.tags.map(tag => (
                         <span
                           key={tag}
-                          className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded"
+                          className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded"
                         >
                           {tag}
                         </span>

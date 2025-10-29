@@ -11,7 +11,6 @@ import {
 } from '@/components/ui/navigation-menu'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Link } from '@tanstack/react-router'
-import CodeImg from '@/assets/icons/codeimg.jpg'
 import logoArrow from '@/assets/icons/logo-arrow.svg'
 import logoArrowDark from '@/assets/icons/logo-arrow-dark.svg'
 import { Button } from '@/components/ui/button'

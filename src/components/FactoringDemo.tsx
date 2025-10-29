@@ -433,7 +433,7 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
               ref={inputRef}
               value={expressionInput}
               onChange={(e) => setExpressionInput(e.target.value)}
-              className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg text-lg font-mono focus:border-blue-500 focus:outline-none transition-colors"
+              className="flex-1 px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg text-lg font-mono focus:border-blue-500 dark:focus:border-blue-400 focus:outline-none transition-colors bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
               placeholder="Enter boolean expression (e.g. A ∧ B ∨ ¬A)"
               aria-label="Boolean expression"
             />
@@ -448,20 +448,20 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
             >
               Examples
             </Button>
-            <Button variant={"outline"} onClick={handleReset} className="px-6 py-3 h-auto border-2 text-base hover:bg-gray-50">
+            <Button variant={"outline"} onClick={handleReset} className="px-6 py-3 h-auto border-2 text-base hover:bg-gray-50 dark:hover:bg-gray-800">
               ↺ Reset
             </Button>
           </div>
 
           {/* Quick operator buttons */}
           <div className="flex flex-wrap gap-2 quick-insert">
-            <span className="text-sm text-gray-600 font-medium self-center mr-2">Quick insert:</span>
+            <span className="text-sm text-gray-600 dark:text-gray-400 font-medium self-center mr-2">Quick insert:</span>
             {['∧','∨','¬','⊕','→','↔','(',')'].map(sym => (
               <button
                 key={sym}
                 type="button"
                 onClick={() => insertOperator(sym)}
-                className="px-3 py-1.5 border-2 border-gray-300 rounded-md text-base bg-white hover:bg-blue-50 hover:border-blue-400 transition-colors font-mono font-bold"
+                className="px-3 py-1.5 border-2 border-gray-300 dark:border-gray-600 rounded-md text-base bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:border-blue-400 dark:hover:border-blue-500 transition-colors font-mono font-bold text-gray-900 dark:text-gray-100"
                 aria-label={`Insert ${sym}`}>
                 {sym}
               </button>
@@ -469,8 +469,8 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
           </div>
 
           {/* Display Options - Compact */}
-          <div className="flex flex-wrap items-center gap-4 text-sm bg-gray-50 rounded-lg p-3 border display-options">
-            <span className="text-xs font-semibold text-gray-600 uppercase">Display:</span>
+          <div className="flex flex-wrap items-center gap-4 text-sm bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border dark:border-gray-700 display-options">
+            <span className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">Display:</span>
             <div className="flex items-center gap-2">
               <Switch
                 id="rulecard-toggle"
@@ -498,7 +498,7 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
           </div>
         </form>
         {errorRemote && (
-          <div className="bg-red-50 border-2 border-red-200 rounded-lg p-3 text-red-700">
+          <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-lg p-3 text-red-700 dark:text-red-400">
             <span className="font-semibold">Error:</span> {errorRemote}
           </div>
         )}
@@ -506,13 +506,13 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
 
 
       {/* Main Visualization Area */}
-      <div ref={visualizationRef} className="bg-white rounded-lg border-2 border-gray-200 p-6 relative min-h-[400px]">
+      <div ref={visualizationRef} className="bg-white dark:bg-gray-900 rounded-lg border-2 border-gray-200 dark:border-gray-700 p-6 relative min-h-[400px]">
         <div ref={containerRef} className="relative">
         {remoteScript == null ? (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="text-6xl mb-4 font-bold text-gray-300">∅</div>
-            <h3 className="text-xl font-semibold text-gray-700 mb-2">Ready to Simplify!</h3>
-            <p className="text-gray-600">Enter a Boolean expression above and click Solve to see step-by-step simplification.</p>
+            <div className="text-6xl mb-4 font-bold text-gray-300 dark:text-gray-600">∅</div>
+            <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">Ready to Simplify!</h3>
+            <p className="text-gray-600 dark:text-gray-400">Enter a Boolean expression above and click Solve to see step-by-step simplification.</p>
           </div>
         ) : (
           <div className="space-y-6">

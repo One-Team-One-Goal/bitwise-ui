@@ -1,8 +1,10 @@
+// ...existing code...
 import { Card, CardContent } from '@/components/ui/card'
 import { useState, useEffect } from 'react'
 import { Progress } from '@/components/ui/progress'
 import { TrendingUp, TrendingDown, Target, BarChart3, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
+import { apiService } from '@/services/api.service'
 
 interface AnalyticsData {
   overallMastery: number
@@ -76,25 +78,32 @@ export default function DataAnalyticsCard({ lesson, user }: { lesson: any; user:
       setLoading(true)
       setError(null)
       try {
-        // Fetch both analytics and statistics
-        const [analyticsResponse, statisticsResponse] = await Promise.all([
-          fetch(`${import.meta.env.VITE_API_BASE_URL}/api/adaptive/analytics/${user.id}`),
-          fetch(`${import.meta.env.VITE_API_BASE_URL}/api/assessment/statistics/${user.id}`)
+        // Use apiService which normalizes base URL and avoids duplicate /api
+        const [analyticsResult, statisticsResult] = await Promise.all([
+          apiService.get(`/adaptive/analytics/${user.id}`),
+          apiService.get(`/assessment/statistics/${user.id}`)
         ])
 
-        const analyticsResult = await analyticsResponse.json()
-        const statisticsResult = await statisticsResponse.json()
-
-        if (analyticsResult.success) {
-          setAnalytics(analyticsResult.data)
+        // Keep existing success/data shape checks to remain compatible with backend response format
+        if (analyticsResult && (analyticsResult as any).success !== undefined) {
+          if ((analyticsResult as any).success) {
+            setAnalytics((analyticsResult as any).data)
+          } else {
+            throw new Error((analyticsResult as any).error || 'Failed to fetch analytics')
+          }
         } else {
-          throw new Error(analyticsResult.error || 'Failed to fetch analytics')
+          // assume apiService returned the data directly
+          setAnalytics(analyticsResult as AnalyticsData)
         }
 
-        if (statisticsResult.success) {
-          setStatistics(statisticsResult.data)
+        if (statisticsResult && (statisticsResult as any).success !== undefined) {
+          if ((statisticsResult as any).success) {
+            setStatistics((statisticsResult as any).data)
+          } else {
+            throw new Error((statisticsResult as any).error || 'Failed to fetch statistics')
+          }
         } else {
-          throw new Error(statisticsResult.error || 'Failed to fetch statistics')
+          setStatistics(statisticsResult as StatisticsData)
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch data')
@@ -105,6 +114,7 @@ export default function DataAnalyticsCard({ lesson, user }: { lesson: any; user:
 
     fetchAnalytics()
   }, [user?.id])
+
 
   const getCurrentLessonAnalytics = () => {
     if (!analytics || !lesson) return null

@@ -1,7 +1,7 @@
-// Updated RouteComponent with improved content display
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState, useEffect, useRef } from 'react'
 import LessonHeader from '@/components/LessonHeader'
+import { useGetLesson } from '@/hooks/useLesson'
 
 import { Button } from '@/components/ui/button'
 import { ChevronRight, ChevronLeft, Check } from 'lucide-react'
@@ -9,38 +9,28 @@ import { Confetti, type ConfettiRef } from '@/components/magicui/confetti'
 import bitbotRightPoint from '@/assets/bitbot/right-point.svg'
 import ContentDisplay from '@/components/ContentDisplay'
 
-// Updated interfaces
+// Local content types (keeps file self-contained)
 interface ContentBlock {
-  type:
-    | 'text'
-    | 'inlineCode'
-    | 'codeBlock'
-    | 'image'
-    | 'list'
-    | 'table'
-    | 'formula'
-    | 'callout'
-    | 'divider'
-    | 'custom'
-  text?: string
-  code?: string
-  language?: string
-  image?: string
-  alt?: string
-  list?: string[] | { text: string; subItems?: string[] }[]
+  type: 'text' | 'inlineCode' | 'codeBlock' | 'image' | 'list' | 'table' | 'formula' | 'callout' | 'divider' | 'custom';
+  text?: string;
+  code?: string;
+  language?: string;
+  image?: string;
+  alt?: string;
+  list?: string[] | { text: string; subItems?: string[] }[];
   table?: {
-    headers: string[]
-    rows: string[][]
-    caption?: string
-  }
-  formula?: string
+    headers: string[];
+    rows: string[][];
+    caption?: string;
+  };
+  formula?: string;
   callout?: {
-    type: 'info' | 'warning' | 'tip' | 'important'
-    title?: string
-    content: string
-  }
-  content?: React.ReactNode
-  className?: string
+    type: 'info' | 'warning' | 'tip' | 'important';
+    title?: string;
+    content: string;
+  };
+  content?: React.ReactNode;
+  className?: string;
 }
 
 export interface Topic {
@@ -62,16 +52,6 @@ export interface Lesson {
   updatedAt: string
 }
 
-async function fetchLesson(lessonId: number): Promise<Lesson> {
-  const response = await fetch(
-    `${import.meta.env.VITE_API_BASE_URL}/api/lessons/${lessonId}`
-  )
-  if (!response.ok) {
-    throw new Error('Failed to fetch lesson')
-  }
-  return await response.json()
-}
-
 export const Route = createFileRoute('/lesson/$lessonId')({
   component: RouteComponent,
 })
@@ -79,24 +59,20 @@ export const Route = createFileRoute('/lesson/$lessonId')({
 function RouteComponent() {
   const { lessonId } = Route.useParams()
   const navigate = useNavigate()
-  const [lesson, setLesson] = useState<Lesson | null>(null)
-  const [loading, setLoading] = useState(true)
+  const lessonIdNum = lessonId ? Number(lessonId) : undefined
+
+  // useGetLesson from useLessonQueries (react-query)
+  const { data: lesson, isLoading, error } = useGetLesson(lessonIdNum)
+
   const [topicIdx, setTopicIdx] = useState(0)
   const [finished, setFinished] = useState(false)
   const confettiRef = useRef<ConfettiRef>(null)
 
+  // reset progress when lesson changes
   useEffect(() => {
-    setLoading(true)
-    setLesson(null)
     setTopicIdx(0)
     setFinished(false)
-    fetchLesson(Number(lessonId))
-      .then((data) => {
-        setLesson(data)
-        setLoading(false)
-      })
-      .catch(() => setLoading(false))
-  }, [lessonId])
+  }, [lesson?.id])
 
   useEffect(() => {
     if (finished) {
@@ -104,7 +80,7 @@ function RouteComponent() {
     }
   }, [finished])
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="pt-36 max-w-4xl mx-auto flex flex-col items-center">
         <div className="animate-pulse">
@@ -115,10 +91,10 @@ function RouteComponent() {
     )
   }
 
-  if (!lesson) {
+  if (error || !lesson) {
     return (
       <div className="pt-36 max-w-4xl mx-auto flex flex-col items-center">
-        <p className="text-lg text-gray-500">Lesson not found.</p>
+        <p className="text-lg text-gray-500">{error ? (error as Error).message : 'Lesson not found.'}</p>
       </div>
     )
   }
@@ -131,12 +107,20 @@ function RouteComponent() {
     )
   }
 
-  const topic = lesson.topics[topicIdx]
+  const topic = lesson.topics?.[topicIdx]
+  
+  if (!topic) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <p className="text-lg text-gray-500">Topic not found.</p>
+      </div>
+    )
+  }
 
   return (
     <div>
       <LessonHeader
-        progress={finished ? 100 : (topicIdx / lesson.topics.length) * 100}
+        progress={finished ? 100 : (topicIdx / (lesson.topics?.length || 1)) * 100}
         title={lesson.title}
       />
       <div className="pt-24 max-w-4xl mx-auto flex flex-col">
@@ -156,16 +140,11 @@ function RouteComponent() {
                 {topic.title}
               </h1>
               <div className="flex items-center text-sm text-gray-500 space-x-4">
-                <span>
-                  Topic {topicIdx + 1} of {lesson.topics.length}
-                </span>
-                {topic.tags.length > 0 && (
+                <span>Topic {topicIdx + 1} of {lesson.topics?.length || 0}</span>
+                {(topic.tags?.length || 0) > 0 && (
                   <div className="flex space-x-1">
-                    {topic.tags.map((tag, i) => (
-                      <span
-                        key={i}
-                        className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs"
-                      >
+                    {topic.tags?.map((tag, i) => (
+                      <span key={i} className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs">
                         {tag}
                       </span>
                     ))}
@@ -176,7 +155,7 @@ function RouteComponent() {
 
             {/* Content Display */}
             {Array.isArray(topic.displayContent) ? (
-              <ContentDisplay blocks={topic.displayContent} />
+              <ContentDisplay blocks={topic.displayContent as any} />
             ) : (
               <div className="text-gray-500 italic">No content available</div>
             )}
@@ -205,14 +184,11 @@ function RouteComponent() {
 
               <div className="bg-gray-50 rounded-lg p-6 mb-8">
                 <p className="text-lg text-gray-700 mb-2">
-                  Topics completed: {lesson.topics.length}
+                  Topics completed: {lesson.topics?.length || 0}
                 </p>
                 <div className="flex flex-wrap justify-center gap-2">
-                  {lesson.topics.map((t, i) => (
-                    <span
-                      key={i}
-                      className="text-sm bg-green-100 text-green-700 px-2 py-1 rounded"
-                    >
+                  {lesson.topics?.map((t, i) => (
+                    <span key={i} className="text-sm bg-green-100 text-green-700 px-2 py-1 rounded">
                       ✓ {t.title}
                     </span>
                   ))}
@@ -246,7 +222,7 @@ function RouteComponent() {
 
       {/* Fixed pagination at bottom */}
       {!finished && (
-        <div className="fixed bottom-0 left-0 w-full bg-background border-t border-gray-200 flex justify-center py-4 z-40 shadow-lg">
+        <div className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 flex justify-center py-4 z-40 shadow-lg">
           <div className="flex w-full max-w-4xl mx-auto justify-between items-center px-6">
             <div>
               {topicIdx > 0 ? (
@@ -264,17 +240,15 @@ function RouteComponent() {
             </div>
 
             <div className="text-sm text-gray-500">
-              {topicIdx + 1} / {lesson.topics.length}
+              {topicIdx + 1} / {lesson.topics?.length || 0}
             </div>
 
             <div>
-              {topicIdx < lesson.topics.length - 1 ? (
+              {topicIdx < (lesson.topics?.length || 0) - 1 ? (
                 <Button
                   className="flex items-center space-x-2"
                   onClick={() =>
-                    setTopicIdx((i) =>
-                      Math.min(i + 1, lesson.topics.length - 1)
-                    )
+                    setTopicIdx((i) => Math.min(i + 1, (lesson.topics?.length || 1) - 1))
                   }
                 >
                   <span>Next</span>

@@ -11,6 +11,22 @@ export const API_ENDPOINTS = {
         EVALUATE: `${API_BASE_URL}/calculator/evaluate`,
         TRUTH_TABLE: `${API_BASE_URL}/calculator/truth-table`,
     },
+    LESSONS: {
+        GET_LESSONS: `${API_BASE_URL}/lessons`,
+        GET_LESSON_BY_ID: (lessonId: number) => `${API_BASE_URL}/lessons/${lessonId}`,
+    },
+    ASSESSMENT: {
+        GET_ASSESSMENTS: `${API_BASE_URL}/assessment/`,
+        GET_ATTEMPT_BY_ID: (attemptId: string | number) => `${API_BASE_URL}/assessment/attempt/${attemptId}`,
+        SUBMIT_ATTEMPT: `${API_BASE_URL}/assessment/submit-attempt`,
+        SUBMIT_PRACTICE: `${API_BASE_URL}/assessment/submit-practice`,
+        SUBMIT_ADAPTIVE_PRACTICE: `${API_BASE_URL}/assessment/submit-adaptive-practice`,
+        GET_STATISTICS_BY_USER: (userId: string | number) => `${API_BASE_URL}/assessment/statistics/${userId}`,
+    },
+    ADAPTIVE: {
+        GET_ANALYTICS_BY_USER: (userId: string | number) => `${API_BASE_URL}/adaptive/analytics/${userId}`,
+    },
+    // ...
     // add here for more
 } as const;
 

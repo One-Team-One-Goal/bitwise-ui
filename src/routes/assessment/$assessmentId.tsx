@@ -4,36 +4,21 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
-import {
-  CheckCircle2,
-  XCircle,
-  Brain,
-  Target,
-  TrendingUp,
-  AlertCircle,
-  Table,
-  Grid3X3,
-  BookOpen,
-  Lightbulb,
-  Loader2,
-} from 'lucide-react'
+import { CheckCircle2, XCircle, Brain, Target, TrendingUp, AlertCircle, Table, Grid3X3, BookOpen, Lightbulb, Loader2 } from 'lucide-react'
 import CircuitRenderer from '@/components/CircuitRenderer'
 
 async function fetchAttempt(attemptId: number) {
-  const response = await fetch(
-    `${import.meta.env.VITE_API_BASE_URL}/api/assessment/attempt/${attemptId}`
-  )
+  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/assessment/attempt/${attemptId}`)
   const result = await response.json()
-  if (!result.success)
-    throw new Error(result.error || 'Failed to fetch attempt')
+  if (!result.success) throw new Error(result.error || 'Failed to fetch attempt')
   return result.data
 }
 
 // Mapping from topic/tag to lessonId
 const topicToLessonId: Record<string, number> = {
-  intro: 1,
+  'intro': 1,
   'boolean-values': 1,
-  applications: 1,
+  'applications': 1,
   'and-gate': 2,
   'or-gate': 2,
   'not-gate': 2,
@@ -51,15 +36,15 @@ const topicToLessonId: Record<string, number> = {
   'commutative-law': 4,
   'absorption-law': 4,
   'distributive-law': 4,
-  simplification: 4,
+  'simplification': 4,
   'karnaugh-maps': 4,
 }
 
 const lessonNames: Record<number, string> = {
-  1: 'Introduction to Boolean Algebra',
-  2: 'Logic Gates',
-  3: 'Truth Tables',
-  4: 'Simplification',
+  1: "Introduction to Boolean Algebra",
+  2: "Logic Gates",
+  3: "Truth Tables",
+  4: "Simplification"
 }
 
 // Component to render truth tables
@@ -68,52 +53,35 @@ const TruthTableRenderer = ({ tableData }: { tableData: any }) => {
     <div className="my-4 p-4 bg-gray-50 rounded-lg border">
       <div className="flex items-center gap-2 mb-3">
         <Table className="w-5 h-5 text-blue-600" />
-        <h4 className="font-semibold text-gray-800">
-          {tableData.caption || 'Truth Table'}
-        </h4>
+        <h4 className="font-semibold text-gray-800">{tableData.caption || 'Truth Table'}</h4>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse border border-gray-300 bg-background">
+        <table className="w-full border-collapse border border-gray-300 bg-white">
           <thead>
             <tr className="bg-blue-100">
-              {(tableData.headers || tableData.rows[0] || []).map(
-                (header: string, idx: number) => (
-                  <th
-                    key={idx}
-                    className="border border-gray-300 px-3 py-2 text-center font-semibold text-blue-900"
-                  >
-                    {header}
-                  </th>
-                )
-              )}
+              {(tableData.headers || tableData.rows[0] || []).map((header: string, idx: number) => (
+                <th key={idx} className="border border-gray-300 px-3 py-2 text-center font-semibold text-blue-900">
+                  {header}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
-            {tableData.rows
-              .slice(tableData.headers ? 0 : 1)
-              .map((row: string[], rowIdx: number) => (
-                <tr
-                  key={rowIdx}
-                  className={rowIdx % 2 === 0 ? 'bg-background' : 'bg-gray-50'}
-                >
-                  {row.map((cell: string, cellIdx: number) => (
-                    <td
-                      key={cellIdx}
-                      className="border border-gray-300 px-3 py-2 text-center"
-                    >
-                      {cell === '0' || cell === '1' ? (
-                        <span
-                          className={`font-mono font-bold ${cell === '1' ? 'text-green-600' : 'text-red-600'}`}
-                        >
-                          {cell}
-                        </span>
-                      ) : (
-                        <span className="text-gray-700">{cell}</span>
-                      )}
-                    </td>
-                  ))}
-                </tr>
-              ))}
+            {tableData.rows.slice(tableData.headers ? 0 : 1).map((row: string[], rowIdx: number) => (
+              <tr key={rowIdx} className={rowIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                {row.map((cell: string, cellIdx: number) => (
+                  <td key={cellIdx} className="border border-gray-300 px-3 py-2 text-center">
+                    {cell === '0' || cell === '1' ? (
+                      <span className={`font-mono font-bold ${cell === '1' ? 'text-green-600' : 'text-red-600'}`}>
+                        {cell}
+                      </span>
+                    ) : (
+                      <span className="text-gray-700">{cell}</span>
+                    )}
+                  </td>
+                ))}
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
@@ -127,19 +95,14 @@ const KarnaughMapRenderer = ({ kMapData }: { kMapData: any }) => {
     <div className="my-4 p-4 bg-gray-50 rounded-lg border">
       <div className="flex items-center gap-2 mb-3">
         <Grid3X3 className="w-5 h-5 text-purple-600" />
-        <h4 className="font-semibold text-gray-800">
-          {kMapData.caption || 'Karnaugh Map'}
-        </h4>
+        <h4 className="font-semibold text-gray-800">{kMapData.caption || 'Karnaugh Map'}</h4>
       </div>
       <div className="flex justify-center">
         <div className="inline-block">
           <div className="flex mb-2">
             <div className="w-16"></div>
             {(kMapData.headers || []).map((header: string, idx: number) => (
-              <div
-                key={idx}
-                className="w-16 text-center font-semibold text-purple-700 text-sm"
-              >
+              <div key={idx} className="w-16 text-center font-semibold text-purple-700 text-sm">
                 {header}
               </div>
             ))}
@@ -147,21 +110,15 @@ const KarnaughMapRenderer = ({ kMapData }: { kMapData: any }) => {
           {kMapData.rows.map((row: string[], rowIdx: number) => (
             <div key={rowIdx} className="flex items-center mb-1">
               <div className="w-16 text-center font-semibold text-purple-700 text-sm pr-2">
-                {kMapData.sideLabels
-                  ? kMapData.sideLabels[rowIdx]
-                  : `Row ${rowIdx}`}
+                {kMapData.sideLabels ? kMapData.sideLabels[rowIdx] : `Row ${rowIdx}`}
               </div>
               {row.map((cell: string, cellIdx: number) => (
-                <div
-                  key={cellIdx}
-                  className="w-16 h-12 border-2 border-purple-300 bg-background flex items-center justify-center font-mono font-bold text-sm hover:bg-purple-50 transition-colors"
+                <div 
+                  key={cellIdx} 
+                  className="w-16 h-12 border-2 border-purple-300 bg-white flex items-center justify-center font-mono font-bold text-sm hover:bg-purple-50 transition-colors"
                 >
                   {cell === '0' || cell === '1' ? (
-                    <span
-                      className={
-                        cell === '1' ? 'text-green-600' : 'text-red-600'
-                      }
-                    >
+                    <span className={cell === '1' ? 'text-green-600' : 'text-red-600'}>
                       {cell}
                     </span>
                   ) : (
@@ -186,9 +143,7 @@ const QuestionStemRenderer = ({ stem }: { stem: any }) => {
     if (stem.type === 'table' && stem.table) {
       return (
         <div>
-          <h2 className="text-xl font-semibold mb-3">
-            Analyze the following truth table:
-          </h2>
+          <h2 className="text-xl font-semibold mb-3">Analyze the following truth table:</h2>
           <TruthTableRenderer tableData={stem.table} />
         </div>
       )
@@ -196,9 +151,7 @@ const QuestionStemRenderer = ({ stem }: { stem: any }) => {
     if (stem.type === 'karnaughMap' && stem.karnaughMap) {
       return (
         <div>
-          <h2 className="text-xl font-semibold mb-3">
-            Analyze the following Karnaugh map:
-          </h2>
+          <h2 className="text-xl font-semibold mb-3">Analyze the following Karnaugh map:</h2>
           <KarnaughMapRenderer kMapData={stem.karnaughMap} />
         </div>
       )
@@ -206,9 +159,7 @@ const QuestionStemRenderer = ({ stem }: { stem: any }) => {
     if (stem.type === 'circuit' && stem.circuit) {
       return (
         <div>
-          <h2 className="text-xl font-semibold mb-3">
-            Analyze the following circuit:
-          </h2>
+          <h2 className="text-xl font-semibold mb-3">Analyze the following circuit:</h2>
           <CircuitRenderer circuit={stem.circuit} />
         </div>
       )
@@ -252,7 +203,7 @@ function RouteComponent() {
     }
     setLoading(true)
     fetchAttempt(Number(assessmentId))
-      .then((data) => {
+      .then(data => {
         setQuestions(data.questions || [])
         setAttemptId(data.id)
         if (data.performance) {
@@ -295,10 +246,7 @@ function RouteComponent() {
           <CardContent className="p-6 text-center">
             <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
             <h2 className="text-xl font-semibold mb-2">Assessment Not Found</h2>
-            <p className="text-gray-500 mb-4">
-              The assessment you're looking for doesn't exist or has been
-              removed.
-            </p>
+            <p className="text-gray-500 mb-4">The assessment you're looking for doesn't exist or has been removed.</p>
             <Button onClick={() => navigate({ to: '/roadmap' })}>
               Back to Roadmap
             </Button>
@@ -331,20 +279,15 @@ function RouteComponent() {
     if (!attemptId) return
     setSubmitting(true)
     try {
-      const endpoint = adaptiveInfo
-        ? 'submit-adaptive-practice'
-        : 'submit-practice'
-      const response = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/api/assessment/${endpoint}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            attemptId,
-            responses: answers,
-          }),
-        }
-      )
+      const endpoint = adaptiveInfo ? 'submit-adaptive-practice' : 'submit-practice'
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/assessment/${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          attemptId,
+          responses: answers,
+        }),
+      })
       const result = await response.json()
       if (result.success) {
         setScore(result.data.score)
@@ -361,9 +304,7 @@ function RouteComponent() {
       }
     } catch (error) {
       console.error('Failed to submit assessment:', error)
-      setFeedback(
-        'There was an error submitting your assessment. Please try again.'
-      )
+      setFeedback('There was an error submitting your assessment. Please try again.')
     } finally {
       setSubmitting(false)
     }
@@ -376,22 +317,16 @@ function RouteComponent() {
   const localScore = questions.reduce(
     (acc, q, idx) =>
       acc +
-      (q.options.find((o: any) => o.id === answers[q.id ?? idx] && o.isCorrect)
-        ? 1
-        : 0),
+      (q.options.find((o: any) => o.id === answers[q.id ?? idx] && o.isCorrect) ? 1 : 0),
     0
   )
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
-      case 'easy':
-        return 'bg-green-100 text-green-700'
-      case 'medium':
-        return 'bg-yellow-100 text-yellow-700'
-      case 'hard':
-        return 'bg-red-100 text-red-700'
-      default:
-        return 'bg-gray-100 text-gray-700'
+      case 'easy': return 'bg-green-100 text-green-700'
+      case 'medium': return 'bg-yellow-100 text-yellow-700'
+      case 'hard': return 'bg-red-100 text-red-700'
+      default: return 'bg-gray-100 text-gray-700'
     }
   }
 
@@ -403,14 +338,12 @@ function RouteComponent() {
   }
 
   const formatTagName = (tag: string) => {
-    return tag.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())
+    return tag.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
   }
 
   const hasVisualElements = () => {
     if (typeof question.stem === 'object' && question.stem !== null) {
-      return (
-        question.stem.type === 'table' || question.stem.type === 'karnaughMap'
-      )
+      return question.stem.type === 'table' || question.stem.type === 'karnaughMap'
     }
     return false
   }
@@ -418,16 +351,14 @@ function RouteComponent() {
   // Helper to try to extract a tag from a recommendation string
   const extractTagFromRecommendation = (rec: string) => {
     // Try to find a tag that is a substring in the recommendation (case-insensitive)
-    return Object.keys(topicToLessonId).find((t) =>
+    return Object.keys(topicToLessonId).find(t =>
       rec.toLowerCase().includes(t.replace(/-/g, ' '))
     )
   }
 
   return (
     <div>
-      <div
-        className={`pt-8 ${hasVisualElements() ? 'max-w-4xl' : 'max-w-2xl'} mx-auto flex flex-col items-center`}
-      >
+      <div className={`pt-8 ${hasVisualElements() ? 'max-w-4xl' : 'max-w-2xl'} mx-auto flex flex-col items-center`}>
         {/* Header Card */}
         <Card className="w-full mb-6">
           <CardContent className="p-6">
@@ -449,9 +380,7 @@ function RouteComponent() {
                 {adaptiveInfo && (
                   <div className="flex items-center gap-2 mt-2">
                     <span className="text-sm text-gray-600">Difficulty:</span>
-                    <span
-                      className={`px-2 py-1 rounded text-xs font-medium capitalize ${getDifficultyColor(adaptiveInfo.recommendedDifficulty)}`}
-                    >
+                    <span className={`px-2 py-1 rounded text-xs font-medium capitalize ${getDifficultyColor(adaptiveInfo.recommendedDifficulty)}`}>
                       {adaptiveInfo.recommendedDifficulty}
                     </span>
                     <span className="text-sm text-gray-600 ml-2">
@@ -483,16 +412,13 @@ function RouteComponent() {
                     Topic {question.topicId}
                   </span>
                   {question.difficulty && (
-                    <span
-                      className={`px-2 py-1 rounded font-medium ${getDifficultyColor(question.difficulty)}`}
-                    >
+                    <span className={`px-2 py-1 rounded font-medium ${getDifficultyColor(question.difficulty)}`}>
                       {question.difficulty}
                     </span>
                   )}
                   {hasVisualElements() && (
                     <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded flex items-center gap-1">
-                      {typeof question.stem === 'object' &&
-                      question.stem?.type === 'table' ? (
+                      {typeof question.stem === 'object' && question.stem?.type === 'table' ? (
                         <>
                           <Table className="w-3 h-3" />
                           Truth Table
@@ -518,17 +444,15 @@ function RouteComponent() {
                       className={`
                         flex items-center px-4 py-3 rounded-lg border transition-all duration-200
                         text-left
-                        ${
-                          isAnswered
-                            ? isSelected
-                              ? isCorrect
-                                ? 'bg-green-50 border-green-400 text-green-900 shadow-md'
-                                : 'bg-red-50 border-red-400 text-red-900 shadow-md'
-                              : isCorrect
-                                ? 'bg-green-50 border-green-300 text-green-800'
-                                : 'bg-gray-50 border-gray-200 text-gray-500'
-                            : 'bg-background border-gray-200 hover:bg-blue-50 hover:border-blue-300 hover:shadow-sm'
-                        }
+                        ${isAnswered
+                          ? isSelected
+                            ? isCorrect
+                              ? 'bg-green-50 border-green-400 text-green-900 shadow-md'
+                              : 'bg-red-50 border-red-400 text-red-900 shadow-md'
+                            : isCorrect
+                              ? 'bg-green-50 border-green-300 text-green-800'
+                              : 'bg-gray-50 border-gray-200 text-gray-500'
+                          : 'bg-white border-gray-200 hover:bg-blue-50 hover:border-blue-300 hover:shadow-sm'}
                         ${isAnswered ? 'cursor-not-allowed' : 'cursor-pointer'}
                         font-medium
                       `}
@@ -538,12 +462,13 @@ function RouteComponent() {
                       <span className="flex-1">{opt.text}</span>
                       {isAnswered && (
                         <>
-                          {isSelected &&
-                            (isCorrect ? (
+                          {isSelected && (
+                            isCorrect ? (
                               <CheckCircle2 className="ml-2 w-5 h-5 text-green-500" />
                             ) : (
                               <XCircle className="ml-2 w-5 h-5 text-red-500" />
-                            ))}
+                            )
+                          )}
                           {!isSelected && isCorrect && (
                             <CheckCircle2 className="ml-2 w-5 h-5 text-green-400" />
                           )}
@@ -556,9 +481,7 @@ function RouteComponent() {
               {answers[question.id ?? current] && (
                 <>
                   <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                    <h4 className="font-semibold text-blue-900 mb-2">
-                      Explanation:
-                    </h4>
+                    <h4 className="font-semibold text-blue-900 mb-2">Explanation:</h4>
                     <p className="text-sm text-blue-800">
                       {
                         question.options.find(
@@ -568,31 +491,22 @@ function RouteComponent() {
                     </p>
                   </div>
                   {!question.options.find(
-                    (o: any) =>
-                      o.id === answers[question.id ?? current] && o.isCorrect
+                    (o: any) => o.id === answers[question.id ?? current] && o.isCorrect
                   ) && (
                     <div className="mt-4 p-4 bg-red-50 rounded-lg">
-                      <h4 className="font-semibold text-red-900 mb-2">
-                        Solution Steps:
-                      </h4>
+                      <h4 className="font-semibold text-red-900 mb-2">Solution Steps:</h4>
                       <ul className="list-disc ml-6 text-sm text-red-800 space-y-1">
-                        {question.solutionSteps?.map(
-                          (step: string, i: number) => (
-                            <li key={i}>{step}</li>
-                          )
-                        )}
+                        {question.solutionSteps?.map((step: string, i: number) => (
+                          <li key={i}>{step}</li>
+                        ))}
                       </ul>
                       {question.sourcePassages?.length > 0 && (
                         <>
-                          <h4 className="font-semibold text-red-900 mt-3 mb-2">
-                            Reference:
-                          </h4>
+                          <h4 className="font-semibold text-red-900 mt-3 mb-2">Reference:</h4>
                           <ul className="list-disc ml-6 text-sm text-red-800 space-y-1">
-                            {question.sourcePassages.map(
-                              (passage: string, i: number) => (
-                                <li key={i}>{passage}</li>
-                              )
-                            )}
+                            {question.sourcePassages.map((passage: string, i: number) => (
+                              <li key={i}>{passage}</li>
+                            ))}
                           </ul>
                         </>
                       )}
@@ -619,13 +533,11 @@ function RouteComponent() {
                 >
                   {submitting ? (
                     <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-background border-t-transparent rounded-full animate-spin"></div>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                       Submitting...
                     </div>
-                  ) : current < total - 1 ? (
-                    'Next'
                   ) : (
-                    'Finish'
+                    current < total - 1 ? 'Next' : 'Finish'
                   )}
                 </Button>
               </div>
@@ -635,13 +547,8 @@ function RouteComponent() {
           <Card className="w-full mb-8">
             <CardContent className="p-8 text-center flex flex-col items-center justify-center">
               <Loader2 className="w-12 h-12 text-blue-500 animate-spin mb-4" />
-              <h2 className="text-2xl font-semibold mb-2">
-                Processing your assessment results...
-              </h2>
-              <p className="text-gray-500">
-                Analyzing your answers and generating personalized feedback.
-                Please wait.
-              </p>
+              <h2 className="text-2xl font-semibold mb-2">Processing your assessment results...</h2>
+              <p className="text-gray-500">Analyzing your answers and generating personalized feedback. Please wait.</p>
             </CardContent>
           </Card>
         ) : (
@@ -649,21 +556,15 @@ function RouteComponent() {
             <CardContent className="p-8 text-center">
               <div className="mb-6">
                 <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
-                <h2 className="text-3xl font-bold mb-2">
-                  Assessment Complete!
-                </h2>
+                <h2 className="text-3xl font-bold mb-2">Assessment Complete!</h2>
               </div>
               <div className="mb-6">
                 <p className="text-2xl mb-2">
-                  Your Score:
-                  <span
-                    className={`font-bold ml-2 ${getScoreColor(score ?? localScore, total)}`}
-                  >
+                  Your Score: 
+                  <span className={`font-bold ml-2 ${getScoreColor(score ?? localScore, total)}`}>
                     {score ?? localScore} / {total}
                   </span>
-                  <span
-                    className={`text-lg ml-2 ${getScoreColor(score ?? localScore, total)}`}
-                  >
+                  <span className={`text-lg ml-2 ${getScoreColor(score ?? localScore, total)}`}>
                     ({Math.round(((score ?? localScore) / total) * 100)}%)
                   </span>
                 </p>
@@ -671,8 +572,7 @@ function RouteComponent() {
                   <div className="flex justify-center items-center gap-4 mt-4">
                     <TrendingUp className="w-5 h-5 text-blue-500" />
                     <span className="text-sm text-gray-600">
-                      Completed at {adaptiveInfo.recommendedDifficulty}{' '}
-                      difficulty
+                      Completed at {adaptiveInfo.recommendedDifficulty} difficulty
                     </span>
                   </div>
                 )}
@@ -699,9 +599,7 @@ function RouteComponent() {
                       <Link
                         key={idx}
                         to="/lesson/$lessonId"
-                        params={{
-                          lessonId: String(topicToLessonId[area] || 1),
-                        }}
+                        params={{ lessonId: String(topicToLessonId[area] || 1) }}
                         className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-sm underline hover:bg-red-200 transition"
                         title={`Go to ${lessonNames[topicToLessonId[area] || 1]}`}
                       >
@@ -720,10 +618,7 @@ function RouteComponent() {
                   </h4>
                   <div className="flex flex-wrap gap-2 justify-center">
                     {strongestAreas.map((area, idx) => (
-                      <span
-                        key={idx}
-                        className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm"
-                      >
+                      <span key={idx} className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">
                         {formatTagName(area)}
                       </span>
                     ))}
@@ -746,9 +641,7 @@ function RouteComponent() {
                           {tag ? (
                             <Link
                               to="/lesson/$lessonId"
-                              params={{
-                                lessonId: String(topicToLessonId[tag]),
-                              }}
+                              params={{ lessonId: String(topicToLessonId[tag]) }}
                               className="underline text-yellow-900 hover:text-yellow-700"
                               title={`Go to ${lessonNames[topicToLessonId[tag]]}`}
                             >
@@ -782,16 +675,10 @@ function RouteComponent() {
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
                     {topicPerformance.map((perf, idx) => (
-                      <div
-                        key={idx}
-                        className="flex justify-between items-center p-2 bg-background rounded"
-                      >
+                      <div key={idx} className="flex justify-between items-center p-2 bg-white rounded">
                         <span>Topic {perf.topicId}</span>
-                        <span
-                          className={`font-medium ${getScoreColor(perf.correct, perf.total)}`}
-                        >
-                          {perf.correct}/{perf.total} (
-                          {Math.round((perf.correct / perf.total) * 100)}%)
+                        <span className={`font-medium ${getScoreColor(perf.correct, perf.total)}`}>
+                          {perf.correct}/{perf.total} ({Math.round((perf.correct / perf.total) * 100)}%)
                         </span>
                       </div>
                     ))}
@@ -802,8 +689,8 @@ function RouteComponent() {
                 <Button onClick={handleRestart} className="min-w-[160px]">
                   Back to Roadmap
                 </Button>
-                <Button
-                  variant="outline"
+                <Button 
+                  variant="outline" 
                   onClick={() => window.location.reload()}
                   className="min-w-[160px]"
                 >

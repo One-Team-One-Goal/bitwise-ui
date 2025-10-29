@@ -140,7 +140,7 @@ function RouteComponent() {
   const [assessmentError, setAssessmentError] = useState<string | null>(null)
   const navigate = useNavigate()
   const { user } = useAuthContext()
-  const [hovered, setHovered] = useState<(typeof timelineItems)[0] | null>(null)
+  const [hovered, setHovered] = useState<typeof timelineItems[0] | null>(null)
 
   // Flatten lessons and sublessons for the timeline
   const timelineItems = lessons.flatMap((lesson) => [
@@ -176,21 +176,18 @@ function RouteComponent() {
     setAssessmentError(null)
 
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/api/assessment/start-adaptive-practice`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ uid: user.id }),
-        }
-      )
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/assessment/start-adaptive-practice`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid: user.id }),
+      })
 
       const result = await response.json()
 
       if (result.success && result.data) {
         // Store the attempt data for the assessment component
         sessionStorage.setItem('currentAttempt', JSON.stringify(result.data))
-
+        
         // Navigate to the assessment
         navigate({ to: `/assessment/${result.data.attemptId}` })
       } else {
@@ -198,11 +195,7 @@ function RouteComponent() {
       }
     } catch (error) {
       console.error('Failed to start adaptive assessment:', error)
-      setAssessmentError(
-        error instanceof Error
-          ? error.message
-          : 'Failed to start assessment. Please try again.'
-      )
+      setAssessmentError(error instanceof Error ? error.message : 'Failed to start assessment. Please try again.')
     } finally {
       setLoadingAssessment(false)
     }
@@ -241,27 +234,28 @@ function RouteComponent() {
   const displayItem = hovered || selected
 
   return (
-    <div className="m-auto pt-30 flex flex-col md:flex-row w-2/3 min-h-[80vh] gap-4 p-4">
+    <div className="m-auto mt-12 flex flex-col md:flex-row w-2/3 min-h-[80vh] gap-4 p-4">
       {/* Left: Lesson Details */}
-      <div className="flex flex-col gap-4 mr-4 flex-shrink-0">
+      <div className='flex flex-col gap-4 mr-4 flex-shrink-0'>
         {/* Lesson Details Card */}
-        <Card className="max-w-md w-full p-6 h-min rounded-md">
+        <Card className="max-w-md w-full p-6 h-min">
           <CardContent className="p-0 space-y-2">
-            <h2 className="text-2xl font-bold">{displayItem.title}</h2>
+            <h2 className="text-2xl font-bold">
+              {displayItem.title}
+            </h2>
             <p className="text-muted-foreground text-sm">
               {displayItem.description}
             </p>
-            <p className="text-sm text-muted-foreground">
-              {displayItem.details}
-            </p>
+            <p className="text-sm text-muted-foreground">{displayItem.details}</p>
           </CardContent>
         </Card>
 
+        
         {/* Data Analytics Card */}
         <DataAnalyticsCard lesson={displayItem} user={user} />
 
         {/* Adaptive Practice Assessment Card */}
-        <Card className="max-w-md w-full p-6 h-min rounded-md">
+        <Card className="max-w-md w-full p-6 h-min">
           <CardContent className="p-0 space-y-4">
             <div>
               <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
@@ -269,13 +263,12 @@ function RouteComponent() {
                 Adaptive Practice Assessment
               </h3>
               <p className="text-sm text-muted-foreground mb-2">
-                Take a personalized assessment that adapts to your skill level
-                and focuses on areas where you need improvement.
+                Take a personalized assessment that adapts to your skill level and focuses on areas where you need improvement.
               </p>
             </div>
 
             {!user && (
-              <div className="flex items-center gap-2 text-xs text-red-500 p-2 rounded">
+              <div className="flex items-center gap-2 text-xs text-red-500 bg-red-50 p-2 rounded">
                 <AlertCircle className="w-4 h-4" />
                 You need to login before taking the assessment.
               </div>
@@ -288,7 +281,7 @@ function RouteComponent() {
               </div>
             )}
 
-            <div className="space-y-2 text-white">
+            <div className="space-y-2">
               <Button
                 disabled={!user || loadingAssessment}
                 className="w-full flex items-center justify-center bg-purple-600 hover:bg-purple-700"
@@ -300,22 +293,24 @@ function RouteComponent() {
                     Generating Assessment...
                   </>
                 ) : (
-                  <div className="flex">
-                    <Brain className="mr-2 h-4 w-4 " />
+                  <>
+                    <Brain className="mr-2 h-4 w-4" />
                     Take Adaptive Assessment
-                  </div>
+                  </>
                 )}
               </Button>
+
+           
             </div>
 
             <div className="text-xs text-muted-foreground">
               <p className="mb-1">
-                <strong>Adaptive:</strong> Questions adjust to your skill level
-                and focus on weak areas.
+                <strong>Adaptive:</strong> Questions adjust to your skill level and focus on weak areas.
               </p>
             </div>
           </CardContent>
         </Card>
+
       </div>
 
       {/* Right: Timeline with sublessons (scrollable only) */}
@@ -327,14 +322,17 @@ function RouteComponent() {
           {timelineItems.map((item, idx) => (
             <TimelineItem
               key={item.id}
+              sx={{ minHeight: 100, mb: 4 }}
               onMouseEnter={() => setHovered(item)}
               onMouseLeave={() => setHovered(null)}
             >
               <TimelineOppositeContent
                 sx={{
-                  flex: 0.5,
-                  textAlign: 'right',
-                  pr: 2,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
+                  minWidth: item.isSublesson ? 80 : 120,
+                  color: item.isSublesson ? 'text.secondary' : 'inherit',
                 }}
               >
                 <span
@@ -345,7 +343,14 @@ function RouteComponent() {
                     : `Lesson ${lessons.findIndex((l) => l.id === item.id) + 1}`}
                 </span>
               </TimelineOppositeContent>
-              <TimelineSeparator>
+              <TimelineSeparator
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
                 <AnimatedAssessmentButton
                   onClick={() => handleItemClick(item)}
                   isSelected={
@@ -358,20 +363,16 @@ function RouteComponent() {
                     item.isSublesson ? 'w-8 h-8 opacity-80' : 'w-12 h-12'
                   }
                 />
-                {idx < timelineItems.length - 1 && (
-                  <TimelineConnector
-                    sx={{
-                      minHeight: 70,
-                      flexGrow: 0,
-                    }}
-                  />
-                )}
+                {idx < timelineItems.length - 1 && <TimelineConnector />}
               </TimelineSeparator>
               <TimelineContent
                 sx={{
-                  flex: 0.5,
                   cursor: 'pointer',
+                  flex: 1,
                   pl: 2,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'center',
                   opacity: item.isSublesson ? 0.8 : 1,
                 }}
                 onClick={() => handleItemClick(item)}

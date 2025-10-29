@@ -1,146 +1,132 @@
-import React, { useState } from 'react'
-import { CircuitCanvas } from './components/CircuitCanvas'
-import { ComponentPalette } from './components/ComponentPalette'
-import { SimulatorToolbar } from './components/SimulatorToolbar'
-import { PropertiesPanel } from './components/PropertiesPanel'
-import { BooleanExpressionInput } from './components/BooleanExpressionInput'
-import { useCircuitSimulator } from './hooks/useCircuitSimulator'
-import { Card, CardContent } from '@/components/ui/card'
-import { parseExpression } from './utils/expressionParser'
-import { generateCircuitFromExpression } from './utils/circuitGenerator'
-import type { ComponentType, ToolbarState, Connection } from './types'
-import { MousePointer, Hand, Cable, Cpu } from 'lucide-react'
+import React, { useState } from 'react';
+import { CircuitCanvas } from './components/CircuitCanvas';
+import { ComponentPalette } from './components/ComponentPalette';
+import { SimulatorToolbar } from './components/SimulatorToolbar';
+import { PropertiesPanel } from './components/PropertiesPanel';
+import { BooleanExpressionInput } from './components/BooleanExpressionInput';
+import { useCircuitSimulator } from './hooks/useCircuitSimulator';
+import { Card, CardContent } from '@/components/ui/card';
+import { parseExpression } from './utils/expressionParser';
+import { generateCircuitFromExpression } from './utils/circuitGenerator';
+import type { ComponentType, ToolbarState, Connection } from './types';
+import { MousePointer, Hand, Cable, Cpu } from 'lucide-react';
 
 export const CircuitSimulator: React.FC = () => {
   // Undo/redo state
-  const circuitHook = useCircuitSimulator()
-  const [undoStack, setUndoStack] = useState<any[]>([])
-  const [redoStack, setRedoStack] = useState<any[]>([])
-  const isUndoingRef = React.useRef(false)
+  const circuitHook = useCircuitSimulator();
+  const [undoStack, setUndoStack] = useState<any[]>([]);
+  const [redoStack, setRedoStack] = useState<any[]>([]);
+  const isUndoingRef = React.useRef(false);
 
   // Save state to undo stack on every change (but not during undo/redo operations)
   React.useEffect(() => {
     if (!isUndoingRef.current) {
-      setUndoStack((stack) => {
+      setUndoStack(stack => {
         // Avoid adding duplicate states
-        const lastState = stack[stack.length - 1]
-        if (
-          lastState &&
-          JSON.stringify(lastState) === JSON.stringify(circuitHook.circuitState)
-        ) {
-          return stack
+        const lastState = stack[stack.length - 1];
+        if (lastState && JSON.stringify(lastState) === JSON.stringify(circuitHook.circuitState)) {
+          return stack;
         }
-        return [...stack, circuitHook.circuitState]
-      })
+        return [...stack, circuitHook.circuitState];
+      });
       // Clear redo stack on new action
-      setRedoStack([])
+      setRedoStack([]);
     }
     // eslint-disable-next-line
-  }, [circuitHook.circuitState])
+  }, [circuitHook.circuitState]);
 
   const handleUndo = () => {
     if (undoStack.length > 1) {
-      isUndoingRef.current = true
-      const prev = undoStack[undoStack.length - 2]
-      setUndoStack((stack) => stack.slice(0, -1))
-      setRedoStack((stack) => [circuitHook.circuitState, ...stack])
-      circuitHook.setCircuitState(prev)
+      isUndoingRef.current = true;
+      const prev = undoStack[undoStack.length - 2];
+      setUndoStack(stack => stack.slice(0, -1));
+      setRedoStack(stack => [circuitHook.circuitState, ...stack]);
+      circuitHook.setCircuitState(prev);
       // Reset flag after state update completes
-      setTimeout(() => {
-        isUndoingRef.current = false
-      }, 0)
+      setTimeout(() => { isUndoingRef.current = false; }, 0);
     }
-  }
+  };
 
   const handleRedo = () => {
     if (redoStack.length > 0) {
-      isUndoingRef.current = true
-      const next = redoStack[0]
-      setRedoStack((stack) => stack.slice(1))
-      setUndoStack((stack) => [...stack, next])
-      circuitHook.setCircuitState(next)
+      isUndoingRef.current = true;
+      const next = redoStack[0];
+      setRedoStack(stack => stack.slice(1));
+      setUndoStack(stack => [...stack, next]);
+      circuitHook.setCircuitState(next);
       // Reset flag after state update completes
-      setTimeout(() => {
-        isUndoingRef.current = false
-      }, 0)
+      setTimeout(() => { isUndoingRef.current = false; }, 0);
     }
-  }
+  };
   const [toolbarState, setToolbarState] = useState<ToolbarState>({
     selectedTool: 'select',
-    selectedComponentType: null,
-  })
-  const [showBooleanExpression, setShowBooleanExpression] = useState(false)
-  const [currentBooleanExpression, setCurrentBooleanExpression] =
-    useState<string>('')
+    selectedComponentType: null
+  });
+  const [showBooleanExpression, setShowBooleanExpression] = useState(false);
+  const [currentBooleanExpression, setCurrentBooleanExpression] = useState<string>('');
 
   // Monitor circuit state and clear expression when circuit is empty
   React.useEffect(() => {
     // If there are no components, clear the boolean expression
     if (circuitHook.circuitState.components.length === 0) {
-      setCurrentBooleanExpression('')
+      setCurrentBooleanExpression('');
     }
-  }, [circuitHook.circuitState.components.length])
+  }, [circuitHook.circuitState.components.length]);
 
   const tools = [
     {
       id: 'select' as const,
       name: 'Select',
       icon: MousePointer,
-      description: 'Select and move components',
+      description: 'Select and move components'
     },
     {
       id: 'pan' as const,
       name: 'Pan',
       icon: Hand,
-      description: 'Pan the canvas',
+      description: 'Pan the canvas'
     },
     {
       id: 'wire' as const,
       name: 'Wire',
       icon: Cable,
-      description: 'Connect components',
+      description: 'Connect components'
     },
     {
       id: 'component' as const,
       name: 'Component',
       icon: Cpu,
-      description: 'Place components',
-    },
-  ]
+      description: 'Place components'
+    }
+  ];
 
   const handleToolSelect = (tool: ToolbarState['selectedTool']) => {
     setToolbarState({
       selectedTool: tool,
-      selectedComponentType:
-        tool === 'component' ? toolbarState.selectedComponentType : null,
-    })
-  }
+      selectedComponentType: tool === 'component' ? toolbarState.selectedComponentType : null
+    });
+  };
 
   const handleComponentTypeSelect = (componentType: ComponentType) => {
     setToolbarState({
       selectedTool: 'component',
-      selectedComponentType: componentType,
-    })
-  }
+      selectedComponentType: componentType
+    });
+  };
 
   const handleCanvasClick = (position: { x: number; y: number }) => {
-    if (
-      toolbarState.selectedTool === 'component' &&
-      toolbarState.selectedComponentType
-    ) {
-      circuitHook.addComponent(toolbarState.selectedComponentType, position)
-      setToolbarState((prev) => ({
-        ...prev,
-        selectedTool: 'select',
-        selectedComponentType: null,
-      }))
+    if (toolbarState.selectedTool === 'component' && toolbarState.selectedComponentType) {
+      circuitHook.addComponent(toolbarState.selectedComponentType, position);
+      setToolbarState(prev => ({ ...prev, selectedTool: 'select', selectedComponentType: null }));
     }
-  }
+  };
 
   return (
+
+
     <div className="h-full flex flex-col bg-background relative">
       {/* Toolbar */}
-      <div data-tour="toolbar" className="z-30 relative">
+      <div data-tour="toolbar">
         <div className="flex items-center gap-2">
           <SimulatorToolbar />
         </div>
@@ -148,10 +134,7 @@ export const CircuitSimulator: React.FC = () => {
 
       <div className="flex flex-1 overflow-hidden min-h-0">
         {/* Component Palette - Desktop sidebar */}
-        <div
-          className="hidden lg:flex w-64 xl:w-80 flex-shrink-0"
-          data-tour="component-palette"
-        >
+        <div className="hidden lg:flex w-64 xl:w-80 flex-shrink-0" data-tour="component-palette">
           <ComponentPalette
             onComponentSelect={handleComponentTypeSelect}
             selectedComponentType={toolbarState.selectedComponentType}
@@ -167,9 +150,7 @@ export const CircuitSimulator: React.FC = () => {
             onToolSelect={handleToolSelect}
             tools={tools}
             showBooleanExpression={showBooleanExpression}
-            onToggleBooleanExpression={() =>
-              setShowBooleanExpression(!showBooleanExpression)
-            }
+            onToggleBooleanExpression={() => setShowBooleanExpression(!showBooleanExpression)}
             undoStack={undoStack}
             redoStack={redoStack}
             handleUndo={handleUndo}
@@ -179,33 +160,31 @@ export const CircuitSimulator: React.FC = () => {
         </div>
 
         {/* Properties Panel - Desktop sidebar */}
-        <div
-          className="hidden xl:flex w-72 2xl:w-80 flex-shrink-0"
-          data-tour="properties"
-        >
-          <PropertiesPanel circuitHook={circuitHook} />
+        <div className="hidden xl:flex w-72 2xl:w-80 flex-shrink-0" data-tour="properties">
+          <PropertiesPanel
+            circuitHook={circuitHook}
+          />
         </div>
       </div>
 
       {/* Mobile & Tablet Component Palette - Fixed at bottom */}
       <div className="lg:hidden">
-        {toolbarState.selectedTool === 'component' &&
-          !circuitHook.circuitState.selectedComponent &&
-          !circuitHook.circuitState.selectedConnection && (
-            <div className="fixed bottom-0 left-0 right-0 z-30 bg-background border-t-2 border-border shadow-2xl max-h-[60vh] overflow-y-auto">
-              <ComponentPalette
-                onComponentSelect={handleComponentTypeSelect}
-                selectedComponentType={toolbarState.selectedComponentType}
-                isMobile={true}
-              />
-            </div>
-          )}
+        {toolbarState.selectedTool === 'component' && 
+         !circuitHook.circuitState.selectedComponent && 
+         !circuitHook.circuitState.selectedConnection && (
+          <div className="fixed bottom-0 left-0 right-0 z-30 bg-background border-t-2 border-border shadow-2xl max-h-[60vh] overflow-y-auto">
+            <ComponentPalette
+              onComponentSelect={handleComponentTypeSelect}
+              selectedComponentType={toolbarState.selectedComponentType}
+              isMobile={true}
+            />
+          </div>
+        )}
       </div>
 
       {/* Mobile & Tablet Properties Panel - Slide-up overlay */}
       <div className="xl:hidden">
-        {(circuitHook.circuitState.selectedComponent ||
-          circuitHook.circuitState.selectedConnection) && (
+        {(circuitHook.circuitState.selectedComponent || circuitHook.circuitState.selectedConnection) && (
           <div className="fixed bottom-0 left-0 right-0 z-30 bg-background border-t-2 border-border shadow-2xl rounded-t-2xl animate-slide-up">
             <div className="flex justify-center py-2">
               <div className="w-12 h-1 bg-muted-foreground/30 rounded-full" />
@@ -223,145 +202,120 @@ export const CircuitSimulator: React.FC = () => {
           <Card className="shadow-lg border-border bg-background/95 backdrop-blur-sm">
             <CardContent className="p-4">
               <BooleanExpressionInput
-                hasExistingCircuit={
-                  circuitHook.circuitState.components.length > 0
-                }
+                hasExistingCircuit={circuitHook.circuitState.components.length > 0}
                 onClose={() => setShowBooleanExpression(false)}
                 onGenerateCircuit={(expression: string) => {
                   // Store the expression for display
-                  setCurrentBooleanExpression(expression)
-
+                  setCurrentBooleanExpression(expression);
+                  
                   // Parse the expression into an expression tree
-                  const parseResult = parseExpression(expression)
-
+                  const parseResult = parseExpression(expression);
+                  
                   if (!parseResult.success || !parseResult.tree) {
-                    console.error(
-                      'Failed to parse expression:',
-                      parseResult.error
-                    )
+                    console.error('Failed to parse expression:', parseResult.error);
                     // TODO: Show user-friendly error message
-                    return
+                    return;
                   }
-
+                  
                   // Generate circuit components and connections from expression tree
                   const circuitResult = generateCircuitFromExpression(
                     parseResult.tree,
                     parseResult.variables
-                  )
-
+                  );
+                  
                   // Clear existing circuit before generating new one
                   circuitHook.circuitState.components.forEach((comp: any) => {
-                    circuitHook.removeComponent(comp.id)
-                  })
-
+                    circuitHook.removeComponent(comp.id);
+                  });
+                  
                   // Load generated components and connections
                   // Store all components first, keeping track of both new and generated IDs
-                  const componentIdMap = new Map<string, string>()
-                  const addedComponents: any[] = []
-
-                  circuitResult.components.forEach((generatedComp) => {
+                  const componentIdMap = new Map<string, string>();
+                  const addedComponents: any[] = [];
+                  
+                  circuitResult.components.forEach(generatedComp => {
                     const newComp = circuitHook.addComponent(
                       generatedComp.type,
                       generatedComp.position
-                    )
-                    componentIdMap.set(generatedComp.id, newComp.id)
-                    addedComponents.push(newComp)
+                    );
 
+                    if (!newComp) {
+                      console.warn('[CircuitSimulator] Failed to add generated component', generatedComp);
+                      return;
+                    }
+
+                    componentIdMap.set(generatedComp.id, newComp.id);
+                    addedComponents.push(newComp);
+                    
                     // Update label if present
                     if (generatedComp.label) {
-                      circuitHook.updateComponent(newComp.id, {
-                        label: generatedComp.label,
-                      })
+                      circuitHook.updateComponent(newComp.id, { label: generatedComp.label });
                     }
-                  })
-
+                  });
+                  
                   // Wait for React state to update before adding connections
                   setTimeout(() => {
                     circuitResult.connections.forEach((conn) => {
-                      const fromCompId = componentIdMap.get(
-                        conn.from.componentId
-                      )
-                      const toCompId = componentIdMap.get(conn.to.componentId)
-
+                      const fromCompId = componentIdMap.get(conn.from.componentId);
+                      const toCompId = componentIdMap.get(conn.to.componentId);
+                      
                       if (fromCompId && toCompId) {
                         // Find components from our local array instead of state
-                        const fromComp = addedComponents.find(
-                          (c) => c.id === fromCompId
-                        )
-                        const toComp = addedComponents.find(
-                          (c) => c.id === toCompId
-                        )
-
+                        const fromComp = addedComponents.find(c => c.id === fromCompId);
+                        const toComp = addedComponents.find(c => c.id === toCompId);
+                        
                         if (fromComp && toComp) {
                           // Find matching connection points by index (preserve original mapping)
-                          const fromOutputIndex =
-                            conn.from.connectionPointId.includes('output_')
-                              ? parseInt(
-                                  conn.from.connectionPointId.split(
-                                    'output_'
-                                  )[1]
-                                )
-                              : 0
-                          const toInputIndex =
-                            conn.to.connectionPointId.includes('input_')
-                              ? parseInt(
-                                  conn.to.connectionPointId.split('input_')[1]
-                                )
-                              : 0
-
-                          const fromOutput = fromComp.outputs[fromOutputIndex]
-                          const toInput = toComp.inputs[toInputIndex]
-
+                          const fromOutputIndex = conn.from.connectionPointId.includes('output_') 
+                            ? parseInt(conn.from.connectionPointId.split('output_')[1]) 
+                            : 0;
+                          const toInputIndex = conn.to.connectionPointId.includes('input_')
+                            ? parseInt(conn.to.connectionPointId.split('input_')[1])
+                            : 0;
+                          
+                          const fromOutput = fromComp.outputs[fromOutputIndex];
+                          const toInput = toComp.inputs[toInputIndex];
+                          
                           if (fromOutput && toInput) {
                             const newConnection = circuitHook.addConnection(
                               fromCompId,
                               fromOutput.id,
                               toCompId,
                               toInput.id
-                            ) as Connection | null
-
+                            ) as Connection | null;
+                          
                             // Apply pre-calculated wire path
-                            if (
-                              newConnection &&
-                              conn.path &&
-                              conn.path.length > 0
-                            ) {
+                            if (newConnection && conn.path && conn.path.length > 0) {
                               requestAnimationFrame(() => {
                                 if (circuitHook.updateConnection) {
-                                  circuitHook.updateConnection(
-                                    newConnection.id,
-                                    {
-                                      path: conn.path,
-                                    }
-                                  )
+                                  circuitHook.updateConnection(newConnection.id, { 
+                                    path: conn.path 
+                                  });
                                 }
-                              })
+                              });
                             }
                           }
                         }
                       }
-                    })
-
+                    });
+                    
                     // Force an immediate simulation update after circuit generation
                     setTimeout(() => {
                       // Trigger immediate propagation by toggling a switch output (if any)
-                      const switches =
-                        circuitHook.circuitState.components.filter(
-                          (c: any) => c.type === 'SWITCH'
-                        )
+                      const switches = circuitHook.circuitState.components.filter(
+                        (c: any) => c.type === 'SWITCH'
+                      );
                       if (switches.length > 0) {
                         // Force re-evaluation by updating the simulator
-                        circuitHook.circuitState.components.forEach(
-                          (comp: any) => {
-                            circuitHook.updateComponent(comp.id, {})
-                          }
-                        )
+                        circuitHook.circuitState.components.forEach((comp: any) => {
+                          circuitHook.updateComponent(comp.id, {});
+                        });
                       }
-                    }, 250)
-
+                    }, 250);
+                    
                     // Close the boolean expression panel
-                    setShowBooleanExpression(false)
-                  }, 200)
+                    setShowBooleanExpression(false);
+                  }, 200);
                 }}
               />
             </CardContent>
@@ -369,5 +323,5 @@ export const CircuitSimulator: React.FC = () => {
         </div>
       )}
     </div>
-  )
-}
+  );
+};

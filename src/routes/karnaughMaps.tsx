@@ -1,15 +1,18 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
-import TruthTable from '@/tools/karnaughMap/truthTable/TruthTable'
-import SettingsCard from '@/tools/karnaughMap/settings/SettingsCard'
-import { useKMaps } from '@/hooks/useKMaps'
-import Map from '@/components/kmap/Map'
-import { KMapHelpGuide } from '@/tools/karnaughMap/KMapHelpGuide'
-import { TooltipProvider } from '@/components/ui/tooltip'
-import RightPoint from '@/assets/bitbot/left-point.svg'
-import { ArrowLeft, ArrowRight, MousePointerClick, Space } from 'lucide-react'
+import { createFileRoute } from "@tanstack/react-router"
+import { useState } from "react"
+import TruthTable from "@/tools/karnaughMap/truthTable/TruthTable"
+import SettingsCard from "@/tools/karnaughMap/settings/SettingsCard"
+import { useKMaps } from "@/hooks/useKMaps"
+import Map from "@/components/kmap/Map"
+import { TooltipProvider } from "@/components/ui/tooltip"
+import introJs from 'intro.js'
+import 'intro.js/introjs.css'
+import { HelpCircle, Calculator } from 'lucide-react'
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { calculatorService } from "@/services/calculator.service"
 
-export const Route = createFileRoute('/karnaughMaps')({
+export const Route = createFileRoute("/karnaughMaps")({
   component: RouteComponent,
 })
 
@@ -29,182 +32,148 @@ function RouteComponent() {
     handleCellClick,
     handleTruthTableChange,
     handleSetAllCells,
-  } = useKMaps()
+  } = useKMaps();
 
-  const [selectedCell, setSelectedCell] = useState<{
-    row: number
-    col: number
-  } | null>(null)
-  const [showKeyboardHelp, setShowKeyboardHelp] = useState(false)
+  const [expression, setExpression] = useState("");
+  const [expressionError, setExpressionError] = useState<string | null>(null);
+  const [isProcessingExpression, setIsProcessingExpression] = useState(false);
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      // Ignore if user is typing in an input
-      if (
-        e.target instanceof HTMLInputElement ||
-        e.target instanceof HTMLTextAreaElement
-      ) {
-        return
-      }
-
-      // Quick set values: 0, 1, X keys
-      if (selectedCell && ['0', '1', 'x', 'X'].includes(e.key)) {
-        const row = selectedCell.row
-        const col = selectedCell.col
-        handleCellClick(row, col)
-        e.preventDefault()
-      }
-
-      // Arrow navigation
-      if (
-        selectedCell &&
-        ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)
-      ) {
-        const { row, col } = selectedCell
-        const dims =
-          variableCount === 5
-            ? 4
-            : variableCount === 4
-              ? 4
-              : variableCount === 3
-                ? 4
-                : 2
-        const rows =
-          variableCount === 3
-            ? 2
-            : variableCount === 5
-              ? 4
-              : variableCount === 4
-                ? 4
-                : 2
-        const cols = dims
-
-        let newRow = row
-        let newCol = col
-
-        switch (e.key) {
-          case 'ArrowUp':
-            newRow = row > 0 ? row - 1 : rows - 1
-            break
-          case 'ArrowDown':
-            newRow = row < rows - 1 ? row + 1 : 0
-            break
-          case 'ArrowLeft':
-            newCol = col > 0 ? col - 1 : cols - 1
-            break
-          case 'ArrowRight':
-            newCol = col < cols - 1 ? col + 1 : 0
-            break
-        }
-
-        setSelectedCell({ row: newRow, col: newCol })
-        e.preventDefault()
-      }
-
-      // Space to toggle
-      if (selectedCell && e.key === ' ') {
-        handleCellClick(selectedCell.row, selectedCell.col)
-        e.preventDefault()
-      }
+  // Handle expression input and conversion to truth table
+  const handleExpressionSubmit = async () => {
+    if (!expression.trim()) {
+      setExpressionError("Please enter a Boolean expression");
+      return;
     }
 
-    window.addEventListener('keydown', handleKeyPress)
-    return () => window.removeEventListener('keydown', handleKeyPress)
-  }, [selectedCell, variableCount, handleCellClick])
+    setIsProcessingExpression(true);
+    setExpressionError(null);
+
+    try {
+      // Generate truth table from expression
+      const response = await calculatorService.generateTruthTable(expression);
+
+      if (!response.success || !response.result) {
+        setExpressionError(response.error || "Failed to parse expression");
+        setIsProcessingExpression(false);
+        return;
+      }
+
+      const { variables: varNames, rows } = response.result;
+
+      // Validate variable count (2-5 variables)
+      if (varNames.length < 2 || varNames.length > 5) {
+        setExpressionError(`Expression must have 2-5 variables (found ${varNames.length})`);
+        setIsProcessingExpression(false);
+        return;
+      }
+
+      // Set variable count to match expression
+      handleVariableCountChange(varNames.length as 2 | 3 | 4 | 5);
+
+      // Wait a bit for state to update
+      setTimeout(() => {
+        // Convert truth table rows to the K-Map format
+        const newTruthTable = rows.map((row: any) => (row.result ? 1 : 0) as 0 | 1);
+        
+        // Update each cell in the truth table
+        newTruthTable.forEach((value: 0 | 1, index: number) => {
+          handleTruthTableChange(index, value);
+        });
+
+        setIsProcessingExpression(false);
+      }, 100);
+
+    } catch (error: any) {
+      setExpressionError(error?.message || "Failed to process expression");
+      setIsProcessingExpression(false);
+    }
+  };
+
+  // Start the intro.js tutorial
+  const startTutorial = () => {
+    const intro = introJs();
+    intro.setOptions({
+      steps: [
+        {
+          title: '👋 Welcome to Karnaugh Map Solver!',
+          intro: 'This tool helps you simplify Boolean expressions using Karnaugh Maps (K-Maps). Let me show you how to use it!'
+        },
+        {
+          element: '.expression-input',
+          title: '⚡ Quick Start: Import Expression',
+          intro: 'The fastest way to get started! Type a Boolean expression like "A∧B∨C" or "A·B+C" and click Generate. The tool will automatically set up the K-Map with the correct number of variables and populate the truth table.',
+          position: 'bottom'
+        },
+        {
+          element: '.settings-panel',
+          title: '⚙️ Settings Panel',
+          intro: 'Manually choose the number of variables (2-5) and select SOP (Sum of Products) or POS (Product of Sums) form. The K-Map will update automatically!',
+          position: 'right'
+        },
+        {
+          element: '.truth-table',
+          title: '📊 Truth Table',
+          intro: 'This is your truth table. Each row represents a combination of input variables. Click on output cells to toggle between 0, 1, and X (don\'t care).',
+          position: 'right'
+        },
+        {
+          element: '.kmap-container',
+          title: '🗺️ Karnaugh Map',
+          intro: 'The K-Map visualizes your truth table in a grid format optimized for finding patterns. Cells are arranged using Gray code so adjacent cells differ by only one bit.',
+          position: 'left'
+        },
+        {
+          element: '.kmap-container',
+          title: '🖱️ Interactive Cells',
+          intro: 'Hover over any cell to see its binary coordinates, minterm number, and variable representation. Click cells to cycle through values: X → 0 → 1 → X',
+          position: 'left'
+        },
+        {
+          element: '.solution-display',
+          title: '✨ Simplified Expression',
+          intro: 'Your simplified Boolean expression appears here! The solver automatically finds the minimal form with optimal grouping. Lower literal cost means a simpler circuit.',
+          position: 'top'
+        },
+        {
+          title: '🎨 Visual Groups',
+          intro: 'Groups of 1s (or 0s for POS) are highlighted with colored overlays. Each group represents a term in your final expression. Larger groups mean fewer variables in that term!'
+        },
+        {
+          title: '🔢 5-Variable Magic',
+          intro: 'For 5 variables, you\'ll see two 4×4 tables (E=0 and E=1). The solver can find groups that span across both tables, which means the E variable doesn\'t appear in that term!'
+        },
+        {
+          title: '🎓 Ready to Simplify!',
+          intro: 'Try entering an expression or clicking some cells to set values, and watch the solution update in real-time. Click the help button (?) anytime to see this tutorial again. Happy simplifying!'
+        }
+      ],
+      showProgress: true,
+      showBullets: true,
+      exitOnOverlayClick: false,
+      doneLabel: 'Got it!',
+      nextLabel: 'Next →',
+      prevLabel: '← Back',
+      skipLabel: 'Skip'
+    });
+    intro.start();
+  };
 
   return (
     <TooltipProvider>
-      <div className="relative pt-20">
-        {/* Help Buttons - Top Right */}
-        <div className="absolute top-25 right-10 z-10 flex gap-2">
-          <button
-            onClick={() => setShowKeyboardHelp(!showKeyboardHelp)}
-            className="h-10 w-10 border hover:bg-purple-200 text-purple-800 rounded-lg text-sm font-semibold transition-colors"
-            title="Keyboard shortcuts"
+      <div className="relative">
+        {/* Help Button - Top Right */}
+        <div className="absolute top-4 right-4 z-10">
+          <Button
+            type="button"
+            onClick={startTutorial}
+            variant="outline"
+            size="icon"
+            className="rounded-full w-10 h-10 shadow-sm hover:shadow-md hover:bg-blue-50 hover:border-blue-400 transition-all"
+            title="Show Tutorial"
           >
-            ⌨️
-          </button>
-          <KMapHelpGuide />
+            <HelpCircle className="h-5 w-5 text-blue-600" />
+          </Button>
         </div>
-
-        {/* Keyboard Shortcuts Help */}
-        {showKeyboardHelp && (
-          <div
-            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center"
-            onClick={() => setShowKeyboardHelp(false)}
-          >
-            <div
-              className="bg-background rounded-lg p-7 py-7 max-w-lg shadow-xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="relative">
-                <p className="text-xl font-bold mb-4 font-space">
-                  Keyboard Shortcuts 
-                </p>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-secondary-foreground text-sm">
-                      Click cell to select
-                    </span>
-                    <kbd className="bg-primary-foreground border rounded text-sm flex align-middle text-center p-1 h-7 w-7 pt-1.5 justify-center">
-                      <MousePointerClick className="h-4" />
-                    </kbd>
-                  </div>
-                  <div className="flex justify-between items-center gap-20">
-                    <span className="text-secondary-foreground text-sm">
-                      Navigate K-Map
-                    </span>
-                    <div className="flex gap-1">
-                      <kbd className="px-2 py-1 bg-primary-foreground border rounded text-sm">
-                        ↑
-                      </kbd>
-                      <kbd className="px-2 py-1 bg-primary-foreground border rounded text-sm">
-                        ↓
-                      </kbd>
-                      <kbd className="bg-primary-foreground border rounded text-sm flex align-middle text-center p-1 h-7 w-7 pt-1.4 justify-center">
-                        <ArrowLeft className="h-4" />
-                      </kbd>
-                      <kbd className="bg-primary-foreground border rounded text-sm flex align-middle text-center p-1 h-7 w-7 pt-1.4 justify-center">
-                        <ArrowRight className="h-4" />
-                      </kbd>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-secondary-foreground text-sm">
-                      Toggle cell value
-                    </span>
-                    <kbd className="bg-primary-foreground border rounded text-sm flex align-middle text-center h-7 w-7 justify-center">
-                      <Space className="w-4" />
-                    </kbd>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-secondary-foreground text-sm">
-                      Set value
-                    </span>
-                    <div className="flex gap-1">
-                      <kbd className="px-2 py-1 bg-primary-foreground border rounded text-sm flex align-middle text-center p-1 h-7 w-7 justify-center">
-                        0
-                      </kbd>
-                      <kbd className="px-2 py-1 bg-primary-foreground border rounded text-sm flex align-middle text-center p-1 h-7 w-7 justify-center">
-                        1
-                      </kbd>
-                      <kbd className="px-2 py-1 bg-primary-foreground border rounded text-sm flex align-middle text-center p-1 h-7 w-7 justify-center">
-                        X
-                      </kbd>
-                    </div>
-                  </div>
-                </div>
-                <img
-                  src={RightPoint}
-                  alt="pointer"
-                  className="absolute -right-45 -bottom-50 transform -translate-y-1/2 pointer-events-none"
-                  aria-hidden="true"
-                />
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Loading Indicator */}
         {isLoading && (
@@ -218,79 +187,110 @@ function RouteComponent() {
 
         {/* Title Section */}
         <div className="mb-4 mt-8">
-          <p className="font-semibold text-center text-3xl">
-            Karnaugh Map Solver
-          </p>
+          <p className="font-semibold text-center text-3xl">Karnaugh Map Solver</p>
         </div>
 
-        {/* Content Section - Horizontal layout */}
-        <div
-          className={`flex justify-center items-start ${variableCount === 5 ? 'gap-0' : 'gap-42'} flex-wrap h-full`}
-        >
-          {/* Truth Table Section */}
-          <div className="flex-1 max-w-sm mt-4">
-            <TruthTable
-              variables={variables}
-              truthTable={truthTable}
-              onTruthTableChange={handleTruthTableChange}
-            />
-          </div>
-
-          {/* Karnaugh Map Section */}
-          <div className="space-y-4 mt-20 p-4" data-tour="kmap">
-            <Map
-              squares={squares}
-              groups={solution?.groups || []}
-              variableCount={variableCount}
-              onCellClick={handleCellClick}
-            />
-
-            {/* Solution Display */}
-            {solution && (
-              <div
-                className="mt-6 p-4 min-w-[320px] w-full"
-                data-tour="solution"
+        {/* Expression Input Section */}
+        <div className="max-w-2xl mx-auto mb-6 expression-input">
+          <div className="bg-white rounded-lg shadow-md p-4 border border-gray-200">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Import Boolean Expression
+            </label>
+            <p className="text-xs text-gray-500 mb-3">
+              Enter a Boolean expression to automatically populate the K-Map (e.g., A∧B∨C or A·B+C)
+            </p>
+            <div className="flex gap-2">
+              <Input
+                type="text"
+                value={expression}
+                onChange={(e) => setExpression(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleExpressionSubmit();
+                  }
+                }}
+                placeholder="Enter expression (e.g., A∧B∨C, A·B+C)"
+                className="flex-1"
+                disabled={isProcessingExpression}
+              />
+              <Button
+                onClick={handleExpressionSubmit}
+                disabled={isProcessingExpression || !expression.trim()}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
               >
-                <p className="font-semibold mb-2 text-sm text-muted-foreground">
-                  {formType} Solution:
-                </p>
-                <div className="font-mono text-lg mb-2 border rounded-sm pl-2 p-1">
-                  {solution.expression}
-                </div>
-                <div className="flex mt-2 gap-12">
-                  <div className="text-sm text-muted-foreground">
-                    Literal Cost: {solution.literalCost}
-                  </div>
-                  {solution.groups.length > 0 && (
-                    <div className="text-sm text-muted-foreground">
-                      Groups: {solution.groups.length}
-                    </div>
-                  )}
-                </div>
+                <Calculator className="h-4 w-4 mr-2" />
+                {isProcessingExpression ? 'Processing...' : 'Generate'}
+              </Button>
+            </div>
+            {expressionError && (
+              <div className="mt-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">
+                ⚠️ {expressionError}
               </div>
             )}
           </div>
-
-          {/* Settings Section */}
-          <div className="flex-1 max-w-sm">
-            <SettingsCard
-              variableCount={variableCount}
-              formType={formType}
-              onVariableCountChange={handleVariableCountChange}
-              onFormTypeChange={(type: string) =>
-                handleFormTypeChange(type as 'SOP' | 'POS')
-              }
-              onSetAllCells={(value: number | string) => {
-                if (typeof value === 'string' && value !== 'X') {
-                  handleSetAllCells(parseInt(value) as 0 | 1)
-                } else {
-                  handleSetAllCells(value as any)
-                }
-              }}
-              onProcess={() => {}} // Auto-solving enabled, no manual process needed
-            />
-          </div>
         </div>
+      
+      {/* Content Section - Horizontal layout */}
+      <div className="flex justify-center items-start gap-8 flex-wrap">
+
+        {/* Truth Table Section */}
+        <div className="flex-1 max-w-sm mt-4 truth-table">
+          <TruthTable 
+            variables={variables}
+            truthTable={truthTable}
+            onTruthTableChange={handleTruthTableChange}
+          />
+        </div>
+
+        {/* Karnaugh Map Section */}
+        <div className="space-y-4 mt-20 p-4 kmap-container">
+          <Map
+            squares={squares}
+            groups={solution?.groups || []}
+            variableCount={variableCount}
+            onCellClick={handleCellClick}
+          />
+          
+          {/* Solution Display */}
+          {solution && (
+            <div className="mt-6 p-4 min-w-[320px] w-full solution-display">
+              <p className="font-semibold mb-2 text-sm text-muted-foreground">
+                {formType} Solution:
+              </p>
+              <div className="font-mono text-lg mb-2 border rounded-sm pl-2 p-1">{solution.expression}</div>
+              <div className="flex mt-2 gap-12">
+                <div className="text-sm text-muted-foreground">
+                  Literal Cost: {solution.literalCost}
+                </div>
+                {solution.groups.length > 0 && (
+                  <div className="text-sm text-muted-foreground">
+                    Groups: {solution.groups.length}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Settings Section */}
+        <div className="flex-1 max-w-sm settings-panel">
+          <SettingsCard
+            variableCount={variableCount}
+            formType={formType}
+            onVariableCountChange={handleVariableCountChange}
+            onFormTypeChange={(type: string) => handleFormTypeChange(type as 'SOP' | 'POS')}
+            onSetAllCells={(value: number | string) => {
+              if (typeof value === 'string' && value !== 'X') {
+                handleSetAllCells(parseInt(value) as 0 | 1);
+              } else {
+                handleSetAllCells(value as any);
+              }
+            }}
+            onProcess={() => {}} // Auto-solving enabled, no manual process needed
+          />
+        </div>
+
+      </div>
       </div>
     </TooltipProvider>
   )

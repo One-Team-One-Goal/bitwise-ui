@@ -632,16 +632,16 @@ export const ConnectionRenderer: React.FC<ConnectionRendererProps> = React.memo(
               onClick={(e) => e.stopPropagation()}
             >
               {/* Wire Info Header */}
-              <div className="px-3 py-2 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200">
-                <div className="text-xs font-semibold text-blue-800">
+              <div className="px-3 py-2 bg-linear-to-r from-primary/10 to-accent/10 dark:from-primary/20 dark:to-accent/20 border-b border-border">
+                <div className="text-xs font-semibold text-primary">
                   Wire Management
                 </div>
-                <div className="flex items-center gap-2 text-xs text-blue-600">
+                <div className="flex items-center gap-2 text-xs text-primary/80">
                   <div
                     className={`w-2 h-2 rounded-full ${
                       connection.value
-                        ? 'bg-green-500 animate-pulse'
-                        : 'bg-gray-400'
+                        ? 'bg-(--color-greenz) animate-pulse'
+                        : 'bg-muted-foreground'
                     }`}
                   />
                   Signal: {connection.value ? 'HIGH (1)' : 'LOW (0)'}
@@ -651,7 +651,7 @@ export const ConnectionRenderer: React.FC<ConnectionRendererProps> = React.memo(
               {/* Wire Actions */}
               <div className="py-1">
                 <button
-                  className="w-full px-3 py-2 text-left text-sm hover:bg-blue-50 text-blue-600 flex items-center gap-3 transition-colors"
+                  className="w-full px-3 py-2 text-left text-sm hover:bg-primary/10 dark:hover:bg-primary/20 text-primary flex items-center gap-3 transition-colors"
                   onClick={() => {
                     onSelect() // Select the wire for rerouting
                     setShowContextMenu(false)
@@ -670,14 +670,14 @@ export const ConnectionRenderer: React.FC<ConnectionRendererProps> = React.memo(
                   </svg>
                   <div>
                     <div className="font-medium">Reroute Wire</div>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-muted-foreground">
                       Drag to reposition
                     </div>
                   </div>
                 </button>
 
                 <button
-                  className="w-full px-3 py-2 text-left text-sm hover:bg-red-50 text-red-600 flex items-center gap-3 transition-colors"
+                  className="w-full px-3 py-2 text-left text-sm hover:bg-destructive/10 dark:hover:bg-destructive/20 text-destructive flex items-center gap-3 transition-colors"
                   onClick={() => {
                     onRemove?.()
                     setShowContextMenu(false)

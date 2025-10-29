@@ -206,7 +206,7 @@ export const SimulatorToolbar: React.FC = () => {
                             className="h-full w-full object-cover"
                           />
                         ) : (
-                          <AvatarFallback className="text-xl text-gray-500">
+                          <AvatarFallback className="text-xl text-muted-foreground">
                             {(displayName || '?').charAt(0)}
                           </AvatarFallback>
                         )}
@@ -236,7 +236,7 @@ export const SimulatorToolbar: React.FC = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="w-full justify-start px-3 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 font-normal"
+                          className="w-full justify-start px-3 py-2 text-sm text-destructive hover:text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20 font-normal"
                           onClick={signOut}
                         >
                           Sign Out

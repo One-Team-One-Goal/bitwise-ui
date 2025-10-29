@@ -1,19 +1,20 @@
 // ...existing code...
 import { BookOpen } from 'lucide-react'
 
+// Use CSS custom properties for gate colors to support dark mode
 const GATE_COLORS: Record<string, string> = {
-  AND: '#34d399',
-  OR: '#60a5fa',
-  NOT: '#fbbf24',
-  NAND: '#f472b6',
-  NOR: '#a78bfa',
-  XOR: '#f87171',
-  XNOR: '#818cf8',
-  BUFFER: '#d1d5db',
+  AND: 'var(--color-greenz)',      // Green for AND
+  OR: 'var(--color-bluez)',        // Blue for OR
+  NOT: 'var(--color-yellowz)',     // Yellow for NOT
+  NAND: 'var(--color-lightpurple)', // Light purple for NAND
+  NOR: 'var(--color-darkpurple)',  // Dark purple for NOR
+  XOR: 'var(--color-redz)',        // Red for XOR
+  XNOR: 'var(--color-cyanz)',      // Cyan for XNOR
+  BUFFER: 'var(--color-grayz)',    // Gray for BUFFER
 }
 
 function getGateColor(type: string) {
-  return GATE_COLORS[type.toUpperCase()] || '#d1d5db'
+  return GATE_COLORS[type.toUpperCase()] || 'var(--color-grayz)'
 }
 
 interface Gate {
@@ -36,8 +37,8 @@ const CircuitRenderer = ({ circuit }: { circuit: Circuit }) => {
   // Guard clause for missing circuit data
   if (!circuit || !circuit.inputs || !circuit.gates) {
     return (
-      <div className="my-4 p-4 bg-red-50 rounded-lg border border-red-300">
-        <p className="text-red-700">Invalid circuit data provided</p>
+      <div className="my-4 p-4 bg-destructive/10 dark:bg-destructive/20 rounded-lg border border-destructive/30">
+        <p className="text-destructive">Invalid circuit data provided</p>
       </div>
     )
   }
@@ -158,19 +159,20 @@ const CircuitRenderer = ({ circuit }: { circuit: Circuit }) => {
         key={`${fromId}-${toId}-${inputIndex}`}
         d={pathD}
         fill="none"
-        stroke="#374151"
+        stroke="var(--foreground)"
         strokeWidth={2.5}
         strokeLinecap="round"
+        strokeOpacity={0.7}
         markerEnd="url(#arrowhead)"
       />
     )
   }
 
   return (
-    <div className="my-4 p-4 bg-gray-50 rounded-lg border overflow-x-auto">
+    <div className="my-4 p-4 bg-muted/30 dark:bg-muted/20 rounded-lg border border-border overflow-x-auto">
       <div className="flex items-center gap-2 mb-3">
-        <BookOpen className="w-5 h-5 text-orange-600" />
-        <h4 className="font-semibold text-gray-800">{circuit.caption || 'Circuit Diagram'}</h4>
+        <BookOpen className="w-5 h-5 text-(--color-orangez)" />
+        <h4 className="font-semibold text-card-foreground">{circuit.caption || 'Circuit Diagram'}</h4>
       </div>
 
       <svg width={svgWidth} height={svgHeight} style={{ minWidth: svgWidth }}>
@@ -184,12 +186,12 @@ const CircuitRenderer = ({ circuit }: { circuit: Circuit }) => {
             orient="auto"
             markerUnits="strokeWidth"
           >
-            <polygon points="0 0, 10 5, 0 10" fill="#374151" />
+            <polygon points="0 0, 10 5, 0 10" fill="var(--foreground)" fillOpacity="0.7" />
           </marker>
 
           {/* small soft shadow for wires */}
           <filter id="wire-shadow" x="-50%" y="-50%" width="200%" height="200%">
-            <feDropShadow dx="0" dy="1" stdDeviation="1" floodColor="#000" floodOpacity="0.08" />
+            <feDropShadow dx="0" dy="1" stdDeviation="1" floodColor="var(--foreground)" floodOpacity="0.08" />
           </filter>
         </defs>
 
@@ -216,8 +218,8 @@ const CircuitRenderer = ({ circuit }: { circuit: Circuit }) => {
           if (!pos) return null
           return (
             <g key={input}>
-              <circle cx={pos.x} cy={pos.y} r={20} fill="#f3f4f6" stroke="#6b7280" strokeWidth={2.5} />
-              <text x={pos.x} y={pos.y + 6} textAnchor="middle" fontWeight="bold" fontSize={18} fill="#374151">
+              <circle cx={pos.x} cy={pos.y} r={20} fill="var(--muted)" stroke="var(--border)" strokeWidth={2.5} />
+              <text x={pos.x} y={pos.y + 6} textAnchor="middle" fontWeight="bold" fontSize={18} fill="var(--foreground)">
                 {input}
               </text>
             </g>
@@ -241,11 +243,13 @@ const CircuitRenderer = ({ circuit }: { circuit: Circuit }) => {
                 height={gateHeight}
                 rx={10}
                 fill={fill}
-                stroke="#374151"
+                fillOpacity={0.9}
+                stroke="var(--foreground)"
                 strokeWidth={2.5}
+                strokeOpacity={0.6}
               />
               {/* Gate type */}
-              <text x={pos.x} y={pos.y - 6} textAnchor="middle" fontWeight="bold" fontSize={16} fill="#111827">
+              <text x={pos.x} y={pos.y - 6} textAnchor="middle" fontWeight="bold" fontSize={16} fill="var(--background)">
                 {gate.type}
               </text>
               {/* Gate id */}

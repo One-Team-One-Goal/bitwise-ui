@@ -50,13 +50,13 @@ const Square: React.FC<SquareProps> = ({
   }, [])
 
   const valueClass = useMemo(() => {
-    // base visual classes
+    // base visual classes using CSS variables for theme support
     const base = 'text-center'
     if (value === 1)
-      return `${base} text-green-600 dark:text-green-400 font-bold ${!groupColor ? 'bg-green-50 dark:bg-green-900/30' : ''}`
+      return `${base} font-bold ${!groupColor ? 'bg-(--color-greenz)/10 dark:bg-(--color-greenz)/20 text-(--color-greenz) dark:text-(--color-greenz2)' : 'text-(--color-greenz)'}`
     if (value === 0)
-      return `${base} text-muted-foreground font-normal ${!groupColor ? 'bg-gray-50 dark:bg-slate-800' : ''}`
-    return `${base} text-red-600 dark:text-red-400 font-bold ${!groupColor ? 'bg-red-50 dark:bg-red-900/30' : ''}`
+      return `${base} text-muted-foreground font-normal ${!groupColor ? 'bg-muted/30 dark:bg-muted/20' : ''}`
+    return `${base} font-bold ${!groupColor ? 'bg-(--color-redz)/10 dark:bg-(--color-redz)/20 text-(--color-redz)' : 'text-(--color-redz)'}`
   }, [value, groupColor])
 
   // Create border style based on group connections
@@ -135,14 +135,14 @@ const Square: React.FC<SquareProps> = ({
       
       {/* Coordinate Tooltip on Hover */}
       {isHovered && coordinates && (
-        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 dark:bg-gray-800 text-white text-xs rounded-lg shadow-xl whitespace-nowrap z-50 pointer-events-none">
+        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-popover border border-border text-popover-foreground text-xs rounded-lg shadow-xl whitespace-nowrap z-50 pointer-events-none">
           <div className="flex flex-col gap-1">
             <div className="font-semibold text-center">{coordinates.variables || coordinates.binary}</div>
-            <div className="text-gray-300 dark:text-gray-400">Binary: {coordinates.binary}</div>
+            <div className="text-muted-foreground">Binary: {coordinates.binary}</div>
             {coordinates.minterm !== undefined && (
-              <div className="text-gray-300 dark:text-gray-400">Minterm: m{coordinates.minterm}</div>
+              <div className="text-muted-foreground">Minterm: m{coordinates.minterm}</div>
             )}
-            <div className="text-xs text-gray-400 dark:text-gray-500 mt-1 text-center">Click to cycle value</div>
+            <div className="text-xs text-muted-foreground/70 mt-1 text-center">Click to cycle value</div>
           </div>
           {/* Arrow pointing down */}
           <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1">

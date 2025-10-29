@@ -168,18 +168,18 @@ function RouteComponent() {
             onClick={startTutorial}
             variant="outline"
             size="icon"
-            className="rounded-full w-10 h-10 shadow-sm hover:shadow-md hover:bg-blue-50 hover:border-blue-400 transition-all"
+            className="rounded-full w-10 h-10 shadow-sm hover:shadow-md hover:bg-primary/10 hover:border-primary transition-all"
             title="Show Tutorial"
           >
-            <HelpCircle className="h-5 w-5 text-blue-600" />
+            <HelpCircle className="h-5 w-5 text-primary" />
           </Button>
         </div>
 
         {/* Loading Indicator */}
         {isLoading && (
-          <div className="mb-4 p-4 bg-blue-100 border border-blue-400 text-blue-700 rounded">
+          <div className="mb-4 p-4 bg-primary/10 border border-primary/30 text-primary rounded-lg dark:bg-primary/20">
             <div className="flex items-center">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-700 mr-2"></div>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
               Processing...
             </div>
           </div>
@@ -192,11 +192,11 @@ function RouteComponent() {
 
         {/* Expression Input Section */}
         <div className="max-w-2xl mx-auto mb-6 expression-input">
-          <div className="bg-white rounded-lg shadow-md p-4 border border-gray-200">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+          <div className="bg-card dark:bg-card rounded-lg shadow-md p-4 border border-border">
+            <label className="block text-sm font-semibold text-foreground mb-2">
               Import Boolean Expression
             </label>
-            <p className="text-xs text-gray-500 mb-3">
+            <p className="text-xs text-muted-foreground mb-3">
               Enter a Boolean expression to automatically populate the K-Map (e.g., A∧B∨C or A·B+C)
             </p>
             <div className="flex gap-2">
@@ -216,14 +216,14 @@ function RouteComponent() {
               <Button
                 onClick={handleExpressionSubmit}
                 disabled={isProcessingExpression || !expression.trim()}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground"
               >
                 <Calculator className="h-4 w-4 mr-2" />
                 {isProcessingExpression ? 'Processing...' : 'Generate'}
               </Button>
             </div>
             {expressionError && (
-              <div className="mt-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">
+              <div className="mt-2 text-sm text-destructive bg-destructive/10 border border-destructive/30 rounded px-3 py-2">
                 ⚠️ {expressionError}
               </div>
             )}

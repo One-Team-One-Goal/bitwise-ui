@@ -53,19 +53,19 @@ export const RuleCard: React.FC<RuleCardProps> = ({
             <CardContent className="space-y-0 p-0">
               {/* Current Application (if provided) - MOST IMPORTANT */}
               {beforeExpression && afterExpression && (
-                <div className="px-6 py-4 bg-blue-50">
-                  <p className="text-xs font-semibold text-blue-800 mb-3">Applied to Your Expression:</p>
+                <div className="px-6 py-4 bg-primary/10 dark:bg-primary/20">
+                  <p className="text-xs font-semibold text-primary mb-3">Applied to Your Expression:</p>
                   <div className="space-y-2">
-                    <code className="block font-mono text-sm text-gray-700 bg-white px-3 py-2 rounded border">
+                    <code className="block font-mono text-sm text-foreground bg-background dark:bg-muted/30 px-3 py-2 rounded border border-border">
                       {beforeExpression}
                     </code>
                     <div className="flex items-center justify-center gap-2">
-                      <span className="text-blue-500">↓</span>
-                      <Badge variant="outline" className="text-xs border-blue-300 text-blue-700">
+                      <span className="text-primary">↓</span>
+                      <Badge variant="outline" className="text-xs border-primary/30 text-primary">
                         {law.title}
                       </Badge>
                     </div>
-                    <code className="block font-mono text-sm text-emerald-700 font-semibold bg-emerald-50 px-3 py-2 rounded border border-emerald-200">
+                    <code className="block font-mono text-sm text-(--color-greenz) font-semibold bg-(--color-greenz)/10 dark:bg-(--color-greenz)/20 px-3 py-2 rounded border border-(--color-greenz)/30">
                       {afterExpression}
                     </code>
                   </div>
@@ -76,8 +76,8 @@ export const RuleCard: React.FC<RuleCardProps> = ({
               {!compact && (
                 <>
                   <Separator />
-                  <div className="px-6 py-4 bg-gray-50">
-                    <p className="text-sm text-gray-700 leading-relaxed">
+                  <div className="px-6 py-4 bg-muted/30 dark:bg-muted/20">
+                    <p className="text-sm text-foreground leading-relaxed">
                       {law.description}
                     </p>
                   </div>
@@ -88,15 +88,15 @@ export const RuleCard: React.FC<RuleCardProps> = ({
               <Separator />
               <div className="px-6 py-4"
 >
-                <p className="text-xs font-semibold text-gray-600 mb-3">General Pattern:</p>
+                <p className="text-xs font-semibold text-muted-foreground mb-3">General Pattern:</p>
                 <div className="space-y-2">
                   {law.patterns.slice(0, compact ? 2 : 4).map((pattern, idx) => (
                     <div key={idx} className="flex items-center gap-3 text-sm">
-                      <code className="font-mono text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                      <code className="font-mono text-primary bg-primary/10 dark:bg-primary/20 px-2 py-1 rounded">
                         {pattern.before}
                       </code>
-                      <span className="text-gray-400">→</span>
-                      <code className="font-mono text-emerald-600 bg-emerald-50 px-2 py-1 rounded">
+                      <span className="text-muted-foreground">→</span>
+                      <code className="font-mono text-(--color-greenz) bg-(--color-greenz)/10 dark:bg-(--color-greenz)/20 px-2 py-1 rounded">
                         {pattern.after}
                       </code>
                     </div>

@@ -146,7 +146,7 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick }
 
   if (!squares || squares.length === 0) {
     return (
-      <div className="flex items-center justify-center p-8 text-gray-500">
+      <div className="flex items-center justify-center p-8 text-muted-foreground">
         Loading K-Map...
       </div>
     );
@@ -159,20 +159,20 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick }
         {/* E = 0 Table (columns 0-3) */}
         <div className="relative">
           <div className="text-center mb-2">
-            <span className="inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-lg text-sm font-semibold">
+            <span className="inline-block bg-primary/10 dark:bg-primary/20 text-primary px-3 py-1 rounded-lg text-sm font-semibold">
               E = 0
             </span>
           </div>
           <div className="inline-block overflow-hidden">
             {/* Column Headers */}
             <div className="flex">
-              <div className="w-16 h-12 flex items-center justify-center relative text-xs text-gray-600">
+              <div className="w-16 h-12 flex items-center justify-center relative text-xs text-muted-foreground">
                 <CornerLabel label={cornerLabel} />
               </div>
               {colHeaders.map((header, index) => (
                 <div
                   key={index}
-                  className="w-16 h-12 flex items-center justify-center font-semibold text-sm text-gray-700"
+                  className="w-16 h-12 flex items-center justify-center font-semibold text-sm text-foreground"
                 >
                   {header}
                 </div>
@@ -183,7 +183,7 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick }
             {Array.from({ length: rows }).map((_, rowIndex) => (
               <div key={rowIndex} className="flex">
                 {/* Row Header */}
-                <div className="w-16 h-16 flex items-center justify-center font-semibold text-sm text-gray-700">
+                <div className="w-16 h-16 flex items-center justify-center font-semibold text-sm text-foreground">
                   {rowHeaders[rowIndex]}
                 </div>
                 
@@ -232,20 +232,20 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick }
         {/* E = 1 Table (columns 4-7) */}
         <div className="relative">
           <div className="text-center mb-2">
-            <span className="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-lg text-sm font-semibold">
+            <span className="inline-block bg-(--color-greenz)/10 dark:bg-(--color-greenz)/20 text-(--color-greenz) px-3 py-1 rounded-lg text-sm font-semibold">
               E = 1
             </span>
           </div>
           <div className="inline-block overflow-hidden">
             {/* Column Headers */}
             <div className="flex">
-              <div className="w-16 h-12 flex items-center justify-center relative text-xs text-gray-600">
+              <div className="w-16 h-12 flex items-center justify-center relative text-xs text-muted-foreground">
                 <CornerLabel label={cornerLabel} />
               </div>
               {colHeaders.map((header, index) => (
                 <div
                   key={index}
-                  className="w-16 h-12 flex items-center justify-center font-semibold text-sm text-gray-700"
+                  className="w-16 h-12 flex items-center justify-center font-semibold text-sm text-foreground"
                 >
                   {header}
                 </div>
@@ -256,7 +256,7 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick }
             {Array.from({ length: rows }).map((_, rowIndex) => (
               <div key={rowIndex} className="flex">
                 {/* Row Header */}
-                <div className="w-16 h-16 flex items-center justify-center font-semibold text-sm text-gray-700">
+                <div className="w-16 h-16 flex items-center justify-center font-semibold text-sm text-foreground">
                   {rowHeaders[rowIndex]}
                 </div>
                 
@@ -313,13 +313,13 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick }
       <div className="inline-block overflow-hidden">
         {/* Column Headers */}
         <div className="flex">
-          <div className="w-16 h-12 flex items-center justify-center relative text-xs text-gray-600">
+          <div className="w-16 h-12 flex items-center justify-center relative text-xs text-muted-foreground">
             <CornerLabel label={cornerLabel} />
           </div>
           {colHeaders.map((header, index) => (
             <div
               key={index}
-              className="w-16 h-12 flex items-center justify-center font-semibold text-sm text-gray-700"
+              className="w-16 h-12 flex items-center justify-center font-semibold text-sm text-foreground"
             >
               {header}
             </div>
@@ -330,7 +330,7 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick }
         {Array.from({ length: rows }).map((_, rowIndex) => (
           <div key={rowIndex} className="flex">
             {/* Row Header */}
-            <div className="w-16 h-16 flex items-center justify-center font-semibold text-sm text-gray-700">
+            <div className="w-16 h-16 flex items-center justify-center font-semibold text-sm text-foreground">
               {rowHeaders[rowIndex]}
             </div>
             
@@ -556,7 +556,7 @@ const CornerLabel: React.FC<CornerLabelProps> = ({ label }) => {
             y1="15" 
             x2="100" 
             y2="100" 
-            stroke="#E2E8F0" 
+            stroke="var(--border)" 
             strokeWidth="2"
             strokeLinecap="round"
           />
@@ -564,12 +564,12 @@ const CornerLabel: React.FC<CornerLabelProps> = ({ label }) => {
       </div>
       
       {/* Top-right label (column variables) */}
-      <div className="absolute bottom-2 left-2 text-xs font-medium text-gray-700">
+      <div className="absolute bottom-2 left-2 text-xs font-medium text-muted-foreground">
         {parts[1]}
       </div>
       
       {/* Bottom-left label (row variables) */}
-      <div className="absolute top-2 right-2 text-xs font-medium text-gray-700">
+      <div className="absolute top-2 right-2 text-xs font-medium text-muted-foreground">
         {parts[0]}
       </div>
     </div>

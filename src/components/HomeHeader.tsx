@@ -1,4 +1,42 @@
+// Minimal useTheme hook for shadcn-style theme tracking
+import { useEffect, useState } from 'react'
+
+function useTheme(): 'light' | 'dark' {
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window !== 'undefined') {
+      // Try to match ThemeToggle logic: check localStorage, then prefers-color-scheme, then class
+      try {
+        const stored = localStorage.getItem('theme')
+        if (stored === 'dark') return 'dark'
+        if (stored === 'light') return 'light'
+      } catch {}
+      if (
+        window.matchMedia &&
+        window.matchMedia('(prefers-color-scheme: dark)').matches
+      ) {
+        return 'dark'
+      }
+      if (document.documentElement.classList.contains('dark')) return 'dark'
+      return 'light'
+    }
+    return 'light'
+  })
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setTheme(
+        document.documentElement.classList.contains('dark') ? 'dark' : 'light'
+      )
+    })
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    })
+    return () => observer.disconnect()
+  }, [])
+  return theme
+}
 import NavLogo from '@/assets/icons/std-logo-black.svg'
+import NavLogoDark from '@/assets/icons/nav-bar-logo.svg'
 import CodeImg from '@/assets/icons/codeimg.jpg'
 import { useScrollDirection } from '@/hooks/useScrollDirection'
 import { Link, useLocation } from '@tanstack/react-router'
@@ -16,15 +54,23 @@ import {
 } from '@/components/ui/navigation-menu'
 import { useBackendProfile } from '@/hooks/useAuthQueries'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import ThemeToggle from '@/components/ui/theme-toggle'
 
 const HomeHeader = () => {
+  const theme = useTheme()
   const isVisible = useScrollDirection()
   const location = useLocation()
   const { isAuthenticated, signOut, user } = useAuthContext()
   const { data: backendProfile } = useBackendProfile()
   const md = backendProfile?.metadata ?? {}
-  const displayName = md.full_name ?? md.name ?? user?.user_metadata?.full_name ?? user?.email ?? 'Unknown'
-  const avatar = md?.avatar_url ?? md?.picture ?? user?.user_metadata?.picture ?? undefined
+  const displayName =
+    md.full_name ??
+    md.name ??
+    user?.user_metadata?.full_name ??
+    user?.email ??
+    'Unknown'
+  const avatar =
+    md?.avatar_url ?? md?.picture ?? user?.user_metadata?.picture ?? undefined
 
   if (location.pathname === '/login' || location.pathname === '/signup') {
     return (
@@ -45,23 +91,27 @@ const HomeHeader = () => {
   }
 
   if (location.pathname === '/digitalCircuit') {
-    return;
+    return
   }
 
   return (
     <header
-      className={`z-50 w-full h-24 transition-transform duration-300 ${
+      className={`fixed top-0 left-0 z-60 w-full h-20 transition-transform duration-300 ${
         isVisible ? 'translate-y-0' : '-translate-y-full'
       }`}
     >
       <nav
         aria-label="Global"
-        className="mx-auto flex max-w-7xl items-center justify-around p-6 lg:px-8"
+        className="mx-auto flex max-w-7xl items-center justify-around p-5 lg:px-8"
       >
         {/* Logo (left) */}
         <div className="flex">
           <Link to="/" className="-m-1.5 p-1.5">
-            <img src={NavLogo} alt="My Icon" className="h-7" />
+            <img
+              src={theme === 'dark' ? NavLogoDark : NavLogo}
+              alt="My Icon"
+              className={theme === 'dark' ? 'h-8' : 'h-6'}
+            />
           </Link>
         </div>
 
@@ -80,7 +130,9 @@ const HomeHeader = () => {
                         <a
                           className="flex h-full w-full flex-col justify-end rounded-md bg-cover bg-center p-6 no-underline outline-hidden select-none focus:shadow-md"
                           href="/roadmap"
-                          style={{ backgroundImage: `linear-gradient(rgba(255,255,255,0.95), rgba(255,255,255,0.95)), url(${CodeImg})` }}
+                          style={{
+                            backgroundImage: `linear-gradient(rgba(255,255,255,0.95), rgba(255,255,255,0.95)), url(${CodeImg}) dark:opacity-10`,
+                          }}
                         >
                           <div className="mt-4 mb-2 text-lg font-medium">
                             bitwise
@@ -149,7 +201,10 @@ const HomeHeader = () => {
                   <ul className="grid w-[200px] gap-4">
                     <li>
                       <NavigationMenuLink asChild>
-                        <Link to="/profile" className="flex-row items-center gap-2">
+                        <Link
+                          to="/profile"
+                          className="flex-row items-center gap-2"
+                        >
                           Profile
                         </Link>
                       </NavigationMenuLink>
@@ -165,7 +220,7 @@ const HomeHeader = () => {
             </NavigationMenuList>
           </NavigationMenu>
         </div>
-        
+
         {/* Right: Conditional User Menu or Login Button */}
         {isAuthenticated ? (
           <NavigationMenu>
@@ -174,9 +229,15 @@ const HomeHeader = () => {
                 <NavigationMenuTrigger className="bg-transparent h-12">
                   <Avatar className="h-9 w-9 mr-1">
                     {avatar ? (
-                      <AvatarImage src={avatar} alt={displayName} className="h-full w-full object-cover" />
+                      <AvatarImage
+                        src={avatar}
+                        alt={displayName}
+                        className="h-full w-full object-cover"
+                      />
                     ) : (
-                      <AvatarFallback className="text-xl text-gray-500">{(displayName || '?').charAt(0)}</AvatarFallback>
+                      <AvatarFallback className="text-xl text-muted-foreground">
+                        {(displayName || '?').charAt(0)}
+                      </AvatarFallback>
                     )}
                   </Avatar>
                 </NavigationMenuTrigger>
@@ -189,17 +250,17 @@ const HomeHeader = () => {
                     <div className="px-3 pt-0 pb-2 text-xs text-muted-foreground border-b">
                       {user?.email || 'User'}
                     </div>
-                    
+
                     {/* Profile Link */}
                     <NavigationMenuLink asChild>
-                      <Link 
-                        to="/profile" 
+                      <Link
+                        to="/profile"
                         className="flex items-start w-full px-3 py-2 text-sm text-left hover:bg-accent hover:text-accent-foreground rounded-md transition-colors"
                       >
                         Profile
                       </Link>
                     </NavigationMenuLink>
-                    
+
                     {/* Sign Out Button */}
                     <Button
                       variant="ghost"
@@ -215,15 +276,19 @@ const HomeHeader = () => {
             </NavigationMenuList>
           </NavigationMenu>
         ) : (
-          <Link to="/login">
-            <Button
-              variant={'outlinez'}
-              size={'lg'}
-              className="hover:bg-transparent hover:text-black"
-            >
-              Learn for free <span aria-hidden="true">&rarr;</span>
-            </Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            <div className="absolute right-8 hover:bg-muted rounded-full">
+              <ThemeToggle />
+            </div>
+            <Link to="/login">
+              <Button
+                variant={'outlinez'}
+                className="hover:bg-transparent text-foreground"
+              >
+                Learn for free <span aria-hidden="true">&rarr;</span>
+              </Button>
+            </Link>
+          </div>
         )}
       </nav>
     </header>

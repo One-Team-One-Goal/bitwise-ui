@@ -153,9 +153,9 @@ export default function DataAnalyticsCard({ lesson, user }: { lesson: any; user:
   // Collapsed state for unauthenticated, loading, or error
   if (!user) {
     return (
-      <Card className="p-0 max-w-md">
+      <Card className="p-0 max-w-md rounded-md">
         <button
-          className="w-full flex items-center justify-between px-6 py-3 bg-gray-50 border-b"
+          className="w-full flex items-center justify-between px-6 py-3 bg-primary-foreground border-b rounded-md"
           onClick={() => setOpen((o) => !o)}
         >
           <span className="text-lg font-semibold flex items-center gap-2">
@@ -177,9 +177,9 @@ export default function DataAnalyticsCard({ lesson, user }: { lesson: any; user:
 
   if (loading) {
     return (
-      <Card className="p-0 max-w-md">
+      <Card className="p-0 max-w-md rounded-md">
         <button
-          className="w-full flex items-center justify-between px-6 py-3 bg-gray-50 border-b"
+          className="w-full flex items-center justify-between px-6 py-3 bg-primary-foreground border-b rounded-md"
           onClick={() => setOpen((o) => !o)}
         >
           <span className="text-lg font-semibold flex items-center gap-2">
@@ -203,9 +203,9 @@ export default function DataAnalyticsCard({ lesson, user }: { lesson: any; user:
 
   if (error) {
     return (
-      <Card className="p-0 max-w-md">
+      <Card className="p-0 max-w-md rounded-md">
         <button
-          className="w-full flex items-center justify-between px-6 py-3 bg-gray-50 border-b"
+          className="w-full flex items-center justify-between px-6 py-3 bg-primary-foreground border-b rounded-md"
           onClick={() => setOpen((o) => !o)}
         >
           <span className="text-lg font-semibold flex items-center gap-2">
@@ -227,9 +227,9 @@ export default function DataAnalyticsCard({ lesson, user }: { lesson: any; user:
 
   if (!analytics || !statistics) {
     return (
-      <Card className="p-0 max-w-md">
+      <Card className="p-0 max-w-md rounded-md">
         <button
-          className="w-full flex items-center justify-between px-6 py-3 bg-gray-50 border-b"
+          className="w-full flex items-center justify-between px-6 py-3 bg-primary-foreground border-b rounded-md"
           onClick={() => setOpen((o) => !o)}
         >
           <span className="text-lg font-semibold flex items-center gap-2">
@@ -256,9 +256,9 @@ export default function DataAnalyticsCard({ lesson, user }: { lesson: any; user:
     Math.round(currentLessonData.skills.reduce((sum, skill) => sum + skill.mastery, 0) / currentLessonData.skills.length * 100) : 0
 
   return (
-    <Card className="p-0 max-w-md">
+    <Card className="p-0 max-w-md rounded-sm">
       <button
-        className="w-full flex items-center justify-between px-6 py-3 bg-gray-50 border-b"
+        className="w-full flex items-center justify-between px-6 py-3 bg-primary-foreground border-b rounded-md"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         aria-controls="analytics-dropdown-content"

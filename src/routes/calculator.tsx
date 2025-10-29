@@ -12,7 +12,7 @@ function RouteComponent() {
         <h1 className='font-bold text-4xl bg-linear-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent'>
           Boolean Algebra Calculator
         </h1>
-        <p className="text-gray-600">Simplify expressions step-by-step with visual animations</p>
+        <p className="text-gray-600 dark:text-gray-400">Simplify expressions step-by-step with visual animations</p>
       </div>
 
       <FactoringDemo />

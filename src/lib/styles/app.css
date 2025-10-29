@@ -13,10 +13,12 @@
   font-family: 'Inter', sans-serif;
 }
 
-html, body {
+html,
+body {
   height: 100%;
   margin: 0;
   padding: 0;
+  overscroll-behavior: none;
 }
 
 #root {
@@ -39,6 +41,7 @@ html, body {
   --color-grayz: #29314d;
   --color-offwhite: #f1f6f1;
   --color-blackz: #031926;
+  --color-dotBlack: #d1d5db;
   --radius: 0.625rem;
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.129 0.042 264.695);
@@ -75,6 +78,19 @@ html, body {
 .dark {
   --background: oklch(0.129 0.042 264.695);
   --foreground: oklch(0.984 0.003 247.858);
+  --color-greenz: #16643a; /* darker emerald */
+  --color-greenz2: #008530; /* deep vivid forest green */
+  --color-yellowz: #b4881c; /* muted warm gold */
+  --color-orangez: #b85e16; /* deep burnt orange */
+  --color-redz: #c7301c; /* darker crimson */
+  --color-darkpurple: #602b9b; /* rich dark violet */
+  --color-lightpurple: #200864; /* dimmed lavender */
+  --color-cyanz: #2492b8; /* deeper cyan-blue */
+  --color-bluez: #291f91; /* muted royal blue */
+  --color-grayz: #2c334c; /* almost-black gray */
+  --color-offwhite: #0b0526; /* slightly dimmer off-white */
+  --color-blackz: #05070c; /* true dark base */
+  --color-dotBlack: #29314d;
   --card: oklch(0.208 0.042 265.755);
   --card-foreground: oklch(0.984 0.003 247.858);
   --popover: oklch(0.208 0.042 265.755);
@@ -130,7 +146,7 @@ h6 {
 }
 
 .btn-shadow {
-  @apply rounded-full border border-black transition-all;
+  @apply rounded-full transition-all;
 }
 
 .joinclass-shadow {
@@ -187,8 +203,8 @@ h6 {
 }
 
 .hide-scrollbar::-webkit-scrollbar {
-              display: none;
-            }
+  display: none;
+}
 
 @media (min-width: 640px) {
   /* Small screens (sm) */

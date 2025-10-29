@@ -66,7 +66,7 @@ function RouteComponent() {
                   draggable="false"
                   src={FeatureBox}
                   alt="My Icon"
-                  className="absolute top-4 md:top-0 left-1/5 md:left-1/5 w-2/6 z-0 md:w-2/6"
+                  className="absolute top-4 md:top-0 left-1/5 md:left-1/5 w-2/6 z-0 md:w-2/6 dark:opacity-10"
                 />
                 <img
                   style={{
@@ -79,7 +79,7 @@ function RouteComponent() {
                   alt="My Icon"
                   className="absolute bottom-0 right-1/6 md:right-1/5 w-10 md:w-max"
                 />
-                <h1 className="addgrotesk text-4xl md:text-7xl font-black text-center w-2/3 z-10 relative pt-6">
+                <h1 className="addgrotesk text-4xl md:text-7xl font-black text-center w-2/3 z-10 relative pt-6 text-secondary-foreground">
                   Interact, Learn. Master logic
                 </h1>
               </div>
@@ -87,7 +87,7 @@ function RouteComponent() {
           </div>
         </div>
       </div>
-      <div className="h-min bg-white w-full flex flex-col md:flex-row justify-center md:space-x-32">
+      <div className="h-min bg-background w-full flex flex-col md:flex-row justify-center md:space-x-32">
         <div className="h-18 md:h-32 addinter flex flex-row space-x-4 items-center justify-center">
           <img
             style={{
@@ -153,7 +153,7 @@ function RouteComponent() {
             just hands-on learning!
           </p>
         </div>
-        <div className="w-86 md:w-4/9 h-96 bg-white rounded-xl flex items-center justify-center z-20 mb-20 box-shadow border">
+        <div className="w-86 md:w-4/9 h-96 bg-background rounded-xl flex items-center justify-center z-20 mb-20 box-shadow border">
           <img src={roadmapSample} className="h-full" />
         </div>
       </div>
@@ -193,16 +193,16 @@ function RouteComponent() {
           className="absolute left-0 top-0 z-0"
         />
 
-        <div className="flex flex-col items-center justify-center p-20 text-white">
-          <h1 className="w-3/4 addgrotesk text-5xl font-bold text-center">
+        <div className="flex flex-col items-center justify-center p-20 text-background">
+          <h1 className="w-3/4 addgrotesk text-5xl font-bold text-center text-secondary-foreground">
             Lesson
           </h1>
-          <p className="addinter text-sm">
+          <p className="addinter text-sm text-secondary-foreground">
             Learn every step to boolean algebra success bit by bit!
           </p>
         </div>
         <div className="w-full h-full px-20 space-x-10 flex flex-col space-y-10 md:space-y-0 md:flex-row justify-center z-10">
-          <div className="w-86 h-94 rounded-3xl border bg-white box-shadow2 flex flex-col">
+          <div className="w-86 h-94 rounded-3xl border border-primary bg-primary-foreground box-shadow2 flex flex-col">
             <div className="w-full h-64 rounded-t-3xl overflow-hidden">
               <img
                 src={booleImg}
@@ -225,7 +225,7 @@ function RouteComponent() {
               </div>
             </div>
           </div>
-          <div className="w-86 h-94 rounded-3xl border bg-white box-shadow2 flex flex-col">
+          <div className="w-86 h-94 rounded-3xl border border-primary bg-primary-foreground box-shadow2 flex flex-col">
             <div className="w-full h-64 rounded-t-3xl overflow-hidden">
               <img
                 src={circuitImg}
@@ -247,7 +247,7 @@ function RouteComponent() {
               </div>
             </div>
           </div>
-          <div className="w-86 h-94 rounded-3xl border bg-white box-shadow2 flex flex-col">
+          <div className="w-86 h-94 rounded-3xl border border-primary bg-primary-foreground box-shadow2 flex flex-col">
             <div className="w-full h-64 rounded-t-3xl overflow-hidden">
               <img
                 src={vennImg}
@@ -284,21 +284,21 @@ function RouteComponent() {
             in one intuitive platform designed for effective learning.
           </p>
           <div className="flex flex-row w-full mb-10">
-            <button className="w-35 md:w-auto text-xs md:text-md bg-[var(--color-grayz)] px-4 md:px-8 py-1 md:py-3 text-white border border-black rounded-full box-shadow3 addgrotesk">
+            <button className="border-primary w-35 md:w-auto text-xs md:text-md bg-[var(--color-grayz)] px-4 md:px-8 py-1 md:py-3 border border-black rounded-full box-shadow3 addgrotesk text-white">
               Host a class
             </button>
             <button className="w-45 px-4 md:px-8 py-3 flex flex-row text-xs md:text-md items-center">
-              Join a class <img src={chevronright} alt="My Icon" className="" />
+              Join a class <img src={chevronright} alt="My Icon" />
             </button>
           </div>
         </div>
       </div>
       <div className="h-min md:h-screen flex flex-col justify-center items-center relative z-0">
         <div className="flex flex-col items-center justify-center p-20 text-black space-y-4 z-50">
-          <h1 className="w-full addgrotesk text-4xl font-bold text-center">
+          <h1 className="w-full addgrotesk text-4xl font-bold text-center text-secondary-foreground">
             Why choose bitwise?
           </h1>
-          <p className="addinter text-sm">
+          <p className="addinter text-sm text-secondary-foreground">
             Let us give you some reasons why you should integrate bitwise to
             your learning!
           </p>
@@ -317,9 +317,9 @@ function RouteComponent() {
           <img
             src={bg_text}
             alt="My Icon"
-            className="absolute top-5 z-0 w-full"
+            className="absolute top-5 z-0 w-full dark:opacity-10"
           />
-          <div className="w-80 h-64 p-5 rounded-3xl border bg-white box-shadow2 flex flex-col space-y-3 relative">
+          <div className="w-80 h-64 p-5 rounded-3xl border border-primary bg-primary-foreground box-shadow2 flex flex-col space-y-3 relative">
             <img
               src={starshape}
               alt="My Icon"
@@ -346,7 +346,7 @@ function RouteComponent() {
               </ul>
             </div>
           </div>
-          <div className="w-80 h-64 p-5 rounded-3xl border bg-white box-shadow2 flex flex-col space-y-3 relative">
+          <div className="w-80 h-64 p-5 rounded-3xl border border-primary bg-primary-foreground box-shadow2 flex flex-col space-y-3 relative">
             <img
               src={softstar}
               alt="My Icon"
@@ -373,7 +373,7 @@ function RouteComponent() {
               </ul>
             </div>
           </div>
-          <div className="w-80 h-64 p-5 rounded-3xl border bg-white box-shadow2 flex flex-col space-y-3 relative">
+          <div className="w-80 h-64 p-5 rounded-3xl border border-primary bg-primary-foreground box-shadow2 flex flex-col space-y-3 relative">
             <img
               src={summerflower}
               alt="My Icon"
@@ -402,7 +402,7 @@ function RouteComponent() {
           </div>
         </div>
 
-        <button className="w-full m-10 mt-5 px-6 py-2.5 text-sm tracking-wider text-white transition-colors duration-300 transform md:w-auto md:mx-4 focus:outline-none border-1 border-white hover:bg-white hover:text-black focus:ring focus:ring-gray-300 focus:ring-opacity-80">
+        <button className="w-full m-10 mt-5 px-6 py-2.5 text-sm tracking-wider text-background transition-colors duration-300 transform md:w-auto md:mx-4 focus:outline-none border-1 border-background hover:bg-background hover:text-black focus:ring focus:ring-gray-300 focus:ring-opacity-80">
           View all
         </button>
       </div>

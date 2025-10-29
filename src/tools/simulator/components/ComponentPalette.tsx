@@ -201,7 +201,7 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
                   onClick={() => toggleCategory(category.id)}
                 >
                   <div className="flex items-center gap-2">
-                    <div className={`flex items-center justify-center h-6 w-6 rounded-md ${isExpanded ? 'bg-primary/20 text-primary' : 'bg-muted/70 text-muted-foreground'}`}>
+                    <div className={`flex items-center justify-center h-6 w-6 rounded-sm ${isExpanded ? 'bg-primary/20 text-primary' : 'bg-muted/70 text-muted-foreground'}`}>
                       <IconComponent className="h-4 w-4" />
                     </div>
                     <span className="text-sm font-semibold tracking-wide">{category.name}</span>

@@ -1,7 +1,5 @@
-// ContentBlock.tsx - Improved content display component
+// ...existing code...
 import React from 'react'
-// import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-// import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 interface ContentBlock {
   type:
@@ -18,10 +16,10 @@ interface ContentBlock {
     | 'karnaughMap'
   text?: string
   code?: string
-  language?: string // for code blocks
+  language?: string
   image?: string
-  alt?: string // for images
-  list?: string[] | { text: string; subItems?: string[] }[] // support nested lists
+  alt?: string
+  list?: string[] | { text: string; subItems?: string[] }[]
   table?: {
     headers: string[]
     rows: string[][]
@@ -32,14 +30,14 @@ interface ContentBlock {
     rows: string[][]
     caption?: string
   }
-  formula?: string // for mathematical expressions
+  formula?: string
   callout?: {
     type: 'info' | 'warning' | 'tip' | 'important'
     title?: string
     content: string
   }
-  content?: React.ReactNode // for custom content
-  className?: string // for additional styling
+  content?: React.ReactNode
+  className?: string
 }
 
 interface ContentDisplayProps {
@@ -58,7 +56,7 @@ const ContentDisplay: React.FC<ContentDisplayProps> = ({
       case 'text':
         return (
           <div key={key} className={`mb-6 ${block.className || ''}`}>
-            <p className="text-lg leading-relaxed text-gray-800">
+            <p className="text-lg leading-relaxed text-gray-800 dark:text-gray-100">
               {block.text}
             </p>
           </div>
@@ -67,7 +65,7 @@ const ContentDisplay: React.FC<ContentDisplayProps> = ({
       case 'inlineCode':
         return (
           <div key={key} className={`mb-6 ${block.className || ''}`}>
-            <code className="bg-gray-100 border border-gray-200 px-3 py-2 rounded-md text-sm font-mono text-gray-800 inline-block">
+            <code className="bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-3 py-2 rounded-md text-sm font-mono text-gray-800 dark:text-gray-100 inline-block">
               {block.code}
             </code>
           </div>
@@ -76,18 +74,11 @@ const ContentDisplay: React.FC<ContentDisplayProps> = ({
       case 'codeBlock':
         return (
           <div key={key} className={`mb-6 ${block.className || ''}`}>
-            <div className="rounded-lg overflow-hidden border border-gray-200">
-              {/* <SyntaxHighlighter
-                language={block.language || 'javascript'}
-                style={vscDarkPlus}
-                customStyle={{
-                  margin: 0,
-                  padding: '1rem',
-                  fontSize: '0.875rem',
-                }}
-              >
-                {block.code || ''}
-              </SyntaxHighlighter> */}
+            <div className="rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+              {/* Syntax highlighter can be plugged here later */}
+              <pre className="m-0 p-4 text-sm font-mono text-gray-800 dark:text-gray-100 whitespace-pre-wrap">
+                {block.code}
+              </pre>
             </div>
           </div>
         )
@@ -99,7 +90,7 @@ const ContentDisplay: React.FC<ContentDisplayProps> = ({
               <img
                 src={block.image}
                 alt={block.alt || 'Lesson image'}
-                className="max-w-full h-auto rounded-lg shadow-sm border border-gray-200"
+                className="max-w-full h-auto rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900"
               />
             )}
           </div>
@@ -114,17 +105,17 @@ const ContentDisplay: React.FC<ContentDisplayProps> = ({
                   return (
                     <li
                       key={i}
-                      className="flex items-start text-lg text-gray-800"
+                      className="flex items-start text-lg text-gray-800 dark:text-gray-100"
                     >
-                      <span className="text-blue-500 mr-3 mt-1">•</span>
+                      <span className="text-blue-500 dark:text-blue-300 mr-3 mt-1">•</span>
                       <span dangerouslySetInnerHTML={{ __html: item }} />
                     </li>
                   )
                 } else {
                   return (
-                    <li key={i} className="text-lg text-gray-800">
+                    <li key={i} className="text-lg text-gray-800 dark:text-gray-100">
                       <div className="flex items-start">
-                        <span className="text-blue-500 mr-3 mt-1">•</span>
+                        <span className="text-blue-500 dark:text-blue-300 mr-3 mt-1">•</span>
                         <div>
                           <span
                             dangerouslySetInnerHTML={{ __html: item.text }}
@@ -134,9 +125,9 @@ const ContentDisplay: React.FC<ContentDisplayProps> = ({
                               {item.subItems.map((subItem, j) => (
                                 <li
                                   key={j}
-                                  className="flex items-start text-base text-gray-600"
+                                  className="flex items-start text-base text-gray-600 dark:text-gray-300"
                                 >
-                                  <span className="text-gray-400 mr-2 mt-1">
+                                  <span className="text-gray-400 dark:text-gray-500 mr-2 mt-1">
                                     ◦
                                   </span>
                                   <span
@@ -161,19 +152,21 @@ const ContentDisplay: React.FC<ContentDisplayProps> = ({
       case 'table':
         return (
           <div key={key} className={`mb-6 ${block.className || ''}`}>
-            <div className="overflow-x-auto rounded-lg border border-gray-300">
-              <table className="min-w-full text-center bg-background border-collapse">
-                {block.table?.caption && (
-                  <caption className="text-base font-semibold text-gray-900 mb-2 m-2">
+            <div className="overflow-x-auto rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900">
+              {block.table?.caption && (
+                <div className="px-4 pt-3">
+                  <caption className="text-base font-semibold text-gray-900 dark:text-gray-100">
                     {block.table.caption}
                   </caption>
-                )}
+                </div>
+              )}
+              <table className="min-w-full text-center border-collapse">
                 <thead>
-                  <tr className="bg-gray-900">
+                  <tr className="bg-gray-100 dark:bg-gray-800">
                     {block.table?.headers.map((header, i) => (
                       <th
                         key={i}
-                        className="px-6 py-3 text-sm font-semibold text-background"
+                        className="px-6 py-3 text-sm font-semibold text-gray-900 dark:text-gray-100"
                       >
                         {header}
                       </th>
@@ -182,11 +175,14 @@ const ContentDisplay: React.FC<ContentDisplayProps> = ({
                 </thead>
                 <tbody>
                   {block.table?.rows.map((row, rIdx) => (
-                    <tr key={rIdx}>
+                    <tr
+                      key={rIdx}
+                      className={rIdx % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50 dark:bg-gray-800'}
+                    >
                       {row.map((cell, cIdx) => (
                         <td
                           key={cIdx}
-                          className="px-6 py-3 text-sm text-gray-900"
+                          className="px-6 py-3 text-sm text-gray-900 dark:text-gray-100"
                         >
                           {cell}
                         </td>
@@ -202,20 +198,22 @@ const ContentDisplay: React.FC<ContentDisplayProps> = ({
       case 'karnaughMap':
         return (
           <div key={key} className={`mb-6 ${block.className || ''}`}>
-            <div className="overflow-x-auto rounded-lg border border-gray-300">
+            <div className="overflow-x-auto rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900">
               {block.karnaughMap?.caption && (
-                <caption className="text-base font-semibold text-gray-900 mb-2 m-2">
-                  {block.karnaughMap.caption}
-                </caption>
+                <div className="px-4 pt-3">
+                  <caption className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                    {block.karnaughMap.caption}
+                  </caption>
+                </div>
               )}
-              <table className="min-w-full text-center bg-background border-collapse">
+              <table className="min-w-full text-center border-collapse">
                 <thead>
-                  <tr className="bg-gray-900">
-                    <th className="px-6 py-3 text-sm font-semibold text-background"></th>
+                  <tr className="bg-gray-100 dark:bg-gray-800">
+                    <th className="px-6 py-3 text-sm font-semibold text-gray-900 dark:text-gray-100"></th>
                     {block.karnaughMap?.headers.map((header, i) => (
                       <th
                         key={i}
-                        className="px-6 py-3 text-sm font-semibold text-background"
+                        className="px-6 py-3 text-sm font-semibold text-gray-900 dark:text-gray-100"
                       >
                         {header}
                       </th>
@@ -224,14 +222,14 @@ const ContentDisplay: React.FC<ContentDisplayProps> = ({
                 </thead>
                 <tbody>
                   {block.karnaughMap?.rows.map((row, rIdx) => (
-                    <tr key={rIdx} className="even:bg-gray-50">
-                      <th className="px-6 py-3 text-sm font-semibold text-gray-900 bg-gray-100">
+                    <tr key={rIdx} className={rIdx % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50 dark:bg-gray-800'}>
+                      <th className="px-6 py-3 text-sm font-semibold text-gray-900 dark:text-gray-100 bg-gray-100 dark:bg-gray-800">
                         {`Row ${rIdx + 1}`}
                       </th>
                       {row.map((cell, cIdx) => (
                         <td
                           key={cIdx}
-                          className="px-6 py-3 text-sm font-mono text-gray-900"
+                          className="px-6 py-3 text-sm font-mono text-gray-900 dark:text-gray-100"
                         >
                           {cell}
                         </td>
@@ -250,8 +248,8 @@ const ContentDisplay: React.FC<ContentDisplayProps> = ({
             key={key}
             className={`mb-6 text-center ${block.className || ''}`}
           >
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 inline-block">
-              <code className="text-lg font-mono text-gray-800">
+            <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 inline-block">
+              <code className="text-lg font-mono text-gray-800 dark:text-gray-100">
                 {block.formula}
               </code>
             </div>
@@ -259,14 +257,14 @@ const ContentDisplay: React.FC<ContentDisplayProps> = ({
         )
 
       case 'callout':
-        const calloutStyles = {
-          info: 'bg-blue-50 border-blue-200 text-blue-800',
-          warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
-          tip: 'bg-green-50 border-green-200 text-green-800',
-          important: 'bg-red-50 border-red-200 text-red-800',
+        const calloutStyles: Record<string, string> = {
+          info: 'bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900 dark:border-blue-800 dark:text-blue-200',
+          warning: 'bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-900 dark:border-yellow-800 dark:text-yellow-200',
+          tip: 'bg-green-50 border-green-200 text-green-800 dark:bg-green-900 dark:border-green-800 dark:text-green-200',
+          important: 'bg-red-50 border-red-200 text-red-800 dark:bg-red-900 dark:border-red-800 dark:text-red-200',
         }
 
-        const calloutIcons = {
+        const calloutIcons: Record<string, string> = {
           info: 'ℹ️',
           warning: '⚠️',
           tip: '💡',
@@ -279,16 +277,14 @@ const ContentDisplay: React.FC<ContentDisplayProps> = ({
               className={`border rounded-lg p-4 ${calloutStyles[block.callout?.type || 'info']}`}
             >
               <div className="flex items-start space-x-3">
-                <span className="text-xl">
-                  {calloutIcons[block.callout?.type || 'info']}
-                </span>
+                <span className="text-xl">{calloutIcons[block.callout?.type || 'info']}</span>
                 <div className="flex-1">
                   {block.callout?.title && (
-                    <h4 className="font-semibold mb-2">
+                    <h4 className="font-semibold mb-2 text-gray-900 dark:text-gray-100">
                       {block.callout.title}
                     </h4>
                   )}
-                  <p className="text-sm">{block.callout?.content}</p>
+                  <p className="text-sm text-gray-800 dark:text-gray-100">{block.callout?.content}</p>
                 </div>
               </div>
             </div>
@@ -298,7 +294,7 @@ const ContentDisplay: React.FC<ContentDisplayProps> = ({
       case 'divider':
         return (
           <div key={key} className={`mb-6 ${block.className || ''}`}>
-            <hr className="border-gray-200" />
+            <hr className="border-gray-200 dark:border-gray-700" />
           </div>
         )
 
@@ -315,10 +311,11 @@ const ContentDisplay: React.FC<ContentDisplayProps> = ({
   }
 
   return (
-    <div className={`prose prose-lg max-w-none ${className}`}>
+    <div className={`prose prose-lg max-w-none dark:prose-invert ${className}`}>
       {blocks.map((block, index) => renderBlock(block, index))}
     </div>
   )
 }
 
 export default ContentDisplay
+// ...existing code...

@@ -12,6 +12,7 @@ import { getLawAnimation } from '@/constants/lawAnimations';
 import introJs from 'intro.js';
 import 'intro.js/introjs.css';
 import { HelpCircle } from 'lucide-react';
+import LeftPointSvg from '@/assets/bitbot/left-point.svg?url'
 
 // Types
 export interface ScriptToken { id: string; text: string; kind?: 'var' | 'op' | 'paren' | 'other'; highlight?: boolean; isNew?: boolean }
@@ -328,6 +329,13 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
     pendingMappings.current = new Map()
   }
 
+  const baseIntro = (content: string) => `
+    <img src="${LeftPointSvg}" class="intro-bitbot-right" alt="Bitbot" />
+    <div class="space-y-2">
+      ${content}
+    </div>
+  `
+
   // Start the intro.js tutorial
   const startTutorial = () => {
     const intro = introJs();
@@ -335,72 +343,72 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
       steps: [
         {
           title: '👋 Welcome to Boolean Simplifier!',
-          intro: 'This interactive tool helps you simplify Boolean algebra expressions step-by-step with beautiful animations. Let me show you around!'
+          intro: baseIntro('This interactive tool helps you simplify Boolean algebra expressions step-by-step with beautiful animations. Let me show you around!'),
         },
         {
           element: '.input-section',
           title: '📝 Input Expression',
-          intro: 'Type your Boolean expression here using variables (A, B, C...) and operators. You can type them directly or use the quick insert buttons below.',
+          intro: baseIntro('Type your Boolean expression here using variables (A, B, C...) and operators. You can type them directly or use the quick insert buttons below.'),
           position: 'bottom'
         },
         {
           element: '.quick-insert',
           title: '⚡ Quick Insert Buttons',
-          intro: 'Click these buttons to quickly insert Boolean operators: ∧ (AND), ∨ (OR), ¬ (NOT), ⊕ (XOR), → (IMPLIES), ↔ (IFF), and parentheses.',
+          intro: baseIntro('Click these buttons to quickly insert Boolean operators: ∧ (AND), ∨ (OR), ¬ (NOT), ⊕ (XOR), → (IMPLIES), ↔ (IFF), and parentheses.'),
           position: 'bottom'
         },
         {
           element: '.examples-button',
           title: '💡 Example Expressions',
-          intro: 'Not sure what to try? Click here to see example expressions you can use to get started.',
+          intro: baseIntro('Not sure what to try? Click here to see example expressions you can use to get started.'),
           position: 'bottom'
         },
         {
           element: '.simplify-button',
           title: '🚀 Simplify',
-          intro: 'Once you\'ve entered an expression, click here to simplify it! The tool will break down each step using Boolean algebra laws.',
+          intro: baseIntro('Once you\'ve entered an expression, click here to simplify it! The tool will break down each step using Boolean algebra laws.'),
           position: 'bottom'
         },
         {
           element: '.display-options',
           title: '⚙️ Display Options',
-          intro: 'Toggle these options to show/hide the Rule Card (details about each law), Explanation (step description), and Auto-play (automatic progression through steps).',
+          intro: baseIntro('Toggle these options to show/hide the Rule Card (details about each law), Explanation (step description), and Auto-play (automatic progression through steps).'),
           position: 'top'
         },
         {
           element: '.expression-display',
           title: '🎨 Expression Display',
-          intro: 'Your expression appears here with animated transitions! Each step is color-coded by the law being applied. New tokens appear in the law\'s highlight color.',
+          intro: baseIntro('Your expression appears here with animated transitions! Each step is color-coded by the law being applied. New tokens appear in the law\'s highlight color.'),
           position: 'bottom'
         },
         {
           element: '.progress-timeline',
           title: '📊 Timeline Navigation',
-          intro: 'Navigate through simplification steps here. Each dot represents a step. Click any dot to jump to that step, or use the arrow buttons to move forward/backward.',
+          intro: baseIntro('Navigate through simplification steps here. Each dot represents a step. Click any dot to jump to that step, or use the arrow buttons to move forward/backward.'),
           position: 'top'
         },
         {
           title: '✨ Law-Specific Animations',
-          intro: 'Each Boolean law has its own color and animation style! Watch as tokens smoothly transition between steps, making it easy to see what changed and why.'
+          intro: baseIntro('Each Boolean law has its own color and animation style! Watch as tokens smoothly transition between steps, making it easy to see what changed and why.')
         },
         {
           title: '🎓 Ready to Simplify!',
-          intro: 'You\'re all set! Try entering an expression like "A ∧ A" or "¬(A ∨ B)" and watch the magic happen. Click the help button (?) anytime to see this tutorial again.'
+          intro: baseIntro('You\'re all set! Try entering an expression like "A ∧ A" or "¬(A ∨ B)" and watch the magic happen. Click the help button (?) anytime to see this tutorial again.')
         }
       ],
-      showProgress: true,
+      showProgress: false,
       showBullets: true,
       exitOnOverlayClick: false,
       doneLabel: 'Got it!',
-      nextLabel: 'Next →',
-      prevLabel: '← Back',
+      nextLabel: 'Next',
+      prevLabel: 'Back',
       skipLabel: 'Skip'
     });
     intro.start();
   };
 
   return (
-    <div className="p-6 rounded-xl w-full max-w-7xl mx-auto space-y-6">
+    <div className="p-3 md:p-6 rounded-xl w-full max-w-7xl mx-auto space-y-4 md:space-y-6 mt-0 pt-0">
       {/* Header with Help Button */}
       <div className="flex justify-end">
         <Button
@@ -408,10 +416,10 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
           onClick={startTutorial}
           variant="outline"
           size="icon"
-          className="rounded-full w-10 h-10 shadow-sm hover:shadow-md hover:bg-primary/10 hover:border-primary transition-all"
+          className="rounded-full w-9 h-9 md:w-10 md:h-10 shadow-sm hover:shadow-md hover:bg-primary/10 hover:border-primary transition-all"
           title="Show Tutorial"
         >
-          <HelpCircle className="h-5 w-5 text-primary" />
+          <HelpCircle className="h-4 w-4 md:h-5 md:w-5 text-primary" />
         </Button>
       </div>
 
@@ -426,42 +434,44 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
       />
 
       {/* Input Section */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg border-2 border-gray-200 dark:border-gray-700 p-5 space-y-3">
+      <div className="space-y-3">
         <form onSubmit={fetchRemoteScript} className="flex flex-col gap-3">
-          <div className="flex gap-2 items-center input-section">
+          <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center input-section">
             <input
               ref={inputRef}
               value={expressionInput}
               onChange={(e) => setExpressionInput(e.target.value)}
-              className="flex-1 px-4 py-3 border-2 border-input dark:border-gray-600 rounded-lg text-lg font-mono focus:border-primary focus:outline-none transition-colors bg-background dark:bg-gray-900 text-foreground"
-              placeholder="Enter boolean expression (e.g. A ∧ B ∨ ¬A)"
+              className="flex-1 px-3 md:px-4 py-2 md:py-3 border-2 border-input rounded-lg text-base md:text-lg font-mono focus:border-primary focus:outline-none transition-colors bg-background text-foreground"
+              placeholder="Enter expression (e.g. A ∧ B ∨ ¬A)"
               aria-label="Boolean expression"
             />
-            <Button variant={"default"} type="submit" className="simplify-button px-6 py-3 h-auto text-base" disabled={loadingRemote}>
-              {loadingRemote ? 'Solving...' : 'Solve'}
-            </Button>
-            <Button 
-              variant={"secondary"} 
-              type="button"
-              onClick={() => setShowExamples(true)} 
-              className="examples-button px-6 py-3 h-auto text-base"
-            >
-              Examples
-            </Button>
-            <Button variant={"outline"} onClick={handleReset} className="px-6 py-3 h-auto border-2 text-base hover:bg-muted/50 dark:hover:bg-muted/30">
-              ↺ Reset
-            </Button>
+            <div className="flex gap-2">
+              <Button variant={"default"} type="submit" className="simplify-button flex-1 sm:flex-none px-4 md:px-6 py-2 md:py-3 h-auto text-sm md:text-base" disabled={loadingRemote}>
+                {loadingRemote ? 'Solving...' : 'Solve'}
+              </Button>
+              <Button 
+                variant={"secondary"} 
+                type="button"
+                onClick={() => setShowExamples(true)} 
+                className="examples-button flex-1 sm:flex-none px-4 md:px-6 py-2 md:py-3 h-auto text-sm md:text-base"
+              >
+                Examples
+              </Button>
+              <Button variant={"outline"} onClick={handleReset} className="px-3 md:px-6 py-2 md:py-3 h-auto border-2 text-sm md:text-base hover:bg-muted/50">
+                ↺
+              </Button>
+            </div>
           </div>
 
           {/* Quick operator buttons */}
           <div className="flex flex-wrap gap-2 quick-insert">
-            <span className="text-sm text-muted-foreground font-medium self-center mr-2">Quick insert:</span>
+            <span className="text-xs md:text-sm text-muted-foreground font-medium self-center mr-1 md:mr-2 w-full sm:w-auto">Quick insert:</span>
             {['∧','∨','¬','⊕','→','↔','(',')'].map(sym => (
               <button
                 key={sym}
                 type="button"
                 onClick={() => insertOperator(sym)}
-                className="px-3 py-1.5 border-2 border-border dark:border-gray-600 rounded-md text-base bg-background dark:bg-gray-900 hover:bg-primary/10 hover:border-primary dark:hover:bg-primary/20 dark:hover:border-primary transition-colors font-mono font-bold text-foreground"
+                className="px-2 md:px-3 py-1 md:py-1.5 border-2 border-border rounded-md text-sm md:text-base bg-background hover:bg-primary/10 hover:border-primary dark:hover:bg-primary/20 transition-colors font-mono font-bold text-foreground flex-1 sm:flex-none min-w-10"
                 aria-label={`Insert ${sym}`}>
                 {sym}
               </button>
@@ -469,15 +479,15 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
           </div>
 
           {/* Display Options - Compact */}
-          <div className="flex flex-wrap items-center gap-4 text-sm bg-muted/30 dark:bg-muted/20 rounded-lg p-3 border border-border dark:border-gray-600 display-options">
-            <span className="text-xs font-semibold text-muted-foreground uppercase">Display:</span>
+          <div className="flex flex-wrap items-center gap-3 md:gap-4 text-sm bg-muted/30 dark:bg-muted/20 rounded-lg p-2 md:p-3 border border-border display-options">
+            <span className="text-xs font-semibold text-muted-foreground uppercase w-full sm:w-auto">Display:</span>
             <div className="flex items-center gap-2">
               <Switch
                 id="rulecard-toggle"
                 checked={showRuleCard}
                 onCheckedChange={setShowRuleCard}
               />
-              <Label htmlFor="rulecard-toggle" className="cursor-pointer text-sm">Rule Card</Label>
+              <Label htmlFor="rulecard-toggle" className="cursor-pointer text-xs md:text-sm">Rule Card</Label>
             </div>
             <div className="flex items-center gap-2">
               <Switch
@@ -485,7 +495,7 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
                 checked={showNarration}
                 onCheckedChange={setShowNarration}
               />
-              <Label htmlFor="narration-toggle" className="cursor-pointer text-sm">Explanation</Label>
+              <Label htmlFor="narration-toggle" className="cursor-pointer text-xs md:text-sm">Explanation</Label>
             </div>
             <div className="flex items-center gap-2">
               <Switch
@@ -493,12 +503,12 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
                 checked={autoPlay}
                 onCheckedChange={setAutoPlay}
               />
-              <Label htmlFor="autoplay-toggle" className="cursor-pointer text-sm">Auto-play</Label>
+              <Label htmlFor="autoplay-toggle" className="cursor-pointer text-xs md:text-sm">Auto-play</Label>
             </div>
           </div>
         </form>
         {errorRemote && (
-          <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-lg p-3 text-red-700 dark:text-red-400">
+          <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-lg p-3 text-sm md:text-base text-red-700 dark:text-red-400">
             <span className="font-semibold">Error:</span> {errorRemote}
           </div>
         )}
@@ -506,16 +516,16 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
 
 
       {/* Main Visualization Area */}
-      <div ref={visualizationRef} className="bg-card dark:bg-gray-800 rounded-lg border-2 border-border dark:border-gray-700 p-6 relative min-h-[400px]">
+      <div ref={visualizationRef} className="bg-card dark:bg-card rounded-lg border-2 border-border p-3 md:p-6 relative min-h-[300px] md:min-h-[400px]">
         <div ref={containerRef} className="relative">
         {remoteScript == null ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="text-6xl mb-4 font-bold text-muted dark:text-muted">∅</div>
-            <h3 className="text-xl font-semibold text-foreground mb-2">Ready to Simplify!</h3>
-            <p className="text-muted-foreground">Enter a Boolean expression above and click Solve to see step-by-step simplification.</p>
+          <div className="flex flex-col items-center justify-center py-12 md:py-16 text-center px-4">
+            <div className="text-5xl md:text-6xl mb-4 font-bold text-muted dark:text-muted">∅</div>
+            <h3 className="text-lg md:text-xl font-semibold text-foreground mb-2">Ready to Simplify!</h3>
+            <p className="text-sm md:text-base text-muted-foreground">Enter a Boolean expression above and click Solve to see step-by-step simplification.</p>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-4 md:space-y-6">
             {/* Rule Card */}
             {showRuleCard && timeline[index] && (
               <RuleCard
@@ -530,13 +540,13 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
             {/* Expression Display with Timeline & Controls - All in One */}
             <div className="bg-card dark:bg-gray-800 rounded-lg border-2 border-border dark:border-gray-700 overflow-hidden">
               {/* Header */}
-              <div className="bg-primary dark:bg-primary text-primary-foreground px-4 py-2">
-                <h4 className="text-sm font-semibold uppercase tracking-wide">Current Expression</h4>
+              <div className="bg-linear-to-r from-primary to-accent text-primary-foreground px-3 md:px-4 py-2">
+                <h4 className="text-xs md:text-sm font-semibold uppercase tracking-wide">Current Expression</h4>
               </div>
               
               {/* Expression */}
-              <div className="p-8 expression-display">
-                <div className="bg-primary/5 dark:bg-primary/10 rounded-lg p-8 border-2 dark:border-gray-600 min-h-24 flex items-center justify-center relative overflow-hidden"
+              <div className="p-4 md:p-8 expression-display">
+                <div className="bg-linear-to-br from-primary/5 to-accent/5 dark:from-primary/10 dark:to-accent/10 rounded-lg p-4 md:p-8 border-2 min-h-16 md:min-h-24 flex items-center justify-center relative overflow-hidden"
                   style={{
                     borderColor: timeline[index]?.law && index > 0 
                       ? getLawAnimation(timeline[index].law).highlightColor 
@@ -551,7 +561,7 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
                     />
                   )}
                   
-                  <div className="flex flex-wrap items-center justify-center gap-1 text-3xl font-mono relative z-10">
+                  <div className="flex flex-wrap items-center justify-center gap-0.5 md:gap-1 text-xl md:text-3xl font-mono relative z-10">
                     {/* Display current timeline state tokens */}
                     {timeline[index]?.tokens.map((tok, tokIdx) => (
                       <CharMotion 
@@ -566,7 +576,7 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
                 
                 {/* Law animation description */}
                 {timeline[index]?.law && index > 0 && (
-                  <div className="mt-3 text-center text-sm italic"
+                  <div className="mt-3 text-center text-xs md:text-sm italic"
                     style={{ color: getLawAnimation(timeline[index].law).highlightColor }}
                   >
                     {getLawAnimation(timeline[index].law).description}
@@ -618,22 +628,22 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
 
             {/* History View */}
             <details className="group">
-              <summary className="cursor-pointer text-sm font-semibold text-foreground hover:text-primary dark:hover:text-primary flex items-center gap-2">
+              <summary className="cursor-pointer text-xs md:text-sm font-semibold text-foreground hover:text-primary dark:hover:text-primary flex items-center gap-2">
                 <span className="group-open:rotate-90 transition-transform">▶</span>
                 View Full Simplification History ({remoteScript.steps.length} steps)
               </summary>
-              <div className="mt-4 space-y-3 pl-6 border-l-4 border-border dark:border-gray-600">
+              <div className="mt-4 space-y-3 pl-4 md:pl-6 border-l-2 md:border-l-4 border-border dark:border-border">
                 {timeline.slice(0, index + 1).map((tstate, idx) => (
                   <div key={tstate.key} className="relative">
                     <button
                       onClick={() => animateToIndex(idx)}
-                      className={`w-full text-left rounded-lg p-4 border-2 transition-all ${
+                      className={`w-full text-left rounded-lg p-3 md:p-4 border-2 transition-all ${
                         idx === index
                           ? 'bg-primary/10 dark:bg-primary/20 border-primary shadow-md'
                           : 'bg-muted/30 dark:bg-muted/20 border-border dark:border-gray-600 hover:bg-muted/50 dark:hover:bg-muted/30'
                       }`}
                     >
-                      <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
                         <span className="text-xs font-semibold text-muted-foreground">
                           {idx === 0 ? 'Original' : `Step ${idx}`}
                         </span>
@@ -641,7 +651,7 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
                           {tstate.law}
                         </span>
                       </div>
-                      <div className="flex flex-wrap items-center gap-1 font-mono text-sm">
+                      <div className="flex flex-wrap items-center gap-0.5 md:gap-1 font-mono text-xs md:text-sm">
                         {tstate.tokens.map((tok) => (
                           <span key={tok.id} className="text-foreground">
                             {tok.text}
@@ -650,7 +660,7 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
                       </div>
                     </button>
                     {idx < index && (
-                      <div className="absolute left-0 top-1/2 w-1 h-full bg-linear-to-b from-primary/30 to-transparent -ml-6"></div>
+                      <div className="absolute left-0 top-1/2 w-0.5 md:w-1 h-full bg-linear-to-b from-primary/30 to-transparent -ml-4 md:-ml-6"></div>
                     )}
                   </div>
                 ))}

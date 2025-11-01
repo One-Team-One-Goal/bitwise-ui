@@ -140,74 +140,7 @@ function RouteComponent() {
     }
   };
 
-  // Start the intro.js tutorial
-  const startTutorial = () => {
-    const intro = introJs();
-    intro.setOptions({
-      steps: [
-        {
-          title: '👋 Welcome to Karnaugh Map Solver!',
-          intro: 'This tool helps you simplify Boolean expressions using Karnaugh Maps (K-Maps). Let me show you how to use it!'
-        },
-        {
-          element: '.expression-input',
-          title: '⚡ Quick Start: Import Expression',
-          intro: 'The fastest way to get started! Type a Boolean expression like "A∧B∨C" or "A·B+C" and click Generate. The tool will automatically set up the K-Map with the correct number of variables and populate the truth table.',
-          position: 'bottom'
-        },
-        {
-          element: '.settings-panel',
-          title: '⚙️ Settings Panel',
-          intro: 'Manually choose the number of variables (2-5) and select SOP (Sum of Products) or POS (Product of Sums) form. The K-Map will update automatically!',
-          position: 'right'
-        },
-        {
-          element: '.truth-table',
-          title: '📊 Truth Table',
-          intro: 'This is your truth table. Each row represents a combination of input variables. Click on output cells to toggle between 0, 1, and X (don\'t care).',
-          position: 'right'
-        },
-        {
-          element: '.kmap-container',
-          title: '🗺️ Karnaugh Map',
-          intro: 'The K-Map visualizes your truth table in a grid format optimized for finding patterns. Cells are arranged using Gray code so adjacent cells differ by only one bit.',
-          position: 'left'
-        },
-        {
-          element: '.kmap-container',
-          title: '🖱️ Interactive Cells',
-          intro: 'Hover over any cell to see its binary coordinates, minterm number, and variable representation. Click cells to cycle through values: X → 0 → 1 → X',
-          position: 'left'
-        },
-        {
-          element: '.solution-display',
-          title: '✨ Simplified Expression',
-          intro: 'Your simplified Boolean expression appears here! The solver automatically finds the minimal form with optimal grouping. Lower literal cost means a simpler circuit.',
-          position: 'top'
-        },
-        {
-          title: '🎨 Visual Groups',
-          intro: 'Groups of 1s (or 0s for POS) are highlighted with colored overlays. Each group represents a term in your final expression. Larger groups mean fewer variables in that term!'
-        },
-        {
-          title: '🔢 5-Variable Magic',
-          intro: 'For 5 variables, you\'ll see two 4×4 tables (E=0 and E=1). The solver can find groups that span across both tables, which means the E variable doesn\'t appear in that term!'
-        },
-        {
-          title: '🎓 Ready to Simplify!',
-          intro: 'Try entering an expression or clicking some cells to set values, and watch the solution update in real-time. Click the help button (?) anytime to see this tutorial again. Happy simplifying!'
-        }
-      ],
-      showProgress: true,
-      showBullets: true,
-      exitOnOverlayClick: false,
-      doneLabel: 'Got it!',
-      nextLabel: 'Next →',
-      prevLabel: '← Back',
-      skipLabel: 'Skip'
-    });
-    intro.start();
-  };
+
 
   return (
     <TooltipProvider>

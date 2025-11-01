@@ -4,7 +4,7 @@ import type { Component, Connection, Position, ToolbarState } from '../types'
 import { ConnectionRenderer } from './ConnectionRenderer'
 import { ComponentRenderer } from './ComponentRenderer'
 import { Button } from '@/components/ui/button'
-import { Grid2X2, RotateCcw, Trash2, Calculator } from 'lucide-react'
+import { Grid2X2, RotateCcw, Trash2, Calculator, ChevronDown, ChevronUp, Info } from 'lucide-react'
 import { HelpGuide } from './HelpGuide'
 import {
   Tooltip,
@@ -97,6 +97,10 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
   const [selectedComponents, setSelectedComponents] = useState<Set<string>>(
     new Set()
   )
+
+  // State for collapsible panels
+  const [isInfoCollapsed, setIsInfoCollapsed] = useState(false)
+  const [isSelectionCollapsed, setIsSelectionCollapsed] = useState(false)
 
   // Keyboard event handling for deleting selected items
   useEffect(() => {
@@ -1191,41 +1195,59 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
     <div className="relative w-full h-full overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Bulk Actions Toolbar - Shows when multiple components selected */}
       {selectedComponents.size > 0 && (
-        <div className="absolute top-3 left-1/2 transform -translate-x-1/2 z-20 shadow-lg bg-background text-background rounded-lg border px-3 border-primary-muted py-1 h-12 flex items-center gap-2 animate-in slide-in-from-top duration-300">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-xs text-primary">
-              {selectedComponents.size === 1
-                ? '1 selected'
-                : `${selectedComponents.size} selected`}{' '}
-            </span>
+        <div className="absolute top-3 left-1/2 transform -translate-x-1/2 z-20 shadow-lg bg-background text-background rounded-lg border border-primary-muted animate-in slide-in-from-top duration-300">
+          <div className="flex items-center gap-2 px-3 py-2">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-xs text-primary">
+                {selectedComponents.size === 1
+                  ? '1 selected'
+                  : `${selectedComponents.size} selected`}{' '}
+              </span>
+            </div>
+            {!isSelectionCollapsed && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedComponents(new Set())}
+                  className="h-8 bg-background/20 text-xs text-primary px-2"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    // Delete all selected components
+                    selectedComponents.forEach((compId) => {
+                      circuitHook.removeComponent(compId)
+                    })
+                    setSelectedComponents(new Set())
+                  }}
+                  className="bg-red-500 hover:bg-red-600 text-background text-xs"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsSelectionCollapsed(!isSelectionCollapsed)}
+              className="h-8 w-8 p-0 ml-1"
+            >
+              {isSelectionCollapsed ? (
+                <ChevronDown className="h-4 w-4" />
+              ) : (
+                <ChevronUp className="h-4 w-4" />
+              )}
+            </Button>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setSelectedComponents(new Set())}
-            className="h-8 bg-background/20 text-xs text-primary px-2"
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              // Delete all selected components
-              selectedComponents.forEach((compId) => {
-                circuitHook.removeComponent(compId)
-              })
-              setSelectedComponents(new Set())
-            }}
-            className="bg-red-500 hover:bg-red-600 text-background text-xs"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
         </div>
       )}
 
-      {/* Tool Selection Buttons + Undo/Redo - Top Left */}
-      <div className="absolute top-3 left-3 z-10 flex flex-row gap-0.5 p-1 bg-background/90 backdrop-blur-sm rounded-md shadow-lg border border-gray-200">
+      {/* Tool Selection Buttons + Undo/Redo - Top Left - Responsive: Vertical on mobile, Horizontal on desktop */}
+      <div className="absolute top-3 left-3 z-10 flex flex-col md:flex-row gap-0.5 p-1 bg-background/90 backdrop-blur-sm rounded-md shadow-lg border border-gray-200">
         {tools.map((tool) => (
           <Tooltip key={tool.id}>
             <TooltipTrigger>
@@ -1245,8 +1267,8 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
             <TooltipContent>{tool.description}</TooltipContent>
           </Tooltip>
         ))}
-        {/* Divider for undo/redo */}
-        <div className="w-px h-8 bg-gray-200 mx-1 self-center" />
+        {/* Divider for undo/redo - Horizontal on mobile, Vertical on desktop */}
+        <div className="h-px w-8 md:w-px md:h-8 bg-gray-200 my-1 md:mx-1 self-center" />
         {/* Undo Button */}
         <Tooltip>
           <TooltipTrigger>
@@ -1499,66 +1521,82 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
         )}
       </div>
 
-      {/* Canvas info */}
-      <div className="absolute bottom-4 right-4 bg-background bg-opacity-95 rounded-lg px-3 py-2 text-sm text-gray-600 shadow-lg border border-gray-200">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1">
-            Tool:{' '}
-            <span className="font-medium text-blue-600 ml-1">
-              {capitalizeFirst(String(toolbarState.selectedTool))}
-            </span>
-          </div>
-          <div className="flex items-center gap-1">
-            Components:{' '}
-            <span className="font-medium ml-1">
-              {circuitHook.circuitState.components.length}
-            </span>
-          </div>
+      {/* Canvas info - Collapsible */}
+      <div className="absolute bottom-4 right-4 bg-background bg-opacity-95 rounded-lg shadow-lg border border-gray-200">
+        <div className="flex items-center justify-between px-3 py-2 gap-2">
+          {!isInfoCollapsed && (
+            <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 text-sm text-gray-600">
+              <div className="flex items-center gap-1">
+                Tool:{' '}
+                <span className="font-medium text-blue-600 ml-1">
+                  {capitalizeFirst(String(toolbarState.selectedTool))}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                Components:{' '}
+                <span className="font-medium ml-1">
+                  {circuitHook.circuitState.components.length}
+                </span>
+              </div>
 
-          {/* Zoom controls: minus button, numeric input (percent), plus button */}
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              aria-label="Zoom out"
-              onClick={() => handleZoomDelta(-ZOOM_STEP)}
-              className="inline-flex items-center justify-center rounded px-2 py-1 border border-gray-200 bg-background hover:bg-gray-50 text-sm"
-            >
-              −
-            </button>
+              {/* Zoom controls: minus button, numeric input (percent), plus button */}
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  aria-label="Zoom out"
+                  onClick={() => handleZoomDelta(-ZOOM_STEP)}
+                  className="inline-flex items-center justify-center rounded px-2 py-1 border border-gray-200 bg-background hover:bg-gray-50 text-sm"
+                >
+                  −
+                </button>
 
-            <div className="flex items-center border rounded overflow-hidden">
-              <input
-                min={10}
-                max={300}
-                step={1}
-                value={Math.round(zoom * 100)}
-                onChange={(e) => {
-                  const val = Number(e.target.value)
-                  if (!Number.isNaN(val)) {
-                    handleSetZoomPercent(val)
-                  }
-                }}
-                className="w-11 text-center px-2 py-1 text-sm outline-none"
-                aria-label="Zoom percent"
-              />
-              <span className="py-1 pr-1 text-sm text-gray-500">%</span>
-            </div>
+                <div className="flex items-center border rounded overflow-hidden">
+                  <input
+                    min={10}
+                    max={300}
+                    step={1}
+                    value={Math.round(zoom * 100)}
+                    onChange={(e) => {
+                      const val = Number(e.target.value)
+                      if (!Number.isNaN(val)) {
+                        handleSetZoomPercent(val)
+                      }
+                    }}
+                    className="w-11 text-center px-2 py-1 text-sm outline-none"
+                    aria-label="Zoom percent"
+                  />
+                  <span className="py-1 pr-1 text-sm text-gray-500">%</span>
+                </div>
 
-            <button
-              type="button"
-              aria-label="Zoom in"
-              onClick={() => handleZoomDelta(ZOOM_STEP)}
-              className="inline-flex items-center justify-center rounded px-2 py-1 border border-gray-200 bg-background hover:bg-gray-50 text-sm"
-            >
-              +
-            </button>
-          </div>
+                <button
+                  type="button"
+                  aria-label="Zoom in"
+                  onClick={() => handleZoomDelta(ZOOM_STEP)}
+                  className="inline-flex items-center justify-center rounded px-2 py-1 border border-gray-200 bg-background hover:bg-gray-50 text-sm"
+                >
+                  +
+                </button>
+              </div>
 
-          {connectionState.isConnecting && (
-            <div className="text-blue-600 dark:text-blue-400 font-semibold text-[9px] sm:text-xs animate-pulse">
-              🔗 Connecting
+              {connectionState.isConnecting && (
+                <div className="text-blue-600 dark:text-blue-400 font-semibold text-[9px] sm:text-xs animate-pulse">
+                  🔗 Connecting
+                </div>
+              )}
             </div>
           )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsInfoCollapsed(!isInfoCollapsed)}
+            className="h-8 w-8 p-0 shrink-0"
+          >
+            {isInfoCollapsed ? (
+              <Info className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
+          </Button>
         </div>
       </div>
 

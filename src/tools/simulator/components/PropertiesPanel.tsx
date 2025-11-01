@@ -123,19 +123,6 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ circuitHook })
             </Button>
           </div>
         )}
-
-        <div className="pt-2">
-          <Separator className="mb-3" />
-          <Button
-            variant="destructive"
-            size="sm"
-            className="w-full"
-            onClick={() => circuitHook.removeComponent(component.id)}
-          >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Delete Component
-          </Button>
-        </div>
       </div>
     );
   };

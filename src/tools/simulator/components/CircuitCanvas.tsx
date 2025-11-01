@@ -6,11 +6,22 @@ import { ComponentRenderer } from './ComponentRenderer'
 import { Button } from '@/components/ui/button'
 import { Grid2X2, RotateCcw, Trash2, Calculator, ChevronDown, ChevronUp, Info } from 'lucide-react'
 import { HelpGuide } from './HelpGuide'
+import { KeyboardShortcuts } from './KeyboardShortcuts'
 import {
   Tooltip,
   TooltipTrigger,
   TooltipContent,
 } from '@/components/ui/tooltip'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 const INITIAL_CONNECTION_STATE: {
   isConnecting: boolean
@@ -98,6 +109,21 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
     new Set()
   )
 
+  // State for bulk delete confirmation dialog
+  const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false)
+  
+  // State for clear all confirmation dialog
+  const [showClearAllDialog, setShowClearAllDialog] = useState(false)
+
+  // State for clipboard (copy/paste)
+  const [clipboard, setClipboard] = useState<{
+    components: Component[]
+    connections: Connection[]
+  } | null>(null)
+
+  // Track previous tool for space bar toggle
+  const previousToolRef = useRef<ToolbarState['selectedTool']>('select')
+
   // State for collapsible panels
   const [isInfoCollapsed, setIsInfoCollapsed] = useState(false)
   const [isSelectionCollapsed, setIsSelectionCollapsed] = useState(false)
@@ -129,20 +155,9 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
             setDeleteAnimation(null)
           }, 150)
         }
-        // FEATURE: Delete multiple selected components
+        // FEATURE: Delete multiple selected components with confirmation
         else if (selectedComponents.size > 0) {
-          // Delete all selected components
-          selectedComponents.forEach((compId) => {
-            setDeleteAnimation({ componentId: compId })
-          })
-
-          setTimeout(() => {
-            selectedComponents.forEach((compId) => {
-              circuitHook.removeComponent(compId)
-            })
-            setSelectedComponents(new Set())
-            setDeleteAnimation(null)
-          }, 150)
+          setShowBulkDeleteDialog(true)
         }
         // Delete single selected component
         else if (circuitHook.circuitState.selectedComponent) {
@@ -232,14 +247,16 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
         onToolSelect?.('pan')
       }
 
-      // Space bar to toggle selected switch/button
-      if (event.key === ' ' && circuitHook.circuitState.selectedComponent) {
+      // Space bar to enable pan mode temporarily
+      if (event.key === ' ' && !event.repeat) {
         if (
           event.target instanceof HTMLInputElement ||
           event.target instanceof HTMLTextAreaElement
         )
           return
         event.preventDefault()
+        
+        // If there's a selected switch/button, toggle it
         const component = circuitHook.circuitState.components.find(
           (c: Component) => c.id === circuitHook.circuitState.selectedComponent
         )
@@ -253,18 +270,239 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
             value: !output.value,
           }))
           circuitHook.updateComponent(component.id, { outputs: newOutputs })
+        } else {
+          // Otherwise, switch to pan mode
+          if (toolbarState.selectedTool !== 'pan') {
+            previousToolRef.current = toolbarState.selectedTool
+            onToolSelect?.('pan')
+          }
         }
       }
 
-      // Ctrl+A to select all
+      // Ctrl+A to select all components
       if ((event.ctrlKey || event.metaKey) && event.key === 'a') {
         event.preventDefault()
-        // For now, just focus on the canvas
+        const allComponentIds = new Set<string>(
+          circuitHook.circuitState.components.map((c: Component) => c.id)
+        )
+        setSelectedComponents(allComponentIds)
+      }
+
+      // G key to toggle grid
+      if (event.key === 'g' || event.key === 'G') {
+        if (
+          event.target instanceof HTMLInputElement ||
+          event.target instanceof HTMLTextAreaElement
+        )
+          return
+        event.preventDefault()
+        circuitHook.toggleSnapToGrid?.()
+      }
+
+      // = or + key to zoom in
+      if (event.key === '=' || event.key === '+') {
+        if (
+          event.target instanceof HTMLInputElement ||
+          event.target instanceof HTMLTextAreaElement
+        )
+          return
+        event.preventDefault()
+        setZoom((prev) => Math.min(prev + 0.1, 3))
+      }
+
+      // - key to zoom out
+      if (event.key === '-' || event.key === '_') {
+        if (
+          event.target instanceof HTMLInputElement ||
+          event.target instanceof HTMLTextAreaElement
+        )
+          return
+        event.preventDefault()
+        setZoom((prev) => Math.max(prev - 0.1, 0.1))
+      }
+
+      // 0 key to reset zoom
+      if (event.key === '0') {
+        if (
+          event.target instanceof HTMLInputElement ||
+          event.target instanceof HTMLTextAreaElement
+        )
+          return
+        event.preventDefault()
+        setZoom(1)
+      }
+
+      // Ctrl+C to copy selected components
+      if ((event.ctrlKey || event.metaKey) && event.key === 'c') {
+        if (
+          event.target instanceof HTMLInputElement ||
+          event.target instanceof HTMLTextAreaElement
+        )
+          return
+        
+        if (selectedComponents.size > 0) {
+          event.preventDefault()
+          // Copy selected components and their internal connections
+          const componentsToCopy = circuitHook.circuitState.components.filter(
+            (c: Component) => selectedComponents.has(c.id)
+          )
+          
+          const connectionsToCopy = circuitHook.circuitState.connections.filter(
+            (conn: Connection) => 
+              selectedComponents.has(conn.from.componentId) &&
+              selectedComponents.has(conn.to.componentId)
+          )
+          
+          setClipboard({
+            components: componentsToCopy,
+            connections: connectionsToCopy
+          })
+        }
+      }
+
+      // Ctrl+V to paste clipboard
+      if ((event.ctrlKey || event.metaKey) && event.key === 'v') {
+        if (
+          event.target instanceof HTMLInputElement ||
+          event.target instanceof HTMLTextAreaElement
+        )
+          return
+        
+        if (clipboard && clipboard.components.length > 0) {
+          event.preventDefault()
+          
+          // Create ID mapping for pasted components
+          const idMap = new Map<string, string>()
+          const newSelectedIds = new Set<string>()
+          
+          // Calculate offset for pasted components (30px down and right)
+          const PASTE_OFFSET = 30
+          
+          // Add components with new IDs and offset positions
+          clipboard.components.forEach((comp) => {
+            const newComp = circuitHook.addComponent(comp.type, {
+              x: comp.position.x + PASTE_OFFSET,
+              y: comp.position.y + PASTE_OFFSET
+            })
+            
+            if (newComp) {
+              idMap.set(comp.id, newComp.id)
+              newSelectedIds.add(newComp.id)
+              
+              // Copy label if it exists
+              if (comp.label) {
+                circuitHook.updateComponent(newComp.id, { label: comp.label })
+              }
+            }
+          })
+          
+          // Add connections between pasted components
+          setTimeout(() => {
+            clipboard.connections.forEach((conn) => {
+              const newFromId = idMap.get(conn.from.componentId)
+              const newToId = idMap.get(conn.to.componentId)
+              
+              if (newFromId && newToId) {
+                const fromComp = circuitHook.circuitState.components.find(
+                  (c: Component) => c.id === newFromId
+                )
+                const toComp = circuitHook.circuitState.components.find(
+                  (c: Component) => c.id === newToId
+                )
+                
+                if (fromComp && toComp) {
+                  // Find matching connection points by their relative index
+                  const oldFromComp = clipboard.components.find(c => c.id === conn.from.componentId)
+                  const oldToComp = clipboard.components.find(c => c.id === conn.to.componentId)
+                  
+                  if (oldFromComp && oldToComp) {
+                    const fromOutputIndex = oldFromComp.outputs.findIndex(
+                      o => o.id === conn.from.connectionPointId
+                    )
+                    const toInputIndex = oldToComp.inputs.findIndex(
+                      i => i.id === conn.to.connectionPointId
+                    )
+                    
+                    if (fromOutputIndex !== -1 && toInputIndex !== -1) {
+                      const newFromOutput = fromComp.outputs[fromOutputIndex]
+                      const newToInput = toComp.inputs[toInputIndex]
+                      
+                      if (newFromOutput && newToInput) {
+                        circuitHook.addConnection(
+                          newFromId,
+                          newFromOutput.id,
+                          newToId,
+                          newToInput.id
+                        )
+                      }
+                    }
+                  }
+                }
+              }
+            })
+            
+            // Select the pasted components
+            setSelectedComponents(newSelectedIds)
+          }, 100)
+        }
+      }
+
+      // Ctrl+X to cut selected components
+      if ((event.ctrlKey || event.metaKey) && event.key === 'x') {
+        if (
+          event.target instanceof HTMLInputElement ||
+          event.target instanceof HTMLTextAreaElement
+        )
+          return
+        
+        if (selectedComponents.size > 0) {
+          event.preventDefault()
+          // Copy to clipboard
+          const componentsToCopy = circuitHook.circuitState.components.filter(
+            (c: Component) => selectedComponents.has(c.id)
+          )
+          
+          const connectionsToCopy = circuitHook.circuitState.connections.filter(
+            (conn: Connection) => 
+              selectedComponents.has(conn.from.componentId) &&
+              selectedComponents.has(conn.to.componentId)
+          )
+          
+          setClipboard({
+            components: componentsToCopy,
+            connections: connectionsToCopy
+          })
+          
+          // Delete selected components
+          selectedComponents.forEach((compId) => {
+            circuitHook.removeComponent(compId)
+          })
+          setSelectedComponents(new Set())
+        }
+      }
+    }
+
+    const handleKeyUp = (event: KeyboardEvent) => {
+      // Release space to go back to previous tool
+      if (event.key === ' ') {
+        if (
+          event.target instanceof HTMLInputElement ||
+          event.target instanceof HTMLTextAreaElement
+        )
+          return
+        event.preventDefault()
+        if (toolbarState.selectedTool === 'pan') {
+          onToolSelect?.(previousToolRef.current)
+        }
       }
     }
 
     document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
+    document.addEventListener('keyup', handleKeyUp)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      document.removeEventListener('keyup', handleKeyUp)
+    }
   }, [
     circuitHook.circuitState.selectedConnection,
     circuitHook.circuitState.selectedComponent,
@@ -275,6 +513,8 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
     handleUndo,
     handleRedo,
     onToolSelect,
+    selectedComponents,
+    clipboard,
   ])
 
   const [panState, setPanState] = useState<{
@@ -1116,8 +1356,8 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
           />
           {/* Multi-selection highlight */}
           {selectedComponents.has(component.id) && (
-            <div className="absolute inset-0 border-3 border-blue-400 bg-blue-100 bg-opacity-10 rounded-lg pointer-events-none">
-              <div className="absolute -top-2 -right-2 w-5 h-5 bg-blue-500 text-background rounded-full flex items-center justify-center text-xs font-bold">
+            <div className="absolute inset-0 border-3 border-blue-500 bg-blue-400/30 rounded-lg pointer-events-none shadow-lg shadow-blue-500/50">
+              <div className="absolute -top-2 -right-2 w-5 h-5 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold shadow-md">
                 ✓
               </div>
             </div>
@@ -1217,13 +1457,7 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => {
-                    // Delete all selected components
-                    selectedComponents.forEach((compId) => {
-                      circuitHook.removeComponent(compId)
-                    })
-                    setSelectedComponents(new Set())
-                  }}
+                  onClick={() => setShowBulkDeleteDialog(true)}
                   className="bg-red-500 hover:bg-red-600 text-background text-xs"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -1314,7 +1548,7 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
               className="h-9 p-0"
             >
               <Calculator className="h-6 w-6 mr-2" />
-              Boolean to circuit
+              Boolean to Circuit
             </Button>
           </TooltipTrigger>
           <TooltipContent>Toggle Boolean Expression Input</TooltipContent>
@@ -1329,7 +1563,7 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
             <Button
               variant="destructive"
               size="sm"
-              onClick={circuitHook.clearAll}
+              onClick={() => setShowClearAllDialog(true)}
               className="h-9 w-9 p-0"
             >
               <Trash2 className="h-6 w-6" />
@@ -1355,6 +1589,9 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
 
         {/* Help Guide */}
         <HelpGuide />
+
+        {/* Keyboard Shortcuts */}
+        <KeyboardShortcuts />
 
         {/* Grid Toggle */}
         <Tooltip>
@@ -1627,6 +1864,67 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
           </TooltipContent>
         </Tooltip>
       )}
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selectedComponents.size} Component{selectedComponents.size !== 1 ? 's' : ''}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {selectedComponents.size === 1 ? 'this component' : `these ${selectedComponents.size} components`}? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                // Delete all selected components
+                selectedComponents.forEach((compId) => {
+                  setDeleteAnimation({ componentId: compId })
+                })
+
+                setTimeout(() => {
+                  selectedComponents.forEach((compId) => {
+                    circuitHook.removeComponent(compId)
+                  })
+                  setSelectedComponents(new Set())
+                  setDeleteAnimation(null)
+                }, 150)
+                
+                setShowBulkDeleteDialog(false)
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Clear All Confirmation Dialog */}
+      <AlertDialog open={showClearAllDialog} onOpenChange={setShowClearAllDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear All Components?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to clear the entire circuit? This will remove all {circuitHook.circuitState.components.length} component{circuitHook.circuitState.components.length !== 1 ? 's' : ''} and {circuitHook.circuitState.connections.length} connection{circuitHook.circuitState.connections.length !== 1 ? 's' : ''}. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => {
+                circuitHook.clearAll()
+                setShowClearAllDialog(false)
+                setSelectedComponents(new Set())
+              }}
+            >
+              Clear All
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

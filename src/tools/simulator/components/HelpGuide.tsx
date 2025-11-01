@@ -13,6 +13,7 @@ interface HelpGuideProps {
 }
 
 export const HelpGuide: React.FC<HelpGuideProps> = ({ onStartTour }) => {
+    const [isRunning, setIsRunning] = React.useState(false);
 
     const baseIntro = (content: string) => `
     <img src="${rightPointSvg}" class="intro-bitbot-left" alt="Bitbot" />
@@ -21,6 +22,9 @@ export const HelpGuide: React.FC<HelpGuideProps> = ({ onStartTour }) => {
     </div>
   `
   const startTour = () => {
+    if (isRunning) return; // Prevent starting tour if already running
+    
+    setIsRunning(true);
     const intro = introJs();
     
     intro.setOptions({
@@ -77,11 +81,13 @@ export const HelpGuide: React.FC<HelpGuideProps> = ({ onStartTour }) => {
 
     intro.oncomplete(() => {
       localStorage.setItem('circuit-simulator-tour-seen', 'true');
+      setIsRunning(false);
       if (onStartTour) onStartTour();
     });
 
     intro.onexit(() => {
       localStorage.setItem('circuit-simulator-tour-seen', 'true');
+      setIsRunning(false);
     });
 
     intro.start();
@@ -102,19 +108,20 @@ export const HelpGuide: React.FC<HelpGuideProps> = ({ onStartTour }) => {
 
   return (
     <Tooltip>
-      <TooltipTrigger>
+      <TooltipTrigger asChild>
         <Button
           variant="outline"
           size="sm"
           onClick={startTour}
           className="h-10 w-10 p-0"
           data-tour="help-button"
+          disabled={isRunning}
         >
-          <HelpCircle className="h-6 w-6" />
+          <HelpCircle className={`h-6 w-6 ${isRunning ? 'animate-pulse' : ''}`} />
         </Button>
       </TooltipTrigger>
       <TooltipContent side='left'>
-        Start Interactive Tour
+        {isRunning ? 'Tour in progress...' : 'Start Interactive Tour'}
       </TooltipContent>
     </Tooltip>
   );

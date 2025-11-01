@@ -125,13 +125,13 @@ const Square: React.FC<SquareProps> = ({
     !isGrouped || !groupColor ? 'border border-border' : 'relative rounded-md'
 
   return (
-    <div className="relative group" ref={cellRef}>
+    <div className={`relative group ${isHovered ? 'z-9999' : 'z-0'}`} ref={cellRef}>
       <div
         className={`
           flex items-center justify-center 
           cursor-pointer transition-all duration-200
           text-lg font-mono
-          hover:scale-105 hover:shadow-lg hover:z-10
+          hover:scale-105 hover:shadow-lg
           active:scale-95
           ${valueClass}
           ${borderClass}
@@ -152,7 +152,15 @@ const Square: React.FC<SquareProps> = ({
       
       {/* Coordinate Tooltip on Hover */}
       {isHovered && coordinates && (
-        <div className={`absolute ${tooltipPosition === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'} left-1/2 transform -translate-x-1/2 px-3 py-2 bg-popover dark:bg-gray-800 border border-border text-popover-foreground dark:text-gray-100 text-xs rounded-lg shadow-xl whitespace-nowrap z-50 pointer-events-none`}>
+        <div className={`fixed px-3 py-2 bg-popover dark:bg-gray-800 border-2 border-primary/50 text-popover-foreground dark:text-gray-100 text-xs rounded-lg shadow-2xl whitespace-nowrap z-9999 pointer-events-none`}
+          style={{
+            top: tooltipPosition === 'top' 
+              ? `${(cellRef.current?.getBoundingClientRect().top || 0) - 10}px`
+              : `${(cellRef.current?.getBoundingClientRect().bottom || 0) + 10}px`,
+            left: `${(cellRef.current?.getBoundingClientRect().left || 0) + (cellRef.current?.getBoundingClientRect().width || 0) / 2}px`,
+            transform: tooltipPosition === 'top' ? 'translate(-50%, -100%)' : 'translate(-50%, 0)'
+          }}
+        >
           <div className="flex flex-col gap-1">
             <div className="font-semibold text-center">{coordinates.variables || coordinates.binary}</div>
             <div className="text-muted-foreground dark:text-gray-400">Binary: {coordinates.binary}</div>
@@ -162,8 +170,8 @@ const Square: React.FC<SquareProps> = ({
             <div className="text-xs text-muted-foreground/70 dark:text-gray-500 mt-1 text-center">Click to cycle value</div>
           </div>
           {/* Arrow pointing in appropriate direction */}
-          <div className={`absolute ${tooltipPosition === 'top' ? 'top-full' : 'bottom-full'} left-1/2 transform -translate-x-1/2 ${tooltipPosition === 'top' ? '-mt-1' : '-mb-1'}`}>
-            <div className={`border-4 border-transparent ${tooltipPosition === 'top' ? 'border-t-gray-900 dark:border-t-gray-800' : 'border-b-gray-900 dark:border-b-gray-800'}`}></div>
+          <div className={`absolute ${tooltipPosition === 'top' ? 'top-full' : 'bottom-full'} left-1/2 transform -translate-x-1/2 ${tooltipPosition === 'top' ? '-mt-1' : '-mb-1'} z-9999`}>
+            <div className={`border-4 border-transparent ${tooltipPosition === 'top' ? 'border-t-popover dark:border-t-gray-800' : 'border-b-popover dark:border-b-gray-800'}`}></div>
           </div>
         </div>
       )}

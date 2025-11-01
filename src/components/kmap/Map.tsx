@@ -7,35 +7,37 @@ interface MapProps {
   groups: KMapGroup[];
   variableCount: number;
   onCellClick: (row: number, col: number) => void;
+  formType: 'SOP' | 'POS';
 }
 
-const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick }) => {
+const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick, formType }) => {
   const { rows, cols } = getDimensions(variableCount);
   
   // Generate headers for the map
+  // Headers follow Gray code order: [00, 01, 11, 10]
   const generateHeaders = () => {
     if (variableCount === 2) {
       return {
-        colHeaders: ['B', "B'"],
-        rowHeaders: ['A', "A'"],
+        colHeaders: ["B'", "B"], // Gray code: [0, 1]
+        rowHeaders: ["A'", "A"], // Gray code: [0, 1]
         cornerLabel: 'A//B'
       };
     } else if (variableCount === 3) {
       return {
-        colHeaders: ['BC', "BC'", "B'C'", "B'C"],
-        rowHeaders: ['A', "A'"],
+        colHeaders: ["B'C'", "B'C", "BC", "BC'"], // Gray code: [00, 01, 11, 10]
+        rowHeaders: ["A'", "A"], // Gray code: [0, 1]
         cornerLabel: 'A//BC'
       };
     } else if (variableCount === 4) {
       return {
-        colHeaders: ['CD', "CD'", "C'D'", "C'D"],
-        rowHeaders: ['AB', "AB'", "A'B'", "A'B"],
+        colHeaders: ["C'D'", "C'D", "CD", "CD'"], // Gray code: [00, 01, 11, 10]
+        rowHeaders: ["A'B'", "A'B", "AB", "AB'"], // Gray code: [00, 01, 11, 10]
         cornerLabel: 'AB//CD'
       };
     } else if (variableCount === 5) {
       return {
-        colHeaders: ['CD', "CD'", "C'D'", "C'D"],
-        rowHeaders: ['AB', "AB'", "A'B'", "A'B"],
+        colHeaders: ["C'D'", "C'D", "CD", "CD'"], // Gray code: [00, 01, 11, 10]
+        rowHeaders: ["A'B'", "A'B", "AB", "AB'"], // Gray code: [00, 01, 11, 10]
         cornerLabel: 'AB//CD'
       };
     }
@@ -74,6 +76,7 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick }
       const b = rowCoord[1] === "0" ? "B'" : "B";
       const c = colCoord[0] === "0" ? "C'" : "C";
       const d = colCoord[1] === "0" ? "D'" : "D";
+      // Display in ABCD order (row variables first, then column variables)
       variables = `${a}${b}${c}${d}`;
     } else if (variableCount === 5) {
       binary = (eCoord || "0") + rowCoord + colCoord;
@@ -82,7 +85,8 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick }
       const b = rowCoord[1] === "0" ? "B'" : "B";
       const c = colCoord[0] === "0" ? "C'" : "C";
       const d = colCoord[1] === "0" ? "D'" : "D";
-      variables = `${e}${a}${b}${c}${d}`;
+      // Display in ABCDE order (E first, then row variables, then column variables)
+      variables = `${a}${b}${c}${d}${e}`;
     } else {
       binary = "";
       variables = "";
@@ -180,37 +184,48 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick }
             </div>
 
             {/* Rows with data - E=0 table (columns 0-3) */}
-            {Array.from({ length: rows }).map((_, rowIndex) => (
-              <div key={rowIndex} className="flex">
-                {/* Row Header */}
-                <div className="w-16 h-16 flex items-center justify-center font-semibold text-sm text-foreground">
-                  {rowHeaders[rowIndex]}
-                </div>
-                
-                {/* Data Cells - columns 0-3 for E=0 */}
-                {Array.from({ length: 4 }).map((_, colIndex) => {
-                  const cell = squares[rowIndex]?.[colIndex]; // Access columns 0-3
-                  const group = getCellGroup(rowIndex, colIndex, 0);
-                  const connections = getGroupConnections(rowIndex, colIndex, group);
-                  const coordinates = getCellCoordinates(rowIndex, colIndex);
+            {Array.from({ length: rows }).map((_, visualRowIndex) => {
+              // Map visual row index to actual storage row index using Gray code
+              const grayCode4 = [0, 1, 3, 2];
+              const storageRowIndex = grayCode4[visualRowIndex];
+              
+              return (
+                <div key={visualRowIndex} className="flex">
+                  {/* Row Header */}
+                  <div className="w-16 h-16 flex items-center justify-center font-semibold text-sm text-foreground">
+                    {rowHeaders[visualRowIndex]}
+                  </div>
                   
-                  if (!cell) return null;
+                  {/* Data Cells - columns 0-3 for E=0 */}
+                  {Array.from({ length: 4 }).map((_, colIndex) => {
+                    const cell = squares[storageRowIndex]?.[colIndex]; // Access columns 0-3
+                    const group = getCellGroup(storageRowIndex, colIndex, 0);
+                    const connections = getGroupConnections(storageRowIndex, colIndex, group);
+                    const coordinates = getCellCoordinates(storageRowIndex, colIndex);
+                    
+                    if (!cell) return null;
 
-                  return (
-                    <Square
-                      key={`e0-${rowIndex}-${colIndex}`}
-                      value={cell[0]}
-                      onClick={() => onCellClick(rowIndex, colIndex)}
-                      groupColor={group?.color}
-                      isGrouped={!!group}
-                      groupConnections={connections}
-                      coordinates={coordinates}
-                      className="w-16 h-16"
-                    />
-                  );
-                })}
-              </div>
-            ))}
+                    // Only show group color if cell value is appropriate for the form type
+                    const shouldShowGroup = group && (cell[0] === 'X' || 
+                      (formType === 'SOP' && cell[0] === 1) || 
+                      (formType === 'POS' && cell[0] === 0));
+
+                    return (
+                      <Square
+                        key={`e0-${visualRowIndex}-${colIndex}`}
+                        value={cell[0]}
+                        onClick={() => onCellClick(storageRowIndex, colIndex)}
+                        groupColor={shouldShowGroup ? group?.color : undefined}
+                        isGrouped={shouldShowGroup}
+                        groupConnections={shouldShowGroup ? connections : {}}
+                        coordinates={coordinates}
+                        className="w-16 h-16"
+                      />
+                    );
+                  })}
+                </div>
+              );
+            })}
           </div>
 
           {/* Group Overlays for E=0 table */}
@@ -253,38 +268,49 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick }
             </div>
 
             {/* Rows with data - E=1 table (columns 4-7) */}
-            {Array.from({ length: rows }).map((_, rowIndex) => (
-              <div key={rowIndex} className="flex">
-                {/* Row Header */}
-                <div className="w-16 h-16 flex items-center justify-center font-semibold text-sm text-foreground">
-                  {rowHeaders[rowIndex]}
-                </div>
-                
-                {/* Data Cells - columns 4-7 for E=1 */}
-                {Array.from({ length: 4 }).map((_, colIndex) => {
-                  const actualCol = colIndex + 4; // Offset by 4 to access columns 4-7
-                  const cell = squares[rowIndex]?.[actualCol];
-                  const group = getCellGroup(rowIndex, colIndex, 1);
-                  const connections = getGroupConnections(rowIndex, colIndex, group);
-                  const coordinates = getCellCoordinates(rowIndex, actualCol);
+            {Array.from({ length: rows }).map((_, visualRowIndex) => {
+              // Map visual row index to actual storage row index using Gray code
+              const grayCode4 = [0, 1, 3, 2];
+              const storageRowIndex = grayCode4[visualRowIndex];
+              
+              return (
+                <div key={visualRowIndex} className="flex">
+                  {/* Row Header */}
+                  <div className="w-16 h-16 flex items-center justify-center font-semibold text-sm text-foreground">
+                    {rowHeaders[visualRowIndex]}
+                  </div>
                   
-                  if (!cell) return null;
+                  {/* Data Cells - columns 4-7 for E=1 */}
+                  {Array.from({ length: 4 }).map((_, colIndex) => {
+                    const actualCol = colIndex + 4; // Offset by 4 to access columns 4-7
+                    const cell = squares[storageRowIndex]?.[actualCol];
+                    const group = getCellGroup(storageRowIndex, colIndex, 1);
+                    const connections = getGroupConnections(storageRowIndex, colIndex, group);
+                    const coordinates = getCellCoordinates(storageRowIndex, actualCol);
+                    
+                    if (!cell) return null;
 
-                  return (
-                    <Square
-                      key={`e1-${rowIndex}-${colIndex}`}
-                      value={cell[0]}
-                      onClick={() => onCellClick(rowIndex, actualCol)}
-                      groupColor={group?.color}
-                      isGrouped={!!group}
-                      groupConnections={connections}
-                      coordinates={coordinates}
-                      className="w-16 h-16"
-                    />
-                  );
-                })}
-              </div>
-            ))}
+                    // Only show group color if cell value is appropriate for the form type
+                    const shouldShowGroup = group && (cell[0] === 'X' || 
+                      (formType === 'SOP' && cell[0] === 1) || 
+                      (formType === 'POS' && cell[0] === 0));
+
+                    return (
+                      <Square
+                        key={`e1-${visualRowIndex}-${colIndex}`}
+                        value={cell[0]}
+                        onClick={() => onCellClick(storageRowIndex, actualCol)}
+                        groupColor={shouldShowGroup ? group?.color : undefined}
+                        isGrouped={shouldShowGroup}
+                        groupConnections={shouldShowGroup ? connections : {}}
+                        coordinates={coordinates}
+                        className="w-16 h-16"
+                      />
+                    );
+                  })}
+                </div>
+              );
+            })}
           </div>
 
           {/* Group Overlays for E=1 table */}
@@ -327,37 +353,52 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick }
         </div>
 
         {/* Rows with data */}
-        {Array.from({ length: rows }).map((_, rowIndex) => (
-          <div key={rowIndex} className="flex">
-            {/* Row Header */}
-            <div className="w-16 h-16 flex items-center justify-center font-semibold text-sm text-foreground">
-              {rowHeaders[rowIndex]}
-            </div>
-            
-            {/* Data Cells */}
-            {Array.from({ length: cols }).map((_, colIndex) => {
-              const cell = squares[rowIndex]?.[colIndex];
-              const group = getCellGroup(rowIndex, colIndex);
-              const connections = getGroupConnections(rowIndex, colIndex, group);
-              const coordinates = getCellCoordinates(rowIndex, colIndex);
+        {Array.from({ length: rows }).map((_, visualRowIndex) => {
+          // Map visual row index to actual storage row index using Gray code
+          const grayCode4 = [0, 1, 3, 2];
+          const grayCode2 = [0, 1];
+          const storageRowIndex = rows === 4 ? grayCode4[visualRowIndex] : 
+                                  rows === 2 ? grayCode2[visualRowIndex] : visualRowIndex;
+          
+          return (
+            <div key={visualRowIndex} className="flex">
+              {/* Row Header */}
+              <div className="w-16 h-16 flex items-center justify-center font-semibold text-sm text-foreground">
+                {rowHeaders[visualRowIndex]}
+              </div>
               
-              if (!cell) return null;
+              {/* Data Cells */}
+              {Array.from({ length: cols }).map((_, colIndex) => {
+                const cell = squares[storageRowIndex]?.[colIndex];
+                const group = getCellGroup(storageRowIndex, colIndex);
+                const connections = getGroupConnections(storageRowIndex, colIndex, group);
+                const coordinates = getCellCoordinates(storageRowIndex, colIndex);
+                
+                if (!cell) return null;
 
-              return (
-                <Square
-                  key={`${rowIndex}-${colIndex}`}
-                  value={cell[0]}
-                  onClick={() => onCellClick(rowIndex, colIndex)}
-                  groupColor={group?.color}
-                  isGrouped={!!group}
-                  groupConnections={connections}
-                  coordinates={coordinates}
-                  className="w-16 h-16"
-                />
-              );
-            })}
-          </div>
-        ))}
+                // Only show group color if cell value is appropriate for the form type
+                // For SOP: only highlight cells with value 1 or X
+                // For POS: only highlight cells with value 0 or X
+                const shouldShowGroup = group && (cell[0] === 'X' || 
+                  (formType === 'SOP' && cell[0] === 1) || 
+                  (formType === 'POS' && cell[0] === 0));
+
+                return (
+                  <Square
+                    key={`${visualRowIndex}-${colIndex}`}
+                    value={cell[0]}
+                    onClick={() => onCellClick(storageRowIndex, colIndex)}
+                    groupColor={shouldShowGroup ? group?.color : undefined}
+                    isGrouped={shouldShowGroup}
+                    groupConnections={shouldShowGroup ? connections : {}}
+                    coordinates={coordinates}
+                    className="w-16 h-16"
+                  />
+                );
+              })}
+            </div>
+          );
+        })}
       </div>
 
       {/* Group Overlays */}

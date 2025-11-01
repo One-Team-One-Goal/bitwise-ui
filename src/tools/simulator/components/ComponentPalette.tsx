@@ -59,9 +59,9 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
 
   const renderComponentButton = (definition: any) => {
     const isSelected = selectedComponentType === definition.type;
-    const baseClasses = 'w-full justify-between h-10 px-2 flex-shrink-0 rounded-md transition-colors border';
+    const baseClasses = 'w-full justify-between h-10 px-2 flex-shrink-0 rounded-md transition-all border';
     const stateClasses = isSelected
-      ? 'border-primary/40 bg-primary/10 text-primary shadow-sm hover:bg-primary/15'
+      ? 'border-primary/40 bg-primary/10 text-primary shadow-lg shadow-primary/50 ring-2 ring-primary/30 hover:bg-primary/15 animate-in fade-in duration-200'
       : 'border-transparent hover:bg-muted/60';
     
     return (
@@ -144,7 +144,9 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
                                 <Button
                                   variant={isSelected ? "default" : "outline"}
                                   size="sm"
-                                  className="h-20 w-full flex flex-col items-center justify-center gap-1.5 p-2"
+                                  className={`h-20 w-full flex flex-col items-center justify-center gap-1.5 p-2 transition-all ${
+                                    isSelected ? 'shadow-lg shadow-primary/50 ring-2 ring-primary/30 scale-105 animate-in fade-in duration-200' : ''
+                                  }`}
                                   onClick={() => onComponentSelect(definition.type)}
                                 >
                                   <div className="text-2xl font-mono">{definition.icon}</div>

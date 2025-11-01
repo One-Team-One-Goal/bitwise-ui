@@ -53,7 +53,7 @@ const EXPRESSION_EXAMPLES = {
 }
 
 interface BooleanExpressionInputProps {
-  onGenerateCircuit: (expression: string) => void
+  onGenerateCircuit: (expression: string, options?: { clearExisting?: boolean }) => void
   hasExistingCircuit?: boolean
   onClose?: () => void
 }
@@ -100,7 +100,7 @@ export const BooleanExpressionInput: React.FC<BooleanExpressionInputProps> = ({
 
   const confirmGenerate = () => {
     const exprToGenerate = simplifiedExpression || expression
-    onGenerateCircuit(exprToGenerate)
+    onGenerateCircuit(exprToGenerate, { clearExisting: true })
     setShowConfirmDialog(false)
     onClose?.()
   }
@@ -155,17 +155,27 @@ export const BooleanExpressionInput: React.FC<BooleanExpressionInputProps> = ({
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Clear Existing Circuit?</AlertDialogTitle>
+            <AlertDialogTitle>Generate Circuit</AlertDialogTitle>
             <AlertDialogDescription>
-              The canvas already contains components. Generating a new circuit
-              will remove all existing components and connections. Do you want
-              to continue?
+              The canvas already contains components. Choose how you want to proceed:
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmGenerate}>
-              Yes, Generate New Circuit
+            <AlertDialogAction 
+              onClick={() => {
+                const exprToGenerate = simplifiedExpression || expression
+                // Pass clearExisting = false to keep existing circuit
+                onGenerateCircuit(exprToGenerate, { clearExisting: false })
+                setShowConfirmDialog(false)
+                onClose?.()
+              }}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              Add to Existing
+            </AlertDialogAction>
+            <AlertDialogAction onClick={confirmGenerate} className="bg-destructive hover:bg-destructive/90">
+              Replace Circuit
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

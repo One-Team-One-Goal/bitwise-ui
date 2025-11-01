@@ -1250,12 +1250,16 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = React.memo(
             segmentStates.push(false)
           }
 
+          // Display mode indicator text below the display
+          const displayModeText = shouldUseBcd ? 'BCD' : 'SEG'
+          const hasAnyInput = component.inputs.some(i => i.connected || i.value)
+          
           return (
             <div className="relative w-full h-full">
               <svg
                 width="100%"
                 height="100%"
-                viewBox="0 0 60 90"
+                viewBox="0 0 60 95"
                 className="absolute inset-0"
               >
                 {/* Display background */}
@@ -1337,6 +1341,30 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = React.memo(
                     className="pointer-events-none"
                   />
                 )}
+                
+                {/* Mode indicator - improved styling */}
+                <g>
+                  <rect
+                    x="20"
+                    y="82"
+                    width="20"
+                    height="10"
+                    rx="2"
+                    fill="#374151"
+                    fillOpacity="0.5"
+                  />
+                  <text
+                    x="30"
+                    y="89"
+                    textAnchor="middle"
+                    fontSize="6"
+                    fill={hasAnyInput ? '#9CA3AF' : '#6B7280'}
+                    fontWeight="700"
+                    letterSpacing="0.5"
+                  >
+                    {displayModeText}
+                  </text>
+                </g>
               </svg>
             </div>
           )
@@ -1519,16 +1547,32 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = React.memo(
               minHeight,
               labelLines.length * lineHeight + 8
             )
+
+            // Update component size if it changed
+            React.useEffect(() => {
+              if (
+                circuitHook &&
+                typeof circuitHook.updateComponent === 'function' &&
+                (component.size.width !== contentWidth ||
+                  component.size.height !== contentHeight)
+              ) {
+                circuitHook.updateComponent(component.id, {
+                  size: { width: contentWidth, height: contentHeight },
+                })
+              }
+            }, [contentWidth, contentHeight])
+
             return (
               <div
-                className="bg-background border-2 border-gray-400 rounded flex items-center justify-center"
+                className="bg-white/90 backdrop-blur-sm border-2 rounded-lg flex items-center justify-center shadow-sm transition-all duration-200"
                 style={{
-                  borderColor: isSelected ? '#3b82f6' : '#9ca3af',
+                  borderColor: isSelected ? '#3b82f6' : '#d1d5db',
                   position: 'relative',
                   width: contentWidth,
                   height: contentHeight,
                   minWidth,
                   minHeight,
+                  boxShadow: isSelected ? '0 0 0 2px rgba(59, 130, 246, 0.2)' : 'none',
                 }}
               >
                 <textarea
@@ -1545,15 +1589,118 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = React.memo(
                     }
                   }}
                   onClick={(e) => e.stopPropagation()}
-                  className="w-full h-full text-center bg-transparent border-none outline-none text-sm px-2 resize-none"
+                  onFocus={(e) => e.stopPropagation()}
+                  className="w-full h-full text-center bg-transparent border-none outline-none text-sm font-medium px-3 resize-none text-gray-800 placeholder:text-gray-400"
                   style={{
                     pointerEvents: 'auto',
                     overflow: 'hidden',
                     resize: 'none',
+                    lineHeight: '1.5',
                   }}
-                  placeholder="Label text..."
+                  placeholder="Add text..."
                   rows={labelLines.length || 1}
                 />
+              </div>
+            )
+          }
+          
+          // BUS component
+          if (component.type === 'BUS') {
+            const bitCount = component.inputs.length
+            const hasSignal = component.inputs.some(i => i.connected || i.value)
+            return (
+              <div className="relative w-full h-full">
+                <svg
+                  width="100%"
+                  height="100%"
+                  viewBox="0 0 100 24"
+                  className="absolute inset-0"
+                >
+                  {/* Bus line background glow when active */}
+                  {hasSignal && (
+                    <rect
+                      x="0"
+                      y="9"
+                      width="100"
+                      height="6"
+                      fill={isSelected ? '#3B82F6' : '#10B981'}
+                      fillOpacity="0.3"
+                      rx="2"
+                      className="animate-pulse"
+                    />
+                  )}
+                  
+                  {/* Bus line (thick) */}
+                  <rect
+                    x="0"
+                    y="10"
+                    width="100"
+                    height="4"
+                    fill={isSelected ? '#3B82F6' : hasSignal ? '#10B981' : '#6B7280'}
+                    rx="1.5"
+                    className="transition-all duration-200"
+                  />
+                  
+                  {/* Diagonal slash indicators (left) */}
+                  <line
+                    x1="12"
+                    y1="7"
+                    x2="16"
+                    y2="17"
+                    stroke={isSelected ? '#1E40AF' : hasSignal ? '#047857' : '#4B5563'}
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                  />
+                  <line
+                    x1="18"
+                    y1="7"
+                    x2="22"
+                    y2="17"
+                    stroke={isSelected ? '#1E40AF' : hasSignal ? '#047857' : '#4B5563'}
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                  />
+                  
+                  {/* Diagonal slash indicators (right) */}
+                  <line
+                    x1="78"
+                    y1="7"
+                    x2="82"
+                    y2="17"
+                    stroke={isSelected ? '#1E40AF' : hasSignal ? '#047857' : '#4B5563'}
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                  />
+                  <line
+                    x1="84"
+                    y1="7"
+                    x2="88"
+                    y2="17"
+                    stroke={isSelected ? '#1E40AF' : hasSignal ? '#047857' : '#4B5563'}
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                  />
+                  
+                  {/* Bit count label with background */}
+                  <rect
+                    x="40"
+                    y="3"
+                    width="20"
+                    height="12"
+                    rx="3"
+                    fill={isSelected ? '#3B82F6' : hasSignal ? '#10B981' : '#4B5563'}
+                  />
+                  <text
+                    x="50"
+                    y="11.5"
+                    textAnchor="middle"
+                    fontSize="8"
+                    fontWeight="bold"
+                    fill="#FFFFFF"
+                  >
+                    {bitCount}
+                  </text>
+                </svg>
               </div>
             )
           }

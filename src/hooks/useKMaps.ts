@@ -131,10 +131,15 @@ export const useKMaps = () => {
           let binaryString: string;
           if (variableCount === 5) {
             // For 5 variables, include E coordinate
+            // Order: EABCD where E is MSB, D is LSB
             const eCoord = newMatrix[i][j][3] as string;
             binaryString = eCoord + rowCoord + colCoord; // EABCD
           } else {
-            binaryString = colCoord + rowCoord;
+            // For 2-4 variables: row coords are higher bits, col coords are lower bits
+            // 2 vars: AB -> rowCoord + colCoord
+            // 3 vars: ABC -> rowCoord (A) + colCoord (BC)
+            // 4 vars: ABCD -> rowCoord (AB) + colCoord (CD)
+            binaryString = rowCoord + colCoord;
           }
           
           const truthTableIndex = parseInt(binaryString, 2);
@@ -162,10 +167,15 @@ export const useKMaps = () => {
           let binaryString: string;
           if (variableCount === 5) {
             // For 5 variables, include E coordinate
+            // Order: EABCD where E is MSB, D is LSB
             const eCoord = matrixData[i][j][3] as string;
             binaryString = eCoord + rowCoord + colCoord; // EABCD
           } else {
-            binaryString = colCoord + rowCoord;
+            // For 2-4 variables: row coords are higher bits, col coords are lower bits
+            // 2 vars: AB -> rowCoord + colCoord
+            // 3 vars: ABC -> rowCoord (A) + colCoord (BC)
+            // 4 vars: ABCD -> rowCoord (AB) + colCoord (CD)
+            binaryString = rowCoord + colCoord;
           }
           
           const truthTableIndex = parseInt(binaryString, 2);

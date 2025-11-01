@@ -129,55 +129,84 @@ export const setCoordinates = (
     }
 
     for (let j = 0; j < r; j++) {
-      // Gray code mapping for rows and columns
-      let k = j;
+      // Gray code mapping for rows
+      let grayRowIndex = j;
       if (r === 4) {
-        k = grayCode4[j];
+        grayRowIndex = grayCode4[j];
       } else if (r === 2) {
-        k = grayCode2[j];
+        grayRowIndex = grayCode2[j];
       }
 
-      // Calculate the truth table index
+      // Calculate the truth table index based on variable count
       let truthTableIndex: number;
       if (typeMap === 5) {
-        // For 5 variables: ABCDE
+        // For 5 variables: EABCD (E is MSB, D is LSB)
         // E is the table index (bit 4)
-        // AB are rows (bits 2-3)
-        // CD are columns (bits 0-1)
-        const cdBits = colInTable; // Column in table (0-3)
-        const abBits = j; // Row (0-3)
+        // AB are rows (bits 3-2)
+        // CD are columns (bits 1-0)
+        const cdBits = grayCode4[colInTable]; // Gray-coded column value
+        const abBits = grayCode4[j]; // Gray-coded row value
         truthTableIndex = tableIndex * 16 + abBits * 4 + cdBits;
+      } else if (typeMap === 4) {
+        // For 4 variables: ABCD (A is MSB, D is LSB)
+        // AB are rows (bits 3-2)
+        // CD are columns (bits 1-0)
+        const cdBits = grayCode4[i]; // Gray-coded column value
+        const abBits = grayCode4[j]; // Gray-coded row value
+        truthTableIndex = abBits * 4 + cdBits;
+      } else if (typeMap === 3) {
+        // For 3 variables: ABC (A is MSB, C is LSB)
+        // A is row (bit 2)
+        // BC are columns (bits 1-0)
+        const bcBits = grayCode4[i]; // Gray-coded column value
+        const aBit = grayCode2[j]; // Gray-coded row value
+        truthTableIndex = aBit * 4 + bcBits;
       } else {
-        truthTableIndex = i * r + j;
+        // For 2 variables: AB (A is MSB, B is LSB)
+        // A is row (bit 1)
+        // B is column (bit 0)
+        const bBit = grayCode2[i]; // Gray-coded column value
+        const aBit = grayCode2[j]; // Gray-coded row value
+        truthTableIndex = aBit * 2 + bBit;
       }
 
-      // Set column coordinates (CD for 4-5 vars, BC for 3 vars, B for 2 vars)
-      let val = "";
-      let t = typeMap;
-      let p = 0;
-
-      const colBits = Math.ceil(t / 2);
-      do {
-        val += perm[truthTableIndex][p];
-        p++;
-      } while (p < colBits);
+      // Set coordinates based on variable arrangement
+      // perm[truthTableIndex] contains [MSB, ..., LSB]
+      // For ABC: perm = [A, B, C]
+      // For ABCD: perm = [A, B, C, D]
+      // For ABCDE: perm = [A, B, C, D, E]
       
-      squares[k][i][1] = val as CellValue;
-
-      // Set row coordinates (AB for 4-5 vars, A for 2-3 vars)
-      val = "";
-      p = colBits;
+      let colCoord = "";
+      let rowCoord = "";
       
-      do {
-        val += perm[truthTableIndex][p];
-        p++;
-      } while (p < t);
+      if (typeMap === 5) {
+        // Column: CD (bits at indices 2-3 from perm, which is [A,B,C,D,E])
+        colCoord = perm[truthTableIndex][2] + perm[truthTableIndex][3]; // CD
+        // Row: AB (bits at indices 0-1 from perm)
+        rowCoord = perm[truthTableIndex][0] + perm[truthTableIndex][1]; // AB
+      } else if (typeMap === 4) {
+        // Column: CD (bits at indices 2-3 from perm, which is [A,B,C,D])
+        colCoord = perm[truthTableIndex][2] + perm[truthTableIndex][3]; // CD
+        // Row: AB (bits at indices 0-1 from perm)
+        rowCoord = perm[truthTableIndex][0] + perm[truthTableIndex][1]; // AB
+      } else if (typeMap === 3) {
+        // Column: BC (bits at indices 1-2 from perm, which is [A,B,C])
+        colCoord = perm[truthTableIndex][1] + perm[truthTableIndex][2]; // BC
+        // Row: A (bit at index 0 from perm)
+        rowCoord = perm[truthTableIndex][0]; // A
+      } else { // typeMap === 2
+        // Column: B (bit at index 1 from perm, which is [A,B])
+        colCoord = perm[truthTableIndex][1]; // B
+        // Row: A (bit at index 0 from perm)
+        rowCoord = perm[truthTableIndex][0]; // A
+      }
       
-      squares[k][i][2] = val as CellValue;
+      squares[grayRowIndex][i][1] = colCoord as CellValue;
+      squares[grayRowIndex][i][2] = rowCoord as CellValue;
       
       // For 5 variables, add E coordinate
       if (typeMap === 5) {
-        squares[k][i][3] = String(tableIndex) as CellValue;
+        squares[grayRowIndex][i][3] = String(tableIndex) as CellValue;
       }
     }
   }
@@ -680,23 +709,26 @@ const generateSolution = (
         eCoord: typeMap === 5 ? (squares[cell.riga][cell.col][3] as string) : undefined // E coordinate for 5-var
       }));
 
-      // For 5 variables, check E coordinate first
-      if (typeMap === 5) {
-        const eBits = groupCoords.map(coord => coord.eCoord).filter(e => e !== undefined);
-        const uniqueEBits = [...new Set(eBits)];
+      // Analyze row coordinates FIRST (AB variables - variables A,B)
+      // This ensures ABCD order in the output, not CDAB
+      const rowLength = groupCoords[0].rowCoord.length;
+      for (let i = 0; i < rowLength; i++) {
+        const bits = groupCoords.map(coord => coord.rowCoord[i]);
+        const uniqueBits = [...new Set(bits)];
         
-        // Only include E if it's constant across the group
-        if (uniqueEBits.length === 1) {
-          const eBit = uniqueEBits[0];
+        // Only include this variable if all cells in the group have the same bit value
+        if (uniqueBits.length === 1) {
+          const bit = uniqueBits[0];
+          const varIndex = i; // A=0, B=1 (AB are the 1st and 2nd variables)
           if (formType === "SOP") {
-            term += eBit === "0" ? "E'" : "E";
+            term += bit === "0" ? `${variables[varIndex]}'` : variables[varIndex];
           } else {
-            term += eBit === "0" ? "E" : "E'";
+            term += bit === "0" ? variables[varIndex] : `${variables[varIndex]}'`;
           }
           literalCost++;
         }
       }
-
+      
       // Analyze column coordinates (CD variables - variables C,D)
       const colLength = groupCoords[0].colCoord.length;
       for (let i = 0; i < colLength; i++) {
@@ -715,21 +747,19 @@ const generateSolution = (
           literalCost++;
         }
       }
-      
-      // Analyze row coordinates (AB variables - variables A,B)
-      const rowLength = groupCoords[0].rowCoord.length;
-      for (let i = 0; i < rowLength; i++) {
-        const bits = groupCoords.map(coord => coord.rowCoord[i]);
-        const uniqueBits = [...new Set(bits)];
+
+      // For 5 variables, check E coordinate last (so it appears as ABCDE)
+      if (typeMap === 5) {
+        const eBits = groupCoords.map(coord => coord.eCoord).filter(e => e !== undefined);
+        const uniqueEBits = [...new Set(eBits)];
         
-        // Only include this variable if all cells in the group have the same bit value
-        if (uniqueBits.length === 1) {
-          const bit = uniqueBits[0];
-          const varIndex = i; // A=0, B=1 (AB are the 1st and 2nd variables)
+        // Only include E if it's constant across the group
+        if (uniqueEBits.length === 1) {
+          const eBit = uniqueEBits[0];
           if (formType === "SOP") {
-            term += bit === "0" ? `${variables[varIndex]}'` : variables[varIndex];
+            term += eBit === "0" ? "E'" : "E";
           } else {
-            term += bit === "0" ? variables[varIndex] : `${variables[varIndex]}'`;
+            term += eBit === "0" ? "E" : "E'";
           }
           literalCost++;
         }

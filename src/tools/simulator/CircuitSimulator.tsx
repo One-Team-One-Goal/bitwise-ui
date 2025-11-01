@@ -234,7 +234,7 @@ export const CircuitSimulator: React.FC = () => {
               <BooleanExpressionInput
                 hasExistingCircuit={circuitHook.circuitState.components.length > 0}
                 onClose={() => setShowBooleanExpression(false)}
-                onGenerateCircuit={(expression: string) => {
+                onGenerateCircuit={(expression: string, options?: { clearExisting?: boolean }) => {
                   // Store the expression for display
                   setCurrentBooleanExpression(expression);
                   
@@ -253,10 +253,12 @@ export const CircuitSimulator: React.FC = () => {
                     parseResult.variables
                   );
                   
-                  // Clear existing circuit before generating new one
-                  circuitHook.circuitState.components.forEach((comp: any) => {
-                    circuitHook.removeComponent(comp.id);
-                  });
+                  // Clear existing circuit only if clearExisting is true (default)
+                  if (options?.clearExisting !== false) {
+                    circuitHook.circuitState.components.forEach((comp: any) => {
+                      circuitHook.removeComponent(comp.id);
+                    });
+                  }
                   
                   // Load generated components and connections
                   // Store all components first, keeping track of both new and generated IDs

@@ -446,18 +446,18 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
               aria-label="Boolean expression"
             />
             <div className="flex gap-2">
-              <Button variant={"default"} type="submit" className="simplify-button flex-1 sm:flex-none px-4 md:px-6 py-2 md:py-3 h-auto text-sm md:text-base" disabled={loadingRemote}>
+              <Button variant={"default"} type="submit" className="simplify-button flex-1 sm:flex-none px-4 md:px-6 py-2 md:py-3 h-auto text-sm md:text-base cursor-pointer" disabled={loadingRemote}>
                 {loadingRemote ? 'Solving...' : 'Solve'}
               </Button>
               <Button 
                 variant={"secondary"} 
                 type="button"
                 onClick={() => setShowExamples(true)} 
-                className="examples-button flex-1 sm:flex-none px-4 md:px-6 py-2 md:py-3 h-auto text-sm md:text-base"
+                className="examples-button flex-1 sm:flex-none px-4 md:px-6 py-2 md:py-3 h-auto text-sm md:text-base cursor-pointer"
               >
                 Examples
               </Button>
-              <Button variant={"outline"} onClick={handleReset} className="px-3 md:px-6 py-2 md:py-3 h-auto border-2 text-sm md:text-base hover:bg-muted/50">
+              <Button variant={"outline"} onClick={handleReset} className="px-3 md:px-6 py-2 md:py-3 h-auto border-2 text-sm md:text-base hover:bg-muted/50 cursor-pointer">
                 ↺
               </Button>
             </div>
@@ -471,7 +471,7 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
                 key={sym}
                 type="button"
                 onClick={() => insertOperator(sym)}
-                className="px-2 md:px-3 py-1 md:py-1.5 border-2 border-border rounded-md text-sm md:text-base bg-background hover:bg-primary/10 hover:border-primary dark:hover:bg-primary/20 transition-colors font-mono font-bold text-foreground flex-1 sm:flex-none min-w-10"
+                className="px-2 md:px-3 py-1 md:py-1.5 border-2 border-border rounded-md text-sm md:text-base bg-background hover:bg-primary/10 hover:border-primary dark:hover:bg-primary/20 transition-colors font-mono font-bold text-foreground flex-1 sm:flex-none min-w-10 cursor-pointer"
                 aria-label={`Insert ${sym}`}>
                 {sym}
               </button>

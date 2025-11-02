@@ -6,18 +6,78 @@ import { PropertiesPanel } from './components/PropertiesPanel';
 import { BooleanExpressionInput } from './components/BooleanExpressionInput';
 import { useCircuitSimulator } from './hooks/useCircuitSimulator';
 import { Card, CardContent } from '@/components/ui/card';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
 import { parseExpression } from './utils/expressionParser';
 import { generateCircuitFromExpression } from './utils/circuitGenerator';
-import type { ComponentType, ToolbarState } from './types';
-import { MousePointer, Hand, Cable, Scissors, Cpu } from 'lucide-react';
+import type { ComponentType, ToolbarState, Connection } from './types';
+import { MousePointer, Hand, Cable, Cpu, Boxes, Settings } from 'lucide-react';
 
 export const CircuitSimulator: React.FC = () => {
+  // Undo/redo state
   const circuitHook = useCircuitSimulator();
+  const [undoStack, setUndoStack] = useState<any[]>([]);
+  const [redoStack, setRedoStack] = useState<any[]>([]);
+  const isUndoingRef = React.useRef(false);
+
+  // Save state to undo stack on every change (but not during undo/redo operations)
+  React.useEffect(() => {
+    if (!isUndoingRef.current) {
+      setUndoStack(stack => {
+        // Avoid adding duplicate states
+        const lastState = stack[stack.length - 1];
+        if (lastState && JSON.stringify(lastState) === JSON.stringify(circuitHook.circuitState)) {
+          return stack;
+        }
+        return [...stack, circuitHook.circuitState];
+      });
+      // Clear redo stack on new action
+      setRedoStack([]);
+    }
+    // eslint-disable-next-line
+  }, [circuitHook.circuitState]);
+
+  const handleUndo = () => {
+    if (undoStack.length > 1) {
+      isUndoingRef.current = true;
+      const prev = undoStack[undoStack.length - 2];
+      setUndoStack(stack => stack.slice(0, -1));
+      setRedoStack(stack => [circuitHook.circuitState, ...stack]);
+      circuitHook.setCircuitState(prev);
+      // Reset flag after state update completes
+      setTimeout(() => { isUndoingRef.current = false; }, 0);
+    }
+  };
+
+  const handleRedo = () => {
+    if (redoStack.length > 0) {
+      isUndoingRef.current = true;
+      const next = redoStack[0];
+      setRedoStack(stack => stack.slice(1));
+      setUndoStack(stack => [...stack, next]);
+      circuitHook.setCircuitState(next);
+      // Reset flag after state update completes
+      setTimeout(() => { isUndoingRef.current = false; }, 0);
+    }
+  };
   const [toolbarState, setToolbarState] = useState<ToolbarState>({
     selectedTool: 'select',
     selectedComponentType: null
   });
   const [showBooleanExpression, setShowBooleanExpression] = useState(false);
+  const [currentBooleanExpression, setCurrentBooleanExpression] = useState<string>('');
+  
+  // Mobile drawer states
+  const [showComponentDrawer, setShowComponentDrawer] = useState(false);
+  const [showPropertiesDrawer, setShowPropertiesDrawer] = useState(false);
+
+  // Monitor circuit state and clear expression when circuit is empty
+  React.useEffect(() => {
+    // If there are no components, clear the boolean expression
+    if (circuitHook.circuitState.components.length === 0) {
+      setCurrentBooleanExpression('');
+    }
+  }, [circuitHook.circuitState.components.length]);
 
   const tools = [
     {
@@ -39,12 +99,6 @@ export const CircuitSimulator: React.FC = () => {
       description: 'Connect components'
     },
     {
-      id: 'wire-edit' as const,
-      name: 'Wire Edit',
-      icon: Scissors,
-      description: 'Select and manage wires'
-    },
-    {
       id: 'component' as const,
       name: 'Component',
       icon: Cpu,
@@ -52,7 +106,12 @@ export const CircuitSimulator: React.FC = () => {
     }
   ];
 
-  // handleToolSelect removed (unused)
+  const handleToolSelect = (tool: ToolbarState['selectedTool']) => {
+    setToolbarState({
+      selectedTool: tool,
+      selectedComponentType: tool === 'component' ? toolbarState.selectedComponentType : null
+    });
+  };
 
   const handleComponentTypeSelect = (componentType: ComponentType) => {
     setToolbarState({
@@ -64,16 +123,19 @@ export const CircuitSimulator: React.FC = () => {
   const handleCanvasClick = (position: { x: number; y: number }) => {
     if (toolbarState.selectedTool === 'component' && toolbarState.selectedComponentType) {
       circuitHook.addComponent(toolbarState.selectedComponentType, position);
-      // Optionally keep the tool selected or switch back to select
-      // setToolbarState(prev => ({ ...prev, selectedTool: 'select' }));
+      setToolbarState(prev => ({ ...prev, selectedTool: 'select', selectedComponentType: null }));
     }
   };
 
   return (
+
+
     <div className="h-full flex flex-col bg-background relative">
       {/* Toolbar */}
       <div data-tour="toolbar">
-        <SimulatorToolbar />
+        <div className="flex items-center gap-2">
+          <SimulatorToolbar />
+        </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden min-h-0">
@@ -91,9 +153,15 @@ export const CircuitSimulator: React.FC = () => {
             circuitHook={circuitHook}
             toolbarState={toolbarState}
             onCanvasClick={handleCanvasClick}
+            onToolSelect={handleToolSelect}
             tools={tools}
             showBooleanExpression={showBooleanExpression}
             onToggleBooleanExpression={() => setShowBooleanExpression(!showBooleanExpression)}
+            undoStack={undoStack}
+            redoStack={redoStack}
+            handleUndo={handleUndo}
+            handleRedo={handleRedo}
+            currentBooleanExpression={currentBooleanExpression}
           />
         </div>
 
@@ -105,42 +173,71 @@ export const CircuitSimulator: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobile & Tablet Component Palette - Fixed at bottom */}
-      <div className="lg:hidden">
-        {toolbarState.selectedTool === 'component' && 
-         !circuitHook.circuitState.selectedComponent && 
-         !circuitHook.circuitState.selectedConnection && (
-          <div className="fixed bottom-0 left-0 right-0 z-40 bg-background border-t-2 border-border shadow-2xl max-h-[60vh] overflow-y-auto">
+      {/* Mobile Side Drawer Buttons - Fixed Bottom Right */}
+      <div className="lg:hidden fixed bottom-4 right-4 z-30 flex flex-col gap-2">
+        <Button
+          variant="default"
+          size="sm"
+          onClick={() => setShowComponentDrawer(true)}
+          className="h-12 w-12 rounded-full shadow-lg"
+        >
+          <Boxes className="h-5 w-5" />
+        </Button>
+        {(circuitHook.circuitState.selectedComponent || circuitHook.circuitState.selectedConnection) && (
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => setShowPropertiesDrawer(true)}
+            className="h-12 w-12 rounded-full shadow-lg"
+          >
+            <Settings className="h-5 w-5" />
+          </Button>
+        )}
+      </div>
+
+      {/* Mobile Component Palette Drawer */}
+      <Sheet open={showComponentDrawer} onOpenChange={setShowComponentDrawer}>
+        <SheetContent side="left" className="w-[280px] sm:w-[320px] p-0 overflow-y-auto">
+          <SheetHeader className="px-4 py-3 border-b">
+            <SheetTitle>Components</SheetTitle>
+          </SheetHeader>
+          <div className="h-full">
             <ComponentPalette
-              onComponentSelect={handleComponentTypeSelect}
+              onComponentSelect={(type) => {
+                handleComponentTypeSelect(type);
+                setShowComponentDrawer(false);
+              }}
               selectedComponentType={toolbarState.selectedComponentType}
               isMobile={true}
             />
           </div>
-        )}
-      </div>
+        </SheetContent>
+      </Sheet>
 
-      {/* Mobile & Tablet Properties Panel - Slide-up overlay */}
-      <div className="xl:hidden">
-        {(circuitHook.circuitState.selectedComponent || circuitHook.circuitState.selectedConnection) && (
-          <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t-2 border-border shadow-2xl rounded-t-2xl animate-slide-up">
-            <div className="flex justify-center py-2">
-              <div className="w-12 h-1 bg-muted-foreground/30 rounded-full" />
-            </div>
-            <div className="max-h-[50vh] overflow-hidden">
-              <PropertiesPanel circuitHook={circuitHook} />
-            </div>
+      {/* Mobile Properties Panel Drawer */}
+      <Sheet open={showPropertiesDrawer} onOpenChange={setShowPropertiesDrawer}>
+        <SheetContent side="right" className="w-[280px] sm:w-[320px] p-0 overflow-y-auto">
+          <SheetHeader className="px-4 py-3 border-b">
+            <SheetTitle>Properties</SheetTitle>
+          </SheetHeader>
+          <div className="h-full">
+            <PropertiesPanel circuitHook={circuitHook} />
           </div>
-        )}
-      </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Boolean Expression Input Overlay */}
       {showBooleanExpression && (
-        <div className="absolute top-16 left-4 right-4 z-40 md:left-1/2 md:transform md:-translate-x-1/2 md:max-w-2xl">
+        <div className="absolute top-16 left-4 right-4 z-20 md:left-1/2 md:transform md:-translate-x-1/2 md:max-w-2xl">
           <Card className="shadow-lg border-border bg-background/95 backdrop-blur-sm">
             <CardContent className="p-4">
               <BooleanExpressionInput
-                onGenerateCircuit={(expression) => {
+                hasExistingCircuit={circuitHook.circuitState.components.length > 0}
+                onClose={() => setShowBooleanExpression(false)}
+                onGenerateCircuit={(expression: string, options?: { clearExisting?: boolean }) => {
+                  // Store the expression for display
+                  setCurrentBooleanExpression(expression);
+                  
                   // Parse the expression into an expression tree
                   const parseResult = parseExpression(expression);
                   
@@ -156,20 +253,31 @@ export const CircuitSimulator: React.FC = () => {
                     parseResult.variables
                   );
                   
-                  // Clear existing circuit and load generated circuit
-                  circuitHook.clearAll();
+                  // Clear existing circuit only if clearExisting is true (default)
+                  if (options?.clearExisting !== false) {
+                    circuitHook.circuitState.components.forEach((comp: any) => {
+                      circuitHook.removeComponent(comp.id);
+                    });
+                  }
                   
                   // Load generated components and connections
-                  // We'll add each component and connection one by one
-                  // First add all components
+                  // Store all components first, keeping track of both new and generated IDs
                   const componentIdMap = new Map<string, string>();
+                  const addedComponents: any[] = [];
                   
                   circuitResult.components.forEach(generatedComp => {
                     const newComp = circuitHook.addComponent(
                       generatedComp.type,
                       generatedComp.position
                     );
+
+                    if (!newComp) {
+                      console.warn('[CircuitSimulator] Failed to add generated component', generatedComp);
+                      return;
+                    }
+
                     componentIdMap.set(generatedComp.id, newComp.id);
+                    addedComponents.push(newComp);
                     
                     // Update label if present
                     if (generatedComp.label) {
@@ -177,35 +285,69 @@ export const CircuitSimulator: React.FC = () => {
                     }
                   });
                   
-                  // Then add all connections using the new component IDs
-                  circuitResult.connections.forEach(conn => {
-                    const fromCompId = componentIdMap.get(conn.from.componentId);
-                    const toCompId = componentIdMap.get(conn.to.componentId);
-                    
-                    if (fromCompId && toCompId) {
-                      // Find the corresponding connection points in the new components
-                      const fromComp = circuitHook.circuitState.components.find(c => c.id === fromCompId);
-                      const toComp = circuitHook.circuitState.components.find(c => c.id === toCompId);
+                  // Wait for React state to update before adding connections
+                  setTimeout(() => {
+                    circuitResult.connections.forEach((conn) => {
+                      const fromCompId = componentIdMap.get(conn.from.componentId);
+                      const toCompId = componentIdMap.get(conn.to.componentId);
                       
-                      if (fromComp && toComp && fromComp.outputs[0] && toComp.inputs[0]) {
-                        circuitHook.addConnection(
-                          fromCompId,
-                          fromComp.outputs[0].id,
-                          toCompId,
-                          toComp.inputs[0].id
-                        );
+                      if (fromCompId && toCompId) {
+                        // Find components from our local array instead of state
+                        const fromComp = addedComponents.find(c => c.id === fromCompId);
+                        const toComp = addedComponents.find(c => c.id === toCompId);
+                        
+                        if (fromComp && toComp) {
+                          // Find matching connection points by index (preserve original mapping)
+                          const fromOutputIndex = conn.from.connectionPointId.includes('output_') 
+                            ? parseInt(conn.from.connectionPointId.split('output_')[1]) 
+                            : 0;
+                          const toInputIndex = conn.to.connectionPointId.includes('input_')
+                            ? parseInt(conn.to.connectionPointId.split('input_')[1])
+                            : 0;
+                          
+                          const fromOutput = fromComp.outputs[fromOutputIndex];
+                          const toInput = toComp.inputs[toInputIndex];
+                          
+                          if (fromOutput && toInput) {
+                            const newConnection = circuitHook.addConnection(
+                              fromCompId,
+                              fromOutput.id,
+                              toCompId,
+                              toInput.id
+                            ) as Connection | null;
+                          
+                            // Apply pre-calculated wire path
+                            if (newConnection && conn.path && conn.path.length > 0) {
+                              requestAnimationFrame(() => {
+                                if (circuitHook.updateConnection) {
+                                  circuitHook.updateConnection(newConnection.id, { 
+                                    path: conn.path 
+                                  });
+                                }
+                              });
+                            }
+                          }
+                        }
                       }
-                    }
-                  });
-                  
-                  // Close the boolean expression panel
-                  setShowBooleanExpression(false);
-                  
-                  console.log('Circuit generated successfully:', {
-                    components: circuitResult.components.length,
-                    connections: circuitResult.connections.length,
-                    variables: parseResult.variables
-                  });
+                    });
+                    
+                    // Force an immediate simulation update after circuit generation
+                    setTimeout(() => {
+                      // Trigger immediate propagation by toggling a switch output (if any)
+                      const switches = circuitHook.circuitState.components.filter(
+                        (c: any) => c.type === 'SWITCH'
+                      );
+                      if (switches.length > 0) {
+                        // Force re-evaluation by updating the simulator
+                        circuitHook.circuitState.components.forEach((comp: any) => {
+                          circuitHook.updateComponent(comp.id, {});
+                        });
+                      }
+                    }, 250);
+                    
+                    // Close the boolean expression panel
+                    setShowBooleanExpression(false);
+                  }, 200);
                 }}
               />
             </CardContent>

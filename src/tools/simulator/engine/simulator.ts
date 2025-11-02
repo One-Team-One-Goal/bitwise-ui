@@ -5,21 +5,36 @@ export class CircuitSimulator {
   private connections: Map<string, Connection> = new Map();
   private simulationEvents: SimulationEvent[] = [];
   private isRunning: boolean = false;
-  private simulationSpeed: number = 100;
+  private simulationSpeed: number = 10; // FIX: Changed from 100ms to 10ms for faster response
 
   constructor() {}
 
   setComponents(components: Component[]): void {
     this.components.clear();
     components.forEach(component => {
-      this.components.set(component.id, { ...component });
+      // CRITICAL FIX: Deep copy to ensure output values are properly synced
+      // Shallow copy was causing switch toggles to not propagate
+      this.components.set(component.id, {
+        ...component,
+        inputs: component.inputs.map(i => ({ ...i })),
+        outputs: component.outputs.map(o => ({ ...o })),
+        position: { ...component.position },
+        size: { ...component.size },
+        properties: { ...component.properties }
+      });
     });
   }
 
   setConnections(connections: Connection[]): void {
     this.connections.clear();
     connections.forEach(connection => {
-      this.connections.set(connection.id, { ...connection });
+      // Deep copy connections to prevent reference issues
+      this.connections.set(connection.id, {
+        ...connection,
+        from: { ...connection.from },
+        to: { ...connection.to },
+        path: connection.path ? connection.path.map(p => ({ ...p })) : []
+      });
     });
   }
 
@@ -43,6 +58,14 @@ export class CircuitSimulator {
     this.simulationEvents = [];
   }
 
+  getComponents(): Component[] {
+    return Array.from(this.components.values());
+  }
+
+  getConnections(): Connection[] {
+    return Array.from(this.connections.values());
+  }
+
   private simulate(): void {
     if (!this.isRunning) return;
 
@@ -54,41 +77,73 @@ export class CircuitSimulator {
   }
 
   private propagateSignals(): void {
-    // First, update all components based on their inputs
-    this.components.forEach(component => {
-      this.updateComponent(component);
-    });
+    // IMPROVEMENT: Run multiple iterations to ensure signals propagate through all layers
+    // This simulates real digital circuit propagation delay
+    // For deep circuits, signals need to flow: inputs -> gates -> more gates -> outputs
+    // Maximum 20 iterations prevents infinite loops in feedback circuits
+    const MAX_ITERATIONS = 20;
+    
+    for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
+      let changesOccurred = false;
+      
+      // PHASE 1: Propagate signals through connections (wire propagation)
+      // In real circuits, wires have near-instantaneous propagation
+      this.connections.forEach(connection => {
+        const fromComponent = this.components.get(connection.from.componentId);
+        const toComponent = this.components.get(connection.to.componentId);
 
-    // Then propagate signals through connections
-    this.connections.forEach(connection => {
-      const fromComponent = this.components.get(connection.from.componentId);
-      const toComponent = this.components.get(connection.to.componentId);
+        if (fromComponent && toComponent) {
+          const fromOutput = fromComponent.outputs.find(
+            output => output.id === connection.from.connectionPointId
+          );
+          const toInput = toComponent.inputs.find(
+            input => input.id === connection.to.connectionPointId
+          );
 
-      if (fromComponent && toComponent) {
-        const fromOutput = fromComponent.outputs.find(
-          output => output.id === connection.from.connectionPointId
-        );
-        const toInput = toComponent.inputs.find(
-          input => input.id === connection.to.connectionPointId
-        );
+          if (fromOutput && toInput) {
+            const oldValue = toInput.value;
+            
+            // Wire carries the signal from output to input
+            toInput.value = fromOutput.value;
+            connection.value = fromOutput.value;
 
-        if (fromOutput && toInput) {
-          const oldValue = toInput.value;
-          toInput.value = fromOutput.value;
-          connection.value = fromOutput.value;
-
-          if (oldValue !== toInput.value) {
-            this.simulationEvents.push({
-              timestamp: Date.now(),
-              componentId: toComponent.id,
-              connectionPointId: toInput.id,
-              oldValue,
-              newValue: toInput.value
-            });
+            if (oldValue !== toInput.value) {
+              changesOccurred = true;
+              this.simulationEvents.push({
+                timestamp: Date.now(),
+                componentId: toComponent.id,
+                connectionPointId: toInput.id,
+                oldValue,
+                newValue: toInput.value
+              });
+            }
           }
         }
+      });
+      
+      // PHASE 2: Update all components based on their inputs (gate propagation delay)
+      // Each gate has a small propagation delay, simulated by the iteration loop
+      this.components.forEach(component => {
+        this.updateComponent(component);
+      });
+      
+      // OPTIMIZATION: If no changes occurred and we've done at least one iteration,
+      // the circuit has reached steady state
+      if (!changesOccurred && iteration > 0) {
+        // Circuit stabilized, no need for more iterations
+        break;
       }
-    });
+      
+      // SAFETY: If we hit max iterations, log a warning (possible feedback loop)
+      if (iteration === MAX_ITERATIONS - 1) {
+        console.warn('⚠️ Circuit simulation reached maximum iterations. Possible feedback loop or oscillation.');
+      }
+    }
+    
+    // MEMORY MANAGEMENT: Limit simulation events to prevent memory leaks
+    if (this.simulationEvents.length > 1000) {
+      this.simulationEvents = this.simulationEvents.slice(-500);
+    }
   }
 
   private updateComponent(component: Component): void {

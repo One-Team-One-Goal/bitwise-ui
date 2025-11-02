@@ -33,7 +33,7 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
   isMobile = false
 }) => {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
-    new Set(['gates', 'inputs', 'outputs'])
+    new Set()
   );
 
   const toggleCategory = (category: string) => {
@@ -59,24 +59,28 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
 
   const renderComponentButton = (definition: any) => {
     const isSelected = selectedComponentType === definition.type;
+    const baseClasses = 'w-full justify-between h-10 px-2 flex-shrink-0 rounded-md transition-all border';
+    const stateClasses = isSelected
+      ? 'border-primary/40 bg-primary/10 text-primary shadow-lg shadow-primary/50 ring-2 ring-primary/30 hover:bg-primary/15 animate-in fade-in duration-200'
+      : 'border-transparent hover:bg-muted/60';
     
     return (
       <TooltipProvider key={definition.type}>
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              variant={isSelected ? "outline" : "ghost"}
+              variant="ghost"
               size="sm"
-              className="w-full justify-between h-10 p-2 flex-shrink-0"
+              className={`${baseClasses} ${stateClasses}`}
               onClick={() => onComponentSelect(definition.type)}
             >
               <div className="flex items-center gap-2 min-w-0">
-                <div className="text-sm font-mono bg-muted rounded px-1.5 py-0.5 min-w-[1.5rem] text-center flex-shrink-0">
+                <div className={`text-sm font-mono rounded px-1.5 py-0.5 min-w-[1.5rem] text-center flex-shrink-0 ${isSelected ? 'bg-primary/20 text-primary' : 'bg-muted/80 text-foreground'}`}>
                   {definition.icon}
                 </div>
-                <div className="text-xs font-medium truncate">{definition.name}</div>
+                <div className={`text-xs font-medium truncate ${isSelected ? 'text-primary' : 'text-foreground'}`}>{definition.name}</div>
               </div>
-              <Info className="h-3 w-3 text-muted-foreground flex-shrink-0 ml-1" />
+              <Info className={`h-3 w-3 flex-shrink-0 ml-1 ${isSelected ? 'text-primary' : 'text-muted-foreground'}`} />
             </Button>
           </TooltipTrigger>
           <TooltipContent side="right" className="max-w-xs">
@@ -140,7 +144,9 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
                                 <Button
                                   variant={isSelected ? "default" : "outline"}
                                   size="sm"
-                                  className="h-20 w-full flex flex-col items-center justify-center gap-1.5 p-2"
+                                  className={`h-20 w-full flex flex-col items-center justify-center gap-1.5 p-2 transition-all ${
+                                    isSelected ? 'shadow-lg shadow-primary/50 ring-2 ring-primary/30 scale-105 animate-in fade-in duration-200' : ''
+                                  }`}
                                   onClick={() => onComponentSelect(definition.type)}
                                 >
                                   <div className="text-2xl font-mono">{definition.icon}</div>
@@ -170,7 +176,7 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
 
   // Desktop vertical layout
   return (
-    <div className="h-full bg-background border-r border-border flex flex-col">
+    <div className="h-full w-full bg-background border-r border-border flex flex-col">
       <div className="p-3 border-b border-border flex-shrink-0">
         <h3 className="text-sm font-semibold">Components</h3>
         <p className="text-xs text-muted-foreground mt-0.5">
@@ -178,25 +184,30 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
         </p>
       </div>
 
-      <ScrollArea className="flex-1 min-h-0">
-        <div className="p-2 space-y-1.5">
+      <ScrollArea className="flex-1 min-h-0 w-full">
+        <div className="p-2 space-y-1.5 w-full">
           {categories.map(category => {
             const isExpanded = expandedCategories.has(category.id);
             const components = ComponentFactory.getDefinitionsByCategory(category.id as any);
             const IconComponent = category.icon;
+            const categoryButtonClasses = `w-full justify-between h-9 px-3 rounded-md transition-colors border ${
+              isExpanded ? 'bg-muted/80 text-foreground border-border/70 shadow-sm hover:bg-muted' : 'border-transparent hover:bg-muted/60'
+            }`;
 
             return (
               <div key={category.id} className="flex-shrink-0">
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="w-full justify-between h-8 px-2"
+                  className={categoryButtonClasses}
                   onClick={() => toggleCategory(category.id)}
                 >
                   <div className="flex items-center gap-2">
-                    <IconComponent className="h-4 w-4" />
-                    <span className="text-sm font-medium">{category.name}</span>
-                    <span className="text-xs text-muted-foreground">({components.length})</span>
+                    <div className={`flex items-center justify-center h-6 w-6 rounded-sm ${isExpanded ? 'bg-primary/20 text-primary' : 'bg-muted/70 text-muted-foreground'}`}>
+                      <IconComponent className="h-4 w-4" />
+                    </div>
+                    <span className="text-sm font-semibold tracking-wide">{category.name}</span>
+                    <span className={`text-xs ${isExpanded ? 'text-primary' : 'text-muted-foreground'}`}>({components.length})</span>
                   </div>
                   {isExpanded ? (
                     <ChevronDown className="h-4 w-4" />
@@ -206,10 +217,10 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
                 </Button>
 
                 {isExpanded && (
-                  <div className="mt-2">
+                  <div className="mt-2 rounded-md border border-border/60 bg-muted/20 p-2 transition-colors">
                     {components.length > 6 ? (
-                      <ScrollArea className="h-64">
-                        <div className="space-y-1 pr-2">
+                      <ScrollArea className="h-64 pr-1">
+                        <div className="space-y-1">
                           {components.map(renderComponentButton)}
                         </div>
                       </ScrollArea>

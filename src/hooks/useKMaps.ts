@@ -29,7 +29,7 @@ export const useKMaps = () => {
 
   // Update variables when count changes
   useEffect(() => {
-    const allVariables = ['A', 'B', 'C', 'D'];
+    const allVariables = ['A', 'B', 'C', 'D', 'E'];
     const newVariables = allVariables.slice(0, variableCount);
     setVariables(newVariables);
   }, [variableCount]);
@@ -127,7 +127,20 @@ export const useKMaps = () => {
         if (newMatrix[i] && newMatrix[i][j]) {
           const colCoord = newMatrix[i][j][1] as string;
           const rowCoord = newMatrix[i][j][2] as string;
-          const binaryString = colCoord + rowCoord;
+          
+          let binaryString: string;
+          if (variableCount === 5) {
+            // For 5 variables, include E coordinate
+            // Order: EABCD where E is MSB, D is LSB
+            const eCoord = newMatrix[i][j][3] as string;
+            binaryString = eCoord + rowCoord + colCoord; // EABCD
+          } else {
+            // For 2-4 variables: row coords are higher bits, col coords are lower bits
+            // 2 vars: AB -> rowCoord + colCoord
+            // 3 vars: ABC -> rowCoord (A) + colCoord (BC)
+            // 4 vars: ABCD -> rowCoord (AB) + colCoord (CD)
+            binaryString = rowCoord + colCoord;
+          }
           
           const truthTableIndex = parseInt(binaryString, 2);
           if (truthTableData[truthTableIndex]) {
@@ -150,7 +163,20 @@ export const useKMaps = () => {
         if (matrixData[i] && matrixData[i][j]) {
           const colCoord = matrixData[i][j][1] as string;
           const rowCoord = matrixData[i][j][2] as string;
-          const binaryString = colCoord + rowCoord;
+          
+          let binaryString: string;
+          if (variableCount === 5) {
+            // For 5 variables, include E coordinate
+            // Order: EABCD where E is MSB, D is LSB
+            const eCoord = matrixData[i][j][3] as string;
+            binaryString = eCoord + rowCoord + colCoord; // EABCD
+          } else {
+            // For 2-4 variables: row coords are higher bits, col coords are lower bits
+            // 2 vars: AB -> rowCoord + colCoord
+            // 3 vars: ABC -> rowCoord (A) + colCoord (BC)
+            // 4 vars: ABCD -> rowCoord (AB) + colCoord (CD)
+            binaryString = rowCoord + colCoord;
+          }
           
           const truthTableIndex = parseInt(binaryString, 2);
           if (newTruthTable[truthTableIndex]) {

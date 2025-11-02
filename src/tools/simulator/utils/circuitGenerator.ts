@@ -39,66 +39,113 @@ function operatorToComponentType(operator: Operator): ComponentType {
 
 /**
  * Calculate layout positions for components
+ * Universal layout strategy: 
+ * - All inputs (switches, constants) in leftmost column (depth 0)
+ * - All gates positioned ahead/forward from inputs
+ * - NOT gates at intermediate positions (depth + 0.6)
+ * - Other gates at full depth increments (depth + 1)
+ * - Clean left-to-right signal flow
  */
 function calculateLayout(
   componentNodes: ComponentNode[],
-  inputVariables: string[]
+  _inputVariables: string[]
 ): void {
-  const LAYER_SPACING = 200;
-  const COMPONENT_SPACING = 100;
-  const START_X = 100;
-  const START_Y = 100;
+  const HORIZONTAL_SPACING = 200;  // Spacing between layers (left to right)
+  const VERTICAL_SPACING = 80;     // Spacing between components in same layer
+  const START_X = 100;             // Starting X position (leftmost column)
+  const START_Y = 300;             // Center Y position in canvas
   
-  // Group components by depth (layer)
-  const layers: Map<number, ComponentNode[]> = new Map();
+  // Build a map of component to its depth
+  const depthMap = new Map<ComponentNode, number>();
   
-  function calculateDepth(node: ExpressionNode, depth = 0): number {
-    if (node.type === 'variable' || node.type === 'constant') {
+  // Calculate depth for each component
+  // Strategy: All inputs at depth 0 (leftmost column), gates positioned forward from there
+  function assignDepth(compNode: ComponentNode, visited = new Set<ComponentNode>()): number {
+    if (visited.has(compNode)) return 0;
+    visited.add(compNode);
+    
+    if (depthMap.has(compNode)) {
+      return depthMap.get(compNode)!;
+    }
+    
+    // Base case: ALL input variables and constants ALWAYS at depth 0 (leftmost column)
+    if (compNode.node.type === 'variable' || compNode.node.type === 'constant') {
+      depthMap.set(compNode, 0);
+      return 0;
+    }
+    
+    // For operators, calculate depth from their deepest input
+    if (compNode.node.type === 'operator') {
+      let maxChildDepth = 0; // Start at 0 (inputs are at depth 0)
+      
+      // Find child components and get their max depth
+      componentNodes.forEach(childNode => {
+        if (compNode.node.left === childNode.node || compNode.node.right === childNode.node) {
+          const childDepth = assignDepth(childNode, visited);
+          maxChildDepth = Math.max(maxChildDepth, childDepth);
+        }
+      });
+      
+      // All gates are positioned ahead of inputs
+      // NOT gates: positioned closer to inputs (faster depth increment)
+      // Other gates: full depth increment for clear separation
+      if (compNode.node.operator === 'NOT') {
+        // NOT gates at depth + 0.6 (60% of spacing forward)
+        const depth = maxChildDepth + 0.6;
+        depthMap.set(compNode, depth);
+        return depth;
+      }
+      
+      // All other gates (AND, OR, XOR, etc.) at full depth increment
+      const depth = maxChildDepth + 1;
+      depthMap.set(compNode, depth);
       return depth;
     }
     
-    const leftDepth = node.left ? calculateDepth(node.left, depth + 1) : depth;
-    const rightDepth = node.right ? calculateDepth(node.right, depth + 1) : depth;
-    
-    return Math.max(leftDepth, rightDepth);
+    // Default fallback
+    const depth = 1;
+    depthMap.set(compNode, depth);
+    return depth;
   }
   
-  // Assign depths
+  // Assign depths to all components
+  componentNodes.forEach(node => assignDepth(node));
+  
+  // Group components by depth (handle fractional depths for NOT gates)
+  const layers = new Map<number, ComponentNode[]>();
   componentNodes.forEach(compNode => {
-    const depth = calculateDepth(compNode.node);
+    const depth = depthMap.get(compNode) || 0;
     if (!layers.has(depth)) {
       layers.set(depth, []);
     }
     layers.get(depth)!.push(compNode);
   });
   
-  // Position components layer by layer
-  const sortedLayers = Array.from(layers.keys()).sort((a, b) => b - a);
+  // Sort layers by depth
+  const sortedDepths = Array.from(layers.keys()).sort((a, b) => a - b);
   
-  sortedLayers.forEach((layerDepth, layerIndex) => {
-    const layerNodes = layers.get(layerDepth)!;
-    const layerY = START_Y + layerIndex * LAYER_SPACING;
+  // Position components layer by layer with vertical centering
+  sortedDepths.forEach((depth) => {
+    const layerNodes = layers.get(depth)!;
+    const x = START_X + depth * HORIZONTAL_SPACING;
     
+    // Sort nodes in this layer alphabetically if they're variables
+    layerNodes.sort((a, b) => {
+      if (a.node.type === 'variable' && b.node.type === 'variable') {
+        return a.node.value.localeCompare(b.node.value);
+      }
+      return 0;
+    });
+    
+    // Calculate total height needed for this layer
+    const totalHeight = (layerNodes.length - 1) * VERTICAL_SPACING;
+    const startY = START_Y - totalHeight / 2;
+    
+    // Position each component in this layer, centered vertically
     layerNodes.forEach((compNode, index) => {
-      const x = START_X + index * COMPONENT_SPACING;
-      const y = layerY;
-      
+      const y = startY + index * VERTICAL_SPACING;
       compNode.component.position = { x, y };
     });
-  });
-  
-  // Position input variables on the left
-  const inputY = START_Y + sortedLayers.length * LAYER_SPACING;
-  inputVariables.forEach((variable, index) => {
-    const inputComp = componentNodes.find(
-      cn => cn.node.type === 'variable' && cn.node.value === variable
-    );
-    if (inputComp) {
-      inputComp.component.position = {
-        x: START_X,
-        y: inputY + index * COMPONENT_SPACING,
-      };
-    }
   });
 }
 
@@ -119,8 +166,8 @@ export function generateCircuitFromExpression(
   const generateId = (prefix: string) => `${prefix}_${Date.now()}_${componentIdCounter++}`;
   const generateConnectionId = () => `conn_${Date.now()}_${connectionIdCounter++}`;
   
-  // Create input switches for each variable
-  const inputComponents: Map<string, Component> = new Map();
+  // Create input switches for each variable (but don't add to components yet)
+  const inputComponents: Map<string, ComponentNode> = new Map();
   variables.forEach(variable => {
     const inputComp = ComponentFactory.createComponent(
       'SWITCH',
@@ -128,26 +175,35 @@ export function generateCircuitFromExpression(
       generateId('input')
     );
     inputComp.label = variable;
-    inputComponents.set(variable, inputComp);
-    components.push(inputComp);
     
-    componentNodes.push({
+    const inputNode: ComponentNode = {
       id: inputComp.id,
       component: inputComp,
       node: { type: 'variable', value: variable },
       outputPin: inputComp.outputs[0].id,
-    });
+    };
+    inputComponents.set(variable, inputNode);
   });
+  
+  // Track which components are actually used
+  const usedComponents = new Set<string>();
   
   // Recursively build circuit from expression tree
   function buildCircuit(node: ExpressionNode): ComponentNode {
     // Variable leaf node - return existing input component
     if (node.type === 'variable') {
-      const inputComp = inputComponents.get(node.value);
-      if (!inputComp) {
+      const inputNode = inputComponents.get(node.value);
+      if (!inputNode) {
         throw new Error(`Variable ${node.value} not found in inputs`);
       }
-      return componentNodes.find(cn => cn.component.id === inputComp.id)!;
+      // Mark this component as used
+      usedComponents.add(inputNode.component.id);
+      // Add to components array if not already added
+      if (!components.find(c => c.id === inputNode.component.id)) {
+        components.push(inputNode.component);
+        componentNodes.push(inputNode);
+      }
+      return inputNode;
     }
     
     // Constant leaf node
@@ -188,9 +244,10 @@ export function generateCircuitFromExpression(
       };
       componentNodes.push(gateNode);
       
-      // Connect inputs
+      // Connect inputs (path will be calculated after layout)
       if (node.left) {
         const leftNode = buildCircuit(node.left);
+        
         const connection: Connection = {
           id: generateConnectionId(),
           from: {
@@ -201,7 +258,7 @@ export function generateCircuitFromExpression(
             componentId: gateComp.id,
             connectionPointId: gateComp.inputs[0].id,
           },
-          path: [], // Will be calculated by the simulator
+          path: [], // Will be calculated after layout
           value: false,
         };
         connections.push(connection);
@@ -210,6 +267,7 @@ export function generateCircuitFromExpression(
       if (node.right) {
         const rightNode = buildCircuit(node.right);
         const inputIndex = node.operator === 'NOT' ? 0 : 1;
+        
         const connection: Connection = {
           id: generateConnectionId(),
           from: {
@@ -220,7 +278,7 @@ export function generateCircuitFromExpression(
             componentId: gateComp.id,
             connectionPointId: gateComp.inputs[inputIndex].id,
           },
-          path: [],
+          path: [], // Will be calculated after layout
           value: false,
         };
         connections.push(connection);
@@ -244,6 +302,7 @@ export function generateCircuitFromExpression(
   ledComp.label = 'Output';
   components.push(ledComp);
   
+  // Create LED connection (path will be calculated after layout)
   const outputConnection: Connection = {
     id: generateConnectionId(),
     from: {
@@ -254,17 +313,46 @@ export function generateCircuitFromExpression(
       componentId: ledComp.id,
       connectionPointId: ledComp.inputs[0].id,
     },
-    path: [],
+    path: [], // Will be calculated after layout
     value: false,
   };
   connections.push(outputConnection);
   
-  // Calculate layout
+  // Calculate layout for all components
   calculateLayout(componentNodes, variables);
+  
+  // Position LED: Find the rightmost component and place LED 200px to its right
+  // Also align it vertically with the output node
+  const maxX = Math.max(...componentNodes.map(cn => cn.component.position.x));
+  
   ledComp.position = {
-    x: 100 + componentNodes.length * 150,
-    y: 100,
+    x: maxX + 200,  // 200px to the right of rightmost component
+    y: outputNode.component.position.y,  // Aligned with output
   };
+  
+  // Update all connection paths after positioning
+  connections.forEach(conn => {
+    const fromComp = components.find(c => c.id === conn.from.componentId);
+    const toComp = components.find(c => c.id === conn.to.componentId);
+    
+    if (fromComp && toComp) {
+      const fromPin = fromComp.outputs.find(p => p.id === conn.from.connectionPointId);
+      const toPin = toComp.inputs.find(p => p.id === conn.to.connectionPointId);
+      
+      if (fromPin && toPin) {
+        const startX = fromComp.position.x + fromPin.position.x;
+        const startY = fromComp.position.y + fromPin.position.y;
+        const endX = toComp.position.x + toPin.position.x;
+        const endY = toComp.position.y + toPin.position.y;
+        
+        // Simple straight line path
+        conn.path = [
+          { x: startX, y: startY },
+          { x: endX, y: endY }
+        ];
+      }
+    }
+  });
   
   return {
     components,

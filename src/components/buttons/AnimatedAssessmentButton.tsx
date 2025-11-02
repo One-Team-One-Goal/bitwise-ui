@@ -106,12 +106,12 @@ const AnimatedAssessmentButton: React.FC<AnimatedAssessmentButtonProps> = ({
           <div
             className={`relative z-10 flex flex-col items-center justify-center transition-all duration-300 ${
               isSelected
-                ? 'text-white'
+                ? 'text-background'
                 : locked
                   ? 'text-gray-500'
                   : isCompleted
-                    ? 'text-white' // Keep white text for completed assessments
-                    : 'text-white'
+                    ? 'text-background' // Keep white text for completed assessments
+                    : 'text-background'
             }`}
           ></div>
         </div>

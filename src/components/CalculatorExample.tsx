@@ -4,19 +4,19 @@
 
 // export function CalculatorExample() {
 //   const [expression, setExpression] = useState('')
-  
+
 //   const { isAuthenticated } = useAuthContext()
-  
+
 //   // Mutations
 //   const basicCalc = useBasicCalculation()
 //   const advancedCalc = useAdvancedCalculation()
-  
+
 //   // Queries
 //   const { data: history, isLoading: historyLoading } = useCalculationHistory()
 
 //   const handleBasicCalculation = () => {
 //     if (!expression) return
-    
+
 //     basicCalc.mutate({
 //       operation: 'basic',
 //       values: [2, 3], // Example values
@@ -26,7 +26,7 @@
 
 //   const handleAdvancedCalculation = () => {
 //     if (!expression || !isAuthenticated) return
-    
+
 //     advancedCalc.mutate({
 //       operation: 'advanced',
 //       values: [5, 10], // Example values
@@ -35,9 +35,9 @@
 //   }
 
 //   return (
-//     <div className="p-6 max-w-md mx-auto bg-white rounded-lg shadow-lg">
+//     <div className="p-6 max-w-md mx-auto bg-background rounded-lg shadow-lg">
 //       <h2 className="text-2xl font-bold mb-4">Calculator Example</h2>
-      
+
 //       {/* Input */}
 //       <div className="mb-4">
 //         <input
@@ -54,7 +54,7 @@
 //         <button
 //           onClick={handleBasicCalculation}
 //           disabled={basicCalc.isPending || !expression}
-//           className="w-full p-2 bg-blue-500 text-white rounded disabled:bg-gray-300"
+//           className="w-full p-2 bg-blue-500 text-background rounded disabled:bg-gray-300"
 //         >
 //           {basicCalc.isPending ? 'Calculating...' : 'Basic Calculation (No Auth)'}
 //         </button>
@@ -62,7 +62,7 @@
 //         <button
 //           onClick={handleAdvancedCalculation}
 //           disabled={advancedCalc.isPending || !expression || !isAuthenticated}
-//           className="w-full p-2 bg-green-500 text-white rounded disabled:bg-gray-300"
+//           className="w-full p-2 bg-green-500 text-background rounded disabled:bg-gray-300"
 //         >
 //           {advancedCalc.isPending ? 'Calculating...' : 'Advanced Calculation (Auth Required)'}
 //         </button>

@@ -53,6 +53,21 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ circuitHook })
           </div>
         </div>
 
+        {/* Label input for LABEL component */}
+        {component.type === 'LABEL' && (
+          <div className="space-y-1 pt-2">
+            <Label htmlFor="component-label" className="text-xs">Label Text</Label>
+            <Input
+              id="component-label"
+              type="text"
+              value={component.label ?? ''}
+              placeholder="Enter label text..."
+              className="h-8 text-xs w-full"
+              onChange={e => circuitHook.updateComponent(component.id, { label: e.target.value })}
+            />
+          </div>
+        )}
+
         <Separator className="my-2 sm:my-3" />
 
         <div className="space-y-2 sm:space-y-3">
@@ -108,19 +123,6 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ circuitHook })
             </Button>
           </div>
         )}
-
-        <div className="pt-2">
-          <Separator className="mb-3" />
-          <Button
-            variant="destructive"
-            size="sm"
-            className="w-full"
-            onClick={() => circuitHook.removeComponent(component.id)}
-          >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Delete Component
-          </Button>
-        </div>
       </div>
     );
   };
@@ -239,7 +241,7 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ circuitHook })
   };
 
   return (
-    <div className="h-full bg-background border-l border-border flex flex-col">
+    <div className="h-full w-full bg-background border-l border-border flex flex-col">
       <div className="p-2 sm:p-3 lg:p-4 border-b border-border flex-shrink-0">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 sm:gap-2">

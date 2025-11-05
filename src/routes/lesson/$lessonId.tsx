@@ -1,8 +1,9 @@
-// ...existing code...
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState, useEffect, useRef } from 'react'
 import LessonHeader from '@/components/LessonHeader'
 import { useGetLesson } from '@/hooks/useLesson'
+import { useMarkTopicViewed, useMarkTopicCompleted, useTopicsForLesson } from '@/hooks/useUserProgress'
+import { useAuthContext } from '@/contexts/AuthContext'
 
 import { Button } from '@/components/ui/button'
 import { ChevronRight, ChevronLeft, Check } from 'lucide-react'
@@ -54,32 +55,159 @@ export interface Lesson {
 }
 
 export const Route = createFileRoute('/lesson/$lessonId')({
+  validateSearch: (search) => {
+    const topicParam = search.topicId
+    const parsed =
+      typeof topicParam === 'string'
+        ? Number(topicParam)
+        : typeof topicParam === 'number'
+          ? topicParam
+          : undefined
+
+    return {
+      topicId: typeof parsed === 'number' && !Number.isNaN(parsed) ? parsed : undefined,
+    }
+  },
   component: RouteComponent,
 })
 
 function RouteComponent() {
   const { lessonId } = Route.useParams()
+  const { topicId: initialTopicId } = Route.useSearch()
   const navigate = useNavigate()
   const lessonIdNum = lessonId ? Number(lessonId) : undefined
+  const { user } = useAuthContext() || {}
 
   // useGetLesson from useLessonQueries (react-query)
   const { data: lesson, isLoading, error } = useGetLesson(lessonIdNum)
 
+  const { data: lessonTopicsProgress } = useTopicsForLesson(lessonIdNum, !!user)
+
   const [topicIdx, setTopicIdx] = useState(0)
   const [finished, setFinished] = useState(false)
+  const [isCompleting, setIsCompleting] = useState(false)
+  const [completionError, setCompletionError] = useState<string | null>(null)
   const confettiRef = useRef<ConfettiRef>(null)
+
+  // Progress tracking mutations
+  const markViewedMutation = useMarkTopicViewed()
+  const markCompletedMutation = useMarkTopicCompleted()
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const goToTopic = (nextIndex: number) => {
+    if (!lesson?.topics?.length) return
+    const clampedIndex = Math.max(0, Math.min(nextIndex, lesson.topics.length - 1))
+    setTopicIdx(clampedIndex)
+    setFinished(false)
+  setCompletionError(null)
+
+    const nextTopic = lesson.topics[clampedIndex]
+    if (nextTopic) {
+      navigate({
+        to: '/lesson/$lessonId',
+        params: { lessonId },
+        search: { topicId: nextTopic.id },
+        replace: true,
+      })
+    }
+  }
+
+  const completeTopic = async (topicId: number, onSuccess: () => void) => {
+    if (!user) {
+      onSuccess()
+      return
+    }
+
+    try {
+      setCompletionError(null)
+      setIsCompleting(true)
+      await markCompletedMutation.mutateAsync(topicId)
+      onSuccess()
+    } catch (error) {
+      console.error('❌ Error marking topic as completed:', error)
+      setCompletionError('Failed to mark this topic as completed. Please try again.')
+    } finally {
+      setIsCompleting(false)
+    }
+  }
 
   // reset progress when lesson changes
   useEffect(() => {
+    if (!lesson?.topics) {
+      return
+    }
+
+    if (typeof initialTopicId === 'number') {
+      const matchingIndex = lesson.topics.findIndex((t) => t.id === initialTopicId)
+      if (matchingIndex >= 0) {
+        setTopicIdx(matchingIndex)
+        setFinished(false)
+        return
+      }
+    }
+
     setTopicIdx(0)
     setFinished(false)
-  }, [lesson?.id])
+  }, [lesson?.id, lesson?.topics, initialTopicId])
+
+  // Auto-mark topic as viewed when user lands on it
+  useEffect(() => {
+    const topic = lesson?.topics?.[topicIdx]
+    if (user && topic) {
+      console.log(`👁️ Setting up timer to mark topic ${topic.id} as viewed...`)
+      // Mark as viewed after 2 seconds of viewing
+      const timer = setTimeout(() => {
+        console.log(`👁️ Marking topic ${topic.id} as viewed now`)
+        markViewedMutation.mutate(topic.id, {
+          onSuccess: (data) => {
+            console.log('✅ Topic marked as viewed:', data)
+          },
+          onError: (error) => {
+            console.error('❌ Error marking topic as viewed:', error)
+          }
+        })
+      }, 2000)
+      return () => clearTimeout(timer)
+    }
+  }, [topicIdx, lesson, user, markViewedMutation])
 
   useEffect(() => {
     if (finished) {
-      confettiRef.current?.fire({})
+      console.log('🎉 Firing confetti!', confettiRef.current)
+      // Fire confetti multiple times for better effect
+      confettiRef.current?.fire({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      })
+      
+      // Fire again after a short delay
+      setTimeout(() => {
+        confettiRef.current?.fire({
+          particleCount: 50,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 }
+        })
+      }, 250)
+      
+      setTimeout(() => {
+        confettiRef.current?.fire({
+          particleCount: 50,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 }
+        })
+      }, 400)
     }
   }, [finished])
+
+  useEffect(() => {
+    scrollToTop()
+  }, [topicIdx])
 
   if (isLoading) {
     return (
@@ -118,10 +246,73 @@ function RouteComponent() {
     )
   }
 
+  const currentTopicProgress = lessonTopicsProgress?.find((topicEntry: any) => topicEntry.id === topic.id)?.userProgress
+  const isCurrentTopicCompleted = currentTopicProgress?.status === 'completed'
+
+  const handleMarkTopicComplete = () => {
+    if (!topic || isCurrentTopicCompleted || isCompleting) return
+    void completeTopic(topic.id, () => {})
+  }
+
+  const handleNextTopic = async () => {
+    if (isCompleting) return
+    if (!lesson?.topics?.length) return
+
+    const current = lesson.topics[topicIdx]
+    if (!current) return
+
+    if (!user || isCurrentTopicCompleted) {
+      goToTopic(topicIdx + 1)
+      return
+    }
+
+    await completeTopic(current.id, () => {
+      goToTopic(topicIdx + 1)
+    })
+  }
+
+  const handleFinishLesson = async () => {
+    if (isCompleting) return
+    if (!lesson?.topics?.length) {
+      setFinished(true)
+      return
+    }
+
+    const current = lesson.topics[topicIdx]
+    if (!current) {
+      setFinished(true)
+      return
+    }
+
+    if (!user || isCurrentTopicCompleted) {
+      setFinished(true)
+      return
+    }
+
+    await completeTopic(current.id, () => {
+      setFinished(true)
+    })
+  }
+
+  const calculateProgress = () => {
+    if (finished) return 100
+
+    const totalTopics = lessonTopicsProgress?.length ?? lesson.topics?.length ?? 0
+    if (totalTopics === 0) return 0
+
+    if (user && lessonTopicsProgress) {
+      const completedTopics = lessonTopicsProgress.filter((topicProgress: any) => topicProgress.userProgress?.status === 'completed').length
+      return Math.round((completedTopics / totalTopics) * 100)
+    }
+
+    const fallbackProgress = ((topicIdx + 1) / totalTopics) * 100
+    return Math.round(fallbackProgress)
+  }
+
   return (
     <div>
       <LessonHeader
-        progress={finished ? 100 : (topicIdx / (lesson.topics?.length || 1)) * 100}
+        progress={calculateProgress()}
         title={lesson.title}
       />
       <div className="pt-24 max-w-4xl mx-auto flex flex-col">
@@ -141,6 +332,7 @@ function RouteComponent() {
                 {topic.title}
               </h1>
               <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 space-x-4">
+                {/* Show topic counter for all topics */}
                 <span>Topic {topicIdx + 1} of {lesson.topics?.length || 0}</span>
                 {(topic.tags?.length || 0) > 0 && (
                   <div className="flex space-x-1">
@@ -157,18 +349,41 @@ function RouteComponent() {
               </div>
             </div>
 
+            {user && (
+              <div className="flex justify-end mb-4">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleMarkTopicComplete}
+                  disabled={isCompleting || isCurrentTopicCompleted}
+                  className="flex items-center gap-2"
+                >
+                  <Check className="w-4 h-4" />
+                  {isCurrentTopicCompleted ? 'Topic Completed' : 'Mark Topic Complete'}
+                </Button>
+              </div>
+            )}
+
+            {completionError && (
+              <div className="mb-4 text-sm text-red-500">
+                {completionError}
+              </div>
+            )}
+
             {/* Content Display */}
             {Array.isArray(topic.displayContent) ? (
               <ContentDisplay blocks={topic.displayContent as any} />
             ) : (
               <div className="text-gray-500 dark:text-gray-400 italic">No content available</div>
             )}
+
           </div>
         ) : (
           <div className="w-full p-6 pt-16 flex flex-col items-center justify-between min-h-[600px] relative">
             <Confetti
               ref={confettiRef}
-              className="absolute left-0 top-0 z-0 w-full h-full"
+              manualstart={true}
+              className="absolute left-0 top-0 z-0 w-full h-full pointer-events-none"
             />
             <div className="relative z-10 text-center">
               <div className="mb-8">
@@ -236,7 +451,8 @@ function RouteComponent() {
                 <Button
                   variant="outline"
                   className="flex items-center space-x-2"
-                  onClick={() => setTopicIdx((i) => Math.max(i - 1, 0))}
+                  onClick={() => goToTopic(topicIdx - 1)}
+                  disabled={isCompleting}
                 >
                   <ChevronLeft className="w-4 h-4" />
                   <span>Previous</span>
@@ -254,19 +470,23 @@ function RouteComponent() {
               {topicIdx < (lesson.topics?.length || 0) - 1 ? (
                 <Button
                   className="flex items-center space-x-2"
-                  onClick={() =>
-                    setTopicIdx((i) => Math.min(i + 1, (lesson.topics?.length || 1) - 1))
-                  }
+                  onClick={() => {
+                    void handleNextTopic()
+                  }}
+                  disabled={isCompleting}
                 >
-                  <span>Next</span>
+                  <span>{isCompleting ? 'Saving...' : 'Next'}</span>
                   <ChevronRight className="w-4 h-4" />
                 </Button>
               ) : (
                 <Button
                   className="flex items-center space-x-2"
-                  onClick={() => setFinished(true)}
+                  onClick={() => {
+                    void handleFinishLesson()
+                  }}
+                  disabled={isCompleting}
                 >
-                  <span>Finish</span>
+                  <span>{isCompleting ? 'Saving...' : 'Finish'}</span>
                   <Check className="w-4 h-4" />
                 </Button>
               )}

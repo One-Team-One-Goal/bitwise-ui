@@ -14,7 +14,7 @@ async function fetchAttempt(attemptId: number) {
   return result.data
 }
 
-// Mapping from topic/tag to lessonId
+// Mapping from topic/tag to lessonIdFf
 const topicToLessonId: Record<string, number> = {
   'intro': 1,
   'boolean-values': 1,
@@ -140,10 +140,10 @@ const QuestionStemRenderer = ({ stem }: { stem: any }) => {
     return <h2 className="text-xl font-semibold mb-3 text-gray-900 dark:text-gray-100">{stem}</h2>
   }
   if (typeof stem === 'object' && stem !== null) {
+    // If there's a visual element (table, kmap, circuit), only show that - no text
     if (stem.type === 'table' && stem.table) {
       return (
         <div>
-          <h2 className="text-xl font-semibold mb-3 text-gray-900 dark:text-gray-100">Analyze the following truth table:</h2>
           <TruthTableRenderer tableData={stem.table} />
         </div>
       )
@@ -151,7 +151,6 @@ const QuestionStemRenderer = ({ stem }: { stem: any }) => {
     if (stem.type === 'karnaughMap' && stem.karnaughMap) {
       return (
         <div>
-          <h2 className="text-xl font-semibold mb-3 text-gray-900 dark:text-gray-100">Analyze the following Karnaugh map:</h2>
           <KarnaughMapRenderer kMapData={stem.karnaughMap} />
         </div>
       )
@@ -159,12 +158,12 @@ const QuestionStemRenderer = ({ stem }: { stem: any }) => {
     if (stem.type === 'circuit' && stem.circuit) {
       return (
         <div>
-          <h2 className="text-xl font-semibold mb-3 text-gray-900 dark:text-gray-100">Analyze the following circuit:</h2>
           <CircuitRenderer circuit={stem.circuit} />
         </div>
       )
     }
-    if (stem.text) {
+    // Only show text if there's no visual element
+    if (stem.text && !stem.type) {
       return <h2 className="text-xl font-semibold mb-3 text-gray-900 dark:text-gray-100">{stem.text}</h2>
     }
   }
@@ -195,6 +194,9 @@ function RouteComponent() {
   const [strongestAreas, setStrongestAreas] = useState<string[]>([])
   const [recommendations, setRecommendations] = useState<string[]>([])
   const [processingResults, setProcessingResults] = useState(false)
+  // Move these hooks to the top to comply with Rules of Hooks
+  const [selectedOption, setSelectedOption] = useState<string | null>(null)
+  const [submittedAnswers, setSubmittedAnswers] = useState<Set<number>>(new Set())
 
   useEffect(() => {
     if (!user) {
@@ -202,9 +204,39 @@ function RouteComponent() {
       return
     }
     setLoading(true)
+    
+    // Try to get attempt data from sessionStorage first (for newly created assessments)
+    const cachedAttempt = sessionStorage.getItem('currentAttempt')
+    if (cachedAttempt) {
+      try {
+        const data = JSON.parse(cachedAttempt)
+        // Check if this is the correct attempt
+        if (data.attemptId === Number(assessmentId)) {
+          // Clear the cache after using it
+          sessionStorage.removeItem('currentAttempt')
+          
+          // Ensure questions is always an array
+          const questionsData = Array.isArray(data.questions) ? data.questions : []
+          setQuestions(questionsData)
+          setAttemptId(data.attemptId)
+          if (data.adaptiveInfo) {
+            setAdaptiveInfo(data.adaptiveInfo)
+          }
+          setLoading(false)
+          return
+        }
+      } catch (error) {
+        console.error('Failed to parse cached attempt:', error)
+        sessionStorage.removeItem('currentAttempt')
+      }
+    }
+    
+    // If no cached data or different attempt, fetch from server
     fetchAttempt(Number(assessmentId))
       .then(data => {
-        setQuestions(data.questions || [])
+        // Ensure questions is always an array
+        const questionsData = Array.isArray(data.questions) ? data.questions : []
+        setQuestions(questionsData)
         setAttemptId(data.id)
         if (data.performance) {
           setAdaptiveInfo(data.performance)
@@ -217,6 +249,11 @@ function RouteComponent() {
         navigate({ to: '/roadmap' })
       })
   }, [assessmentId, navigate, user])
+
+  // Reset selectedOption when moving to a new question
+  useEffect(() => {
+    setSelectedOption(null)
+  }, [current])
 
   if (loading) {
     return (
@@ -260,13 +297,22 @@ function RouteComponent() {
   const total = questions.length
   const progress = ((current + 1) / total) * 100
 
-  const handleAnswer = (optionId: string) => {
-    setAnswers({ ...answers, [question.id ?? current]: optionId })
+  const handleSelectOption = (optionId: string) => {
+    // Don't allow changing answer after submission
+    if (submittedAnswers.has(question.id ?? current)) return
+    setSelectedOption(optionId)
+  }
+
+  const handleSubmitAnswer = () => {
+    if (!selectedOption) return
+    setAnswers({ ...answers, [question.id ?? current]: selectedOption })
+    setSubmittedAnswers(new Set([...submittedAnswers, question.id ?? current]))
   }
 
   const handleNext = async () => {
     if (current < total - 1) {
       setCurrent(current + 1)
+      // selectedOption is now reset by useEffect when current changes
     } else {
       setProcessingResults(true)
       setShowResult(true)
@@ -435,8 +481,10 @@ function RouteComponent() {
               </div>
               <div className="flex flex-col gap-3">
                 {question.options.map((opt: any) => {
-                  const isSelected = answers[question.id ?? current] === opt.id
                   const isAnswered = !!answers[question.id ?? current]
+                  const isSelected = isAnswered 
+                    ? answers[question.id ?? current] === opt.id 
+                    : selectedOption === opt.id
                   const isCorrect = opt.isCorrect
                   return (
                     <button
@@ -452,12 +500,14 @@ function RouteComponent() {
                             : isCorrect
                               ? 'bg-green-50 border-green-300 text-green-800 dark:bg-gray-800 dark:border-green-700 dark:text-green-200'
                               : 'bg-gray-50 border-gray-200 text-gray-500 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300'
-                          : 'bg-white border-gray-200 hover:bg-blue-50 hover:border-blue-300 hover:shadow-sm dark:bg-gray-900 dark:border-gray-700 dark:hover:bg-blue-900'}
+                          : isSelected
+                            ? 'bg-blue-50 border-blue-400 text-blue-900 shadow-md dark:bg-blue-900 dark:border-blue-700 dark:text-blue-200'
+                            : 'bg-white border-gray-200 hover:bg-blue-50 hover:border-blue-300 hover:shadow-sm dark:bg-gray-900 dark:border-gray-700 dark:hover:bg-blue-900'}
                         ${isAnswered ? 'cursor-not-allowed' : 'cursor-pointer'}
                         font-medium
                       `}
                       disabled={isAnswered}
-                      onClick={() => handleAnswer(opt.id)}
+                      onClick={() => handleSelectOption(opt.id)}
                     >
                       <span className="flex-1 text-gray-900 dark:text-gray-100">{opt.text}</span>
                       {isAnswered && (
@@ -478,6 +528,18 @@ function RouteComponent() {
                   )
                 })}
               </div>
+              
+              {/* Submit Answer Button */}
+              {!answers[question.id ?? current] && selectedOption && (
+                <div className="mt-4">
+                  <Button 
+                    onClick={handleSubmitAnswer}
+                    className="w-full"
+                  >
+                    Submit Answer
+                  </Button>
+                </div>
+              )}
               {answers[question.id ?? current] && (
                 <>
                   <div className="mt-6 p-4 rounded-lg bg-blue-50 dark:bg-blue-900 border border-blue-100 dark:border-blue-800">
@@ -500,16 +562,6 @@ function RouteComponent() {
                           <li key={i}>{step}</li>
                         ))}
                       </ul>
-                      {question.sourcePassages?.length > 0 && (
-                        <>
-                          <h4 className="font-semibold text-red-900 dark:text-red-200 mt-3 mb-2">Reference:</h4>
-                          <ul className="list-disc ml-6 text-sm text-red-800 dark:text-red-100 space-y-1">
-                            {question.sourcePassages.map((passage: string, i: number) => (
-                              <li key={i}>{passage}</li>
-                            ))}
-                          </ul>
-                        </>
-                      )}
                     </div>
                   )}
                 </>
@@ -519,7 +571,10 @@ function RouteComponent() {
                   {current > 0 && (
                     <Button
                       variant="outline"
-                      onClick={() => setCurrent(current - 1)}
+                      onClick={() => {
+                        setCurrent(current - 1)
+                        setSelectedOption(null)
+                      }}
                       disabled={submitting}
                     >
                       Previous
@@ -537,7 +592,7 @@ function RouteComponent() {
                       Submitting...
                     </div>
                   ) : (
-                    current < total - 1 ? 'Next' : 'Finish'
+                    current < total - 1 ? 'Next Question' : 'Finish Assessment'
                   )}
                 </Button>
               </div>
@@ -686,13 +741,13 @@ function RouteComponent() {
                 </div>
               )}
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button onClick={handleRestart} className="min-w-[160px]">
+                <Button onClick={handleRestart} className="min-w-40">
                   Back to Roadmap
                 </Button>
                 <Button 
                   variant="outline" 
                   onClick={() => window.location.reload()}
-                  className="min-w-[160px]"
+                  className="min-w-40"
                 >
                   Take Another Assessment
                 </Button>

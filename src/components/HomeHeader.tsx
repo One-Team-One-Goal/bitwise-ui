@@ -1,10 +1,8 @@
-// Minimal useTheme hook for shadcn-style theme tracking
 import { useEffect, useState } from 'react'
 
 function useTheme(): 'light' | 'dark' {
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     if (typeof window !== 'undefined') {
-      // Try to match ThemeToggle logic: check localStorage, then prefers-color-scheme, then class
       try {
         const stored = localStorage.getItem('theme')
         if (stored === 'dark') return 'dark'
@@ -35,6 +33,7 @@ function useTheme(): 'light' | 'dark' {
   }, [])
   return theme
 }
+
 import NavLogo from '@/assets/icons/std-logo-black.svg'
 import NavLogoDark from '@/assets/icons/nav-bar-logo.svg'
 import CodeImg from '@/assets/icons/codeimg.jpg'
@@ -69,6 +68,52 @@ import { useBackendProfile } from '@/hooks/useAuthQueries'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import ThemeToggle from '@/components/ui/theme-toggle'
 import { Separator } from '@/components/ui/separator'
+import { Calculator, Grid3x3, Cpu, Book } from 'lucide-react'
+
+type NavItem = {
+  key: string
+  label: string
+  to: string
+  icon: React.ElementType
+  description?: string
+  group?: 'primary' | 'tools'
+}
+
+const NAV_ITEMS: NavItem[] = [
+  {
+    key: 'learn',
+    label: 'Learn',
+    to: '/roadmap',
+    icon: Book,
+    group: 'primary',
+  },
+  {
+    key: 'calculator',
+    label: 'Calculator',
+    to: '/calculator',
+    icon: Calculator,
+    description: 'Perform Boolean calculations with our interactive tool.',
+    group: 'tools',
+  },
+  {
+    key: 'karnaugh',
+    label: 'Karnaugh Maps',
+    to: '/karnaughMaps',
+    icon: Grid3x3,
+    description:
+      'Learn to visualize how karnaugh maps simplify logic expressions.',
+    group: 'tools',
+  },
+  {
+    key: 'digital',
+    label: 'Digital Circuit',
+    to: '/digitalCircuit',
+    icon: Cpu,
+    description: 'Learn to design and analyze digital circuits.',
+    group: 'tools',
+  },
+]
+
 
 const HomeHeader = () => {
   const theme = useTheme()
@@ -86,6 +131,10 @@ const HomeHeader = () => {
     'Unknown'
   const avatar =
     md?.avatar_url ?? md?.picture ?? user?.user_metadata?.picture ?? undefined
+
+  // derive nav groups from the dynamic nav items
+  const primaryItems = NAV_ITEMS.filter((i) => i.group === 'primary')
+  const toolItems = NAV_ITEMS.filter((i) => i.group === 'tools')
 
   if (location.pathname === '/login' || location.pathname === '/signup') {
     return (
@@ -131,109 +180,42 @@ const HomeHeader = () => {
         </div>
 
         {/* Desktop Navigation - Hidden on mobile */}
-        <div className="hidden lg:flex flex-1 justify-center">
-          <NavigationMenu viewport={false}>
-            <NavigationMenuList>
-              <NavigationMenuItem>
-                <NavigationMenuTrigger className="bg-transparent">
-                  Learn
-                </NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <ul className="grid gap-2 md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
-                    <li className="row-span-3">
-                      <NavigationMenuLink asChild>
-                        <a
-                          className="flex h-full w-full flex-col justify-end rounded-md bg-cover bg-center p-6 no-underline outline-hidden select-none focus:shadow-md"
-                          href="/roadmap"
-                          style={{
-                            backgroundImage: `linear-gradient(rgba(255,255,255,0.95), rgba(255,255,255,0.95)), url(${CodeImg}) dark:opacity-10`,
-                          }}
-                        >
-                          <div className="mt-4 mb-2 text-lg font-medium">
-                            bitwise
-                          </div>
-                          <p className="text-muted-foreground text-sm leading-tight">
-                            Learn Boolean algebra from basics to real-world
-                            uses.
-                          </p>
-                        </a>
-                      </NavigationMenuLink>
-                    </li>
-                    <ListItem href="/roadmap" title="Basics">
-                      Grasp variables, constants, and logic operations.
-                    </ListItem>
-                    <ListItem href="/roadmap" title="Laws">
-                      Key rules behind Boolean expressions.
-                    </ListItem>
-                    <ListItem href="/roadmap" title="Uses">
-                      Real-world logic design and computing examples.
-                    </ListItem>
-                  </ul>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-              <NavigationMenuItem>
-                <NavigationMenuTrigger className="bg-transparent">
-                  Tools
-                </NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <ul className="grid w-[300px] gap-4">
-                    <li>
-                      <NavigationMenuLink asChild>
-                        <Link to="/calculator">
-                          <div className="font-medium">Calculator</div>
-                          <div className="text-muted-foreground">
-                            Perform Boolean calculations with our interactive
-                            tool.
-                          </div>
-                        </Link>
-                      </NavigationMenuLink>
-                      <NavigationMenuLink asChild>
-                        <Link to="/karnaughMaps">
-                          <div className="font-medium">Karnaugh Maps</div>
-                          <div className="text-muted-foreground">
-                            Learn to visualize how karnaugh maps simplify logic
-                            expressions.
-                          </div>
-                        </Link>
-                      </NavigationMenuLink>
-                      <NavigationMenuLink asChild>
-                        <Link to="/digitalCircuit">
-                          <div className="font-medium">Digital Circuit</div>
-                          <div className="text-muted-foreground">
-                            Learn to design and analyze digital circuits.
-                          </div>
-                        </Link>
-                      </NavigationMenuLink>
-                    </li>
-                  </ul>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-              <NavigationMenuItem>
-                <NavigationMenuTrigger className="bg-transparent">
-                  More
-                </NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <ul className="grid w-[200px] gap-4">
-                    <li>
-                      <NavigationMenuLink asChild>
-                        <Link
-                          to="/profile"
-                          className="flex-row items-center gap-2"
-                        >
-                          Profile
-                        </Link>
-                      </NavigationMenuLink>
-                      <NavigationMenuLink asChild>
-                        <Link to="/" className="flex-row items-center gap-2">
-                          Contact us
-                        </Link>
-                      </NavigationMenuLink>
-                    </li>
-                  </ul>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-            </NavigationMenuList>
-          </NavigationMenu>
+        <div className="hidden lg:flex flex-1 justify-center items-center">
+          <nav aria-label="Primary" className="flex items-center gap-6">
+            {primaryItems.map((item) => {
+              const Icon = item.icon
+              return (
+                <Link
+                  key={item.key}
+                  to={item.to}
+                  className="group relative flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border border-border transition-all duration-200"
+                >
+                  <Icon className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+                  <span className="relative">
+                    {item.label}
+                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary group-hover:w-full transition-all duration-300" />
+                  </span>
+                </Link>
+              )
+            })}
+
+            {toolItems.map((item) => {
+              const Icon = item.icon
+              return (
+                <Link
+                  key={item.key}
+                  to={item.to}
+                  className="group relative flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border border-border transition-all duration-200"
+                >
+                  <Icon className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
+                  <span className="relative">
+                    {item.label}
+                    <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary group-hover:w-full transition-all duration-300" />
+                  </span>
+                </Link>
+              )
+            })}
+          </nav>
         </div>
 
         {/* Desktop Right Side - Hidden on mobile */}
@@ -402,71 +384,33 @@ const HomeHeader = () => {
                     </AccordionContent>
                   </AccordionItem>
 
-                  {/* Tools Section */}
-                  <AccordionItem value="tools" className="border-none">
-                    <AccordionTrigger className="text-base font-semibold hover:no-underline py-2">
-                      Tools
-                    </AccordionTrigger>
-                    <AccordionContent className="space-y-2 pl-4">
-                      <Link
-                        to="/calculator"
-                        className="block py-2 text-sm hover:text-primary transition-colors"
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        <div className="font-medium">Calculator</div>
-                        <div className="text-xs text-muted-foreground">
-                          Perform Boolean calculations with our interactive
-                          tool.
-                        </div>
-                      </Link>
-                      <Link
-                        to="/karnaughMaps"
-                        className="block py-2 text-sm hover:text-primary transition-colors"
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        <div className="font-medium">Karnaugh Maps</div>
-                        <div className="text-xs text-muted-foreground">
-                          Learn to visualize how karnaugh maps simplify logic
-                          expressions.
-                        </div>
-                      </Link>
-                      <Link
-                        to="/digitalCircuit"
-                        className="block py-2 text-sm hover:text-primary transition-colors"
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        <div className="font-medium">Digital Circuit</div>
-                        <div className="text-xs text-muted-foreground">
-                          Learn to design and analyze digital circuits.
-                        </div>
-                      </Link>
-                    </AccordionContent>
-                  </AccordionItem>
-
-                  {/* More Section */}
-                  <AccordionItem value="more" className="border-none">
-                    <AccordionTrigger className="text-base font-semibold hover:no-underline py-2">
-                      More
-                    </AccordionTrigger>
-                    <AccordionContent className="space-y-2 pl-4">
-                      {isAuthenticated && (
-                        <Link
-                          to="/profile"
-                          className="block py-2 text-sm hover:text-primary transition-colors"
-                          onClick={() => setMobileMenuOpen(false)}
-                        >
-                          Profile
-                        </Link>
-                      )}
-                      <Link
-                        to="/"
-                        className="block py-2 text-sm hover:text-primary transition-colors"
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        Contact us
-                      </Link>
-                    </AccordionContent>
-                  </AccordionItem>
+                  {/* Tools (mobile) - rendered as individual links for easier access on small screens */}
+                  <div className="w-full px-4">
+                    <div className="text-base font-semibold pb-2">Tools</div>
+                      <div className="flex flex-col space-y-3">
+                        {toolItems.map((item) => {
+                          const Icon = item.icon
+                          return (
+                            <Link
+                              key={item.key}
+                              to={item.to}
+                              className="flex items-start gap-3 p-2 rounded-lg hover:bg-accent/30 transition-colors"
+                              onClick={() => setMobileMenuOpen(false)}
+                            >
+                              <Icon className="h-5 w-5 mt-1" />
+                              <div>
+                                <div className="font-medium">{item.label}</div>
+                                {item.description && (
+                                  <div className="text-xs text-muted-foreground">
+                                    {item.description}
+                                  </div>
+                                )}
+                              </div>
+                            </Link>
+                          )
+                        })}
+                      </div>
+                  </div>
                 </Accordion>
 
                 <Separator />

@@ -348,6 +348,7 @@ export default function DataAnalyticsCard({ lesson, user }: { lesson: any; user:
                       <Link
                         to="/lesson/$lessonId"
                         params={{ lessonId: String(topic.lessonId) }}
+                        search={{ topicId: topic.topicId }}
                         className="text-blue-600 underline hover:text-blue-800"
                         title={`Go to ${lessonNames[topic.lessonId] || 'Lesson'}`}
                       >
@@ -373,6 +374,7 @@ export default function DataAnalyticsCard({ lesson, user }: { lesson: any; user:
                     <Link
                       to="/lesson/$lessonId"
                       params={{ lessonId: String(lesson.id) }}
+                      search={{ topicId: topic.topicId }}
                       className="text-blue-600 underline hover:text-blue-800"
                       title={`Review ${topic.topicTitle} in this lesson`}
                     >

@@ -655,6 +655,7 @@ function RouteComponent() {
                         key={idx}
                         to="/lesson/$lessonId"
                         params={{ lessonId: String(topicToLessonId[area] || 1) }}
+                        search={{ topicId: undefined }}
                         className="px-3 py-1 bg-red-100 dark:bg-red-800 text-red-700 dark:text-red-200 rounded-full text-sm underline hover:bg-red-200 dark:hover:bg-red-700 transition"
                         title={`Go to ${lessonNames[topicToLessonId[area] || 1]}`}
                       >
@@ -697,6 +698,7 @@ function RouteComponent() {
                             <Link
                               to="/lesson/$lessonId"
                               params={{ lessonId: String(topicToLessonId[tag]) }}
+                              search={{ topicId: undefined }}
                               className="underline text-yellow-900 dark:text-yellow-200 hover:text-yellow-700 dark:hover:text-yellow-300"
                               title={`Go to ${lessonNames[topicToLessonId[tag]]}`}
                             >

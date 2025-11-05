@@ -36,7 +36,6 @@ function useTheme(): 'light' | 'dark' {
 
 import NavLogo from '@/assets/icons/std-logo-black.svg'
 import NavLogoDark from '@/assets/icons/nav-bar-logo.svg'
-import CodeImg from '@/assets/icons/codeimg.jpg'
 import { useScrollDirection } from '@/hooks/useScrollDirection'
 import { Link, useLocation } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
@@ -440,27 +439,6 @@ const HomeHeader = () => {
         </div>
       </nav>
     </header>
-  )
-}
-
-// ListItem helper for NavigationMenu
-function ListItem({
-  title,
-  children,
-  href,
-  ...props
-}: React.ComponentPropsWithoutRef<'li'> & { href: string; title: string }) {
-  return (
-    <li {...props}>
-      <NavigationMenuLink asChild>
-        <Link to={href}>
-          <div className="text-sm leading-none font-medium">{title}</div>
-          <p className="text-muted-foreground line-clamp-2 text-sm leading-snug">
-            {children}
-          </p>
-        </Link>
-      </NavigationMenuLink>
-    </li>
   )
 }
 

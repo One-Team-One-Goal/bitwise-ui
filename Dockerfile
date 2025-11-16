@@ -10,10 +10,16 @@ COPY . .
 
 RUN npm run build
 
-FROM nginx:1.27-alpine AS runner
+FROM node:22-alpine AS runner
 
-COPY --from=build /app/dist /usr/share/nginx/html
+WORKDIR /app
+
+# Copy built static files from the build stage
+COPY --from=build /app/dist ./dist
+
+# Install a tiny static server (serve) and run it on port 80
+RUN npm install -g serve
 
 EXPOSE 80
 
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["serve", "-s", "dist", "-l", "80"]

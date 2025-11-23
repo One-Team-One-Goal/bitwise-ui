@@ -56,15 +56,50 @@ const CircuitRenderer = ({ circuit }: { circuit: Circuit }) => {
   const gateMap: Record<string, Gate> = {}
   circuit.gates.forEach(g => (gateMap[g.id] = g))
 
+  // Map output signal names to their source gate ID
+  const signalSource: Record<string, string> = {}
+  circuit.gates.forEach(g => {
+    if (g.output) signalSource[g.output] = g.id
+  })
+
+  // Calculate depth/level for each gate for auto-layout
+  const gateLevels: Record<string, number> = {}
+  
+  const getGateLevel = (gateId: string, visited = new Set<string>()): number => {
+    if (visited.has(gateId)) return 0 // Cycle detected
+    if (gateLevels[gateId] !== undefined) return gateLevels[gateId]
+    
+    visited.add(gateId)
+    const gate = gateMap[gateId]
+    let maxInputLevel = -1 // -1 means input is from global inputs
+    
+    gate.inputs.forEach(input => {
+      const sourceGateId = signalSource[input]
+      if (sourceGateId) {
+        const level = getGateLevel(sourceGateId, new Set(visited))
+        maxInputLevel = Math.max(maxInputLevel, level)
+      }
+    })
+    
+    const level = maxInputLevel + 1
+    gateLevels[gateId] = level
+    return level
+  }
+
+  // Calculate levels for all gates
+  circuit.gates.forEach(g => getGateLevel(g.id))
+  
+  const maxLevel = Math.max(0, ...Object.values(gateLevels))
+
   // Positions: keys can be input names, gate ids (for gate body), and output signal names
   const positions: Record<string, { x: number; y: number; type: 'input' | 'gate' | 'output' }> = {}
 
-  // Layout constants (kept visually similar to existing design)
+  // Layout constants
   const leftX = 60
-  const midX = 280
-  const rightX = 520
-  const rowSpacing = 90
+  const rightX = 600 // Increased width
+  const rowSpacing = 100
   const topOffset = 80
+  const levelWidth = (rightX - leftX) / (maxLevel + 2) // Distribute columns
 
   // Position inputs (left column)
   circuit.inputs.forEach((input, idx) => {
@@ -75,23 +110,47 @@ const CircuitRenderer = ({ circuit }: { circuit: Circuit }) => {
     }
   })
 
-  // Position gates (middle column) - preserve given order
-  circuit.gates.forEach((gate, idx) => {
-    positions[gate.id] = {
-      x: midX,
-      y: topOffset + idx * rowSpacing,
-      type: 'gate',
-    }
+  // Group gates by level
+  const gatesByLevel: Record<number, Gate[]> = {}
+  circuit.gates.forEach(g => {
+    const level = gateLevels[g.id] || 0
+    if (!gatesByLevel[level]) gatesByLevel[level] = []
+    gatesByLevel[level].push(g)
   })
 
-  // Position outputs (right column). If an output corresponds to a gate output, align vertically with that gate.
+  // Position gates based on level
+  Object.entries(gatesByLevel).forEach(([levelStr, gates]) => {
+    const level = parseInt(levelStr)
+    const x = leftX + (level + 1) * levelWidth
+    
+    gates.forEach((gate, idx) => {
+      // Center vertically relative to total items in this column
+      // Or try to align with inputs? Simple vertical stacking for now.
+      // Better: Try to center based on inputs, but simple stacking is safer to avoid overlap.
+      const y = topOffset + idx * rowSpacing + (level * 20) // slight offset per level
+      
+      positions[gate.id] = {
+        x,
+        y,
+        type: 'gate',
+      }
+      
+      // Also map the output signal to this gate's position (for connections)
+      if (gate.output) {
+        positions[gate.output] = { x, y, type: 'gate' }
+      }
+    })
+  })
+
+  // Position outputs (right column)
   for (let idx = 0; idx < outputSignals.length; idx++) {
     const output = outputSignals[idx]
-    const sourceGate = circuit.gates.find(g => g.output === output)
-    const yPos = sourceGate && positions[sourceGate.id] ? positions[sourceGate.id].y : topOffset + idx * rowSpacing
+    const sourceGateId = signalSource[output]
+    const sourceGatePos = sourceGateId ? positions[sourceGateId] : null
+    
     positions[output] = {
-      x: rightX,
-      y: yPos,
+      x: rightX + 50,
+      y: sourceGatePos ? sourceGatePos.y : topOffset + idx * rowSpacing,
       type: 'output',
     }
   }

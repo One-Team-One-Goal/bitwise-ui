@@ -8,7 +8,8 @@ import { useAuthContext } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { ChevronRight, ChevronLeft, Check } from 'lucide-react'
 import { Confetti, type ConfettiRef } from '@/components/magicui/confetti'
-import bitbotRightPoint from '@/assets/bitbot/right-point.svg'
+import BitBotGuide from '@/components/BitBotGuide'
+import ToolSpotlight from '@/components/ToolSpotlight'
 import ContentDisplay from '@/components/ContentDisplay'
 
 // Local content types (keeps file self-contained)
@@ -309,6 +310,17 @@ function RouteComponent() {
     return Math.round(fallbackProgress)
   }
 
+  const getToolForLesson = (lessonId: number) => {
+    switch (lessonId) {
+      case 1: return 'calculator';
+      case 2: return 'circuit';
+      case 3: return 'kmap';
+      default: return null;
+    }
+  }
+  
+  const toolToSpotlight = lesson ? getToolForLesson(lesson.id) : null;
+
   return (
     <div>
       <LessonHeader
@@ -318,12 +330,11 @@ function RouteComponent() {
       <div className="pt-24 max-w-4xl mx-auto flex flex-col">
         {!finished ? (
           <div className="w-full p-6 pb-20 flex flex-col relative">
-            <img
-              src={bitbotRightPoint}
-              alt="Bitbot Right Point"
-              className="fixed left-[calc(50%-600px)] top-32 w-28 z-50 opacity-90 pointer-events-none select-none animate-float"
-              style={{ transition: 'top 0.3s, left 0.3s' }}
-              draggable="false"
+            <BitBotGuide
+              message={`Let's learn about ${topic.title}!`}
+              emotion="pointing-right"
+              position="bottom-right"
+              className="fixed bottom-8 right-8 z-50"
             />
 
             {/* Topic Header */}
@@ -375,6 +386,10 @@ function RouteComponent() {
               <ContentDisplay blocks={topic.displayContent as any} />
             ) : (
               <div className="text-gray-500 dark:text-gray-400 italic">No content available</div>
+            )}
+
+            {toolToSpotlight && (
+               <ToolSpotlight tool={toolToSpotlight as any} />
             )}
 
           </div>
@@ -497,4 +512,3 @@ function RouteComponent() {
     </div>
   )
 }
-// ...existing code...

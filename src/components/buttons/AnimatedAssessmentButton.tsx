@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react'
 import Lottie from 'lottie-react'
+import { Loader2 } from 'lucide-react'
 import hoverAnimation from '@/assets/animations/assessmentHover.json'
 import hoverAnimationLocked from '@/assets/animations/AnimatedHoveredButtonLocked.json'
 import defaultAnimation from '@/assets/animations/assessmentIdle.json'
@@ -11,18 +12,22 @@ import completePressedAssessment from '@/assets/animations/completePressed.json'
 
 interface AnimatedAssessmentButtonProps {
   onClick: () => void
-  isSelected: boolean
+  isSelected?: boolean
   className?: string
   locked?: boolean
   isCompleted?: boolean
+  loading?: boolean
+  disabled?: boolean
 }
 
 const AnimatedAssessmentButton: React.FC<AnimatedAssessmentButtonProps> = ({
   onClick,
-  isSelected,
+  isSelected = false,
   className,
   locked,
-  isCompleted, // New prop for completed state
+  isCompleted,
+  loading,
+  disabled
 }) => {
   const [state, setState] = useState('default')
   const animationRef = useRef(null)
@@ -32,11 +37,11 @@ const AnimatedAssessmentButton: React.FC<AnimatedAssessmentButtonProps> = ({
     if (isCompleted) {
       switch (state) {
         case 'hover':
-          return completeHoverAssessment // or completeHover if reusing
+          return completeHoverAssessment
         case 'pressed':
-          return completePressedAssessment // or completePressed if reusing
+          return completePressedAssessment
         default:
-          return completeDefaultAssessment // or completeDefault if reusing
+          return completeDefaultAssessment
       }
     } else if (locked) {
       switch (state) {
@@ -58,8 +63,9 @@ const AnimatedAssessmentButton: React.FC<AnimatedAssessmentButtonProps> = ({
   }
 
   const handleMouseEnter = () => {
+    if (disabled || loading) return
     if (locked) {
-      setState('hover') // Still allow hover animation for locked
+      setState('hover')
     } else if (state !== 'pressed') {
       setState('hover')
     }
@@ -70,7 +76,7 @@ const AnimatedAssessmentButton: React.FC<AnimatedAssessmentButtonProps> = ({
   }
 
   const handleClick = () => {
-    if (locked) return // Block clicks on locked
+    if (locked || disabled || loading) return
     setState('pressed')
     setTimeout(() => {
       setState('default')
@@ -82,7 +88,7 @@ const AnimatedAssessmentButton: React.FC<AnimatedAssessmentButtonProps> = ({
     <div className="relative flex items-center">
       <div
         className={`flex items-center justify-center rounded-xl transition-all duration-300 ${
-          locked ? 'cursor-not-allowed' : 'cursor-pointer'
+          locked || disabled || loading ? 'cursor-not-allowed' : 'cursor-pointer'
         } z-50 ${className}`}
       >
         <div
@@ -91,15 +97,21 @@ const AnimatedAssessmentButton: React.FC<AnimatedAssessmentButtonProps> = ({
         >
           {/* Lottie Animation Background */}
           <div className="absolute inset-0 scale-75">
-            <Lottie
-              animationData={getAnimation()}
-              onMouseEnter={handleMouseEnter}
-              onMouseLeave={handleMouseLeave}
-              loop={state !== 'pressed'}
-              autoplay
-              lottieRef={animationRef}
-              className="w-full h-full"
-            />
+            {loading ? (
+              <div className="flex items-center justify-center w-full h-full">
+                <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+              </div>
+            ) : (
+              <Lottie
+                animationData={getAnimation()}
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
+                loop={state !== 'pressed'}
+                autoplay
+                lottieRef={animationRef}
+                className={`w-full h-full ${disabled ? 'opacity-50 grayscale' : ''}`}
+              />
+            )}
           </div>
 
           {/* Assessment Icon and Label Overlay */}
@@ -110,7 +122,7 @@ const AnimatedAssessmentButton: React.FC<AnimatedAssessmentButtonProps> = ({
                 : locked
                   ? 'text-gray-500'
                   : isCompleted
-                    ? 'text-background' // Keep white text for completed assessments
+                    ? 'text-background'
                     : 'text-background'
             }`}
           ></div>

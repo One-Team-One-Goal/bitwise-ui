@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { getLawExplanation } from '@/constants/lawExplanations';
 import type { ScriptStep } from '../FactoringDemo';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

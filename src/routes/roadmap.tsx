@@ -1,13 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import {
-  Timeline,
-  TimelineItem,
-  TimelineSeparator,
-  TimelineConnector,
-  TimelineContent,
-  TimelineOppositeContent,
-} from '@mui/lab'
+import { motion } from 'motion/react'
 import AnimatedAssessmentButton from '@/components/buttons/AnimatedAssessmentButton'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -16,8 +9,19 @@ import DataAnalyticsCard from '@/components/DataAnalyticsCard'
 import { useAuthContext } from '@/contexts/AuthContext'
 import { useAllUserProgress } from '@/hooks/useUserProgress'
 import { userProgressService } from '@/services/user-progress.service'
-import { Loader2, Brain, AlertCircle, ChevronDown, BookOpen, CheckCircle2, Clock } from 'lucide-react'
+import { 
+  Brain, CheckCircle2, Lock, Play, Binary, Cpu, Network, Zap
+} from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import bitbotIdle from '@/assets/bitbot/idle.svg'
+
+import { toast } from 'sonner'
 
 // Define types for better TypeScript support
 interface RoadmapTopic {
@@ -139,10 +143,8 @@ export const Route = createFileRoute('/roadmap')({
 })
 
 function RouteComponent() {
-  const [selected, setSelected] = useState<typeof timelineItems[0] | null>(null)
+  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null)
   const [loadingAssessment, setLoadingAssessment] = useState(false)
-  const [assessmentError, setAssessmentError] = useState<string | null>(null)
-  const [showScrollHint, setShowScrollHint] = useState(true)
   const navigate = useNavigate()
   const { user } = useAuthContext() || { }
   const ALLOW_ANON = import.meta.env.VITE_ALLOW_ANON_ASSESSMENT === 'true'
@@ -151,16 +153,14 @@ function RouteComponent() {
 
   // Fetch user progress
   const { data: userProgress = [] } = useAllUserProgress(!!user)
-
   const [topicsProgress, setTopicsProgress] = useState<Record<number, any[]>>({})
 
-  const userProgressKey = useMemo(
-    () =>
-      userProgress
-        .map((lesson) => `${lesson.lessonId}:${lesson.status}:${Math.round(lesson.progress * 100)}`)
-        .join('|'),
-    [userProgress]
-  )
+  // Calculate overall progress
+  const overallProgress = useMemo(() => {
+    if (!userProgress.length) return 0
+    const totalProgress = userProgress.reduce((acc, curr) => acc + (curr.progress || 0), 0)
+    return Math.round((totalProgress / lessons.length) * 100)
+  }, [userProgress])
 
   useEffect(() => {
     if (!user) {
@@ -169,7 +169,6 @@ function RouteComponent() {
     }
 
     let cancelled = false
-
     const fetchAllLessonTopics = async () => {
       try {
         const results = await Promise.all(
@@ -183,605 +182,318 @@ function RouteComponent() {
             }
           })
         )
-
         if (cancelled) return
-
         const next: Record<number, any[]> = {}
         for (const [lessonId, data] of results) {
           next[lessonId] = data
         }
         setTopicsProgress(next)
       } catch (error) {
-        if (!cancelled) {
-          console.error('Failed to load topic progress data', error)
-        }
+        if (!cancelled) console.error('Failed to load topic progress data', error)
       }
     }
-
     fetchAllLessonTopics()
+    return () => { cancelled = true }
+  }, [user])
 
-    return () => {
-      cancelled = true
-    }
-  }, [user, userProgressKey])
-
-  // Flatten lessons and topics for the timeline
-  const timelineItems = lessons.flatMap((lesson) => [
-    { ...lesson, isTopic: false as const },
-    ...(lesson.topics || []).map((topic, i) => ({
-      ...topic,
-      parentId: lesson.id,
-      isTopic: true as const,
-      parentTitle: lesson.title,
-      parentIdx: lesson.id,
-      idx: i,
-      details: `Details for ${topic.title}`,
-    })),
-  ])
-
-  const resolveTopicIdForLesson = (lessonId: number, opts: { title?: string; idx?: number } = {}) => {
-    const topicsForLesson = topicsProgress[lessonId] ?? []
-    if (!topicsForLesson.length) return undefined
-
-    const normalizedTitle = opts.title?.trim().toLowerCase()
-    if (normalizedTitle) {
-      const matchedByTitle = topicsForLesson.find((topic: any) => topic.title?.trim().toLowerCase() === normalizedTitle)
-      if (matchedByTitle) return matchedByTitle.id
-    }
-
-    if (typeof opts.idx === 'number' && opts.idx >= 0 && opts.idx < topicsForLesson.length) {
-      return topicsForLesson[opts.idx]?.id
-    }
-
-    return topicsForLesson[0]?.id
-  }
-
-  const navigateToLessonTopic = (lessonId: number, topicId?: number) => {
-    if (typeof topicId === 'number') {
-      navigate({
-        to: '/lesson/$lessonId',
-        params: { lessonId: String(lessonId) },
-        search: { topicId },
-      })
-      return
-    }
-
-    navigate({ to: `/lesson/${lessonId}` })
-  }
-
-  const focusFirstTopicForLesson = (lessonId: number) => {
-  const firstTopic = timelineItems.find((item) => item.isTopic && item.parentId === lessonId)
-  if (!firstTopic || !firstTopic.isTopic) return undefined
-
-    setSelected(firstTopic)
-    setShowScrollHint(false)
-
-    if (typeof window !== 'undefined') {
-      window.requestAnimationFrame(() => {
-        const target = document.getElementById(`timeline-item-topic-${lessonId}-${firstTopic.idx}`)
-        target?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      })
-    }
-
-    return firstTopic
-  }
-
-  // Handle click: do not navigate immediately; update selection
-  const handleItemClick = (item: any) => {
-    setSelected(item)
-    setShowScrollHint(false)
-    // Don't navigate immediately, let user explore first
-  }
-
-  const handleStartLesson = () => {
-    if (!selected) return
-
-    if (!selected.isTopic) {
-      const focusedTopic = focusFirstTopicForLesson(selected.id)
-
-      if (!focusedTopic) {
-        navigateToLessonTopic(selected.id)
-      }
-
-      return
-    }
-
-    const lessonId = selected.parentId
-    const targetTopicId = resolveTopicIdForLesson(lessonId, {
-      title: selected.title,
-      idx: selected.idx,
-    })
-
-    navigateToLessonTopic(lessonId, targetTopicId)
-  }
-
-  // Handle adaptive assessment start
   const handleStartAdaptiveAssessment = async () => {
-    if (!effectiveUser) return
-
+    if (!effectiveUser) {
+      toast.error('Please log in to start an assessment')
+      return
+    }
     setLoadingAssessment(true)
-    setAssessmentError(null)
-
     try {
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/assessment/start-adaptive-practice`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uid: effectiveUser.id }),
+        body: JSON.stringify({ userId: effectiveUser.id }),
       })
-
       const result = await response.json()
-
-      if (result.success && result.data) {
-        // Store the attempt data for the assessment component
-        sessionStorage.setItem('currentAttempt', JSON.stringify(result.data))
-        
-        // Navigate to the assessment
-        navigate({ to: `/assessment/${result.data.attemptId}` })
+      if (result.success) {
+        navigate({ to: '/assessment/$assessmentId', params: { assessmentId: result.data.attemptId.toString() } })
       } else {
-        throw new Error(result.error || 'Failed to start adaptive assessment')
+        throw new Error(result.error || 'Failed to start assessment')
       }
     } catch (error) {
-      console.error('Failed to start adaptive assessment:', error)
-      setAssessmentError(error instanceof Error ? error.message : 'Failed to start assessment. Please try again.')
+      console.error('Failed to start assessment:', error)
+      toast.error('Failed to start assessment. Please try again.')
     } finally {
       setLoadingAssessment(false)
     }
   }
 
-  // Handle regular practice assessment start (fallback)
-  /* const handleStartRegularAssessment = async () => {
-    if (!user) return
+  const getLessonStatus = (lessonId: number) => {
+    const progress = userProgress.find(p => p.lessonId === lessonId)
+    const isCompleted = progress?.status === 'completed' || (progress?.progress || 0) >= 1
+    const isStarted = (progress?.progress || 0) > 0
+    
+    // Check if previous lesson is completed (for locking)
+    const prevLesson = lessons.find(l => l.id === lessonId - 1)
+    const prevProgress = prevLesson ? userProgress.find(p => p.lessonId === prevLesson.id) : null
+    const isLocked = prevLesson && (!prevProgress || (prevProgress.progress || 0) < 0.8) // Lock if prev < 80%
 
-    setLoadingAssessment(true)
-    setAssessmentError(null)
-
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/assessment/start-practice`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uid: user.id }),
-      })
-
-      const result = await response.json()
-
-      if (result.success && result.data) {
-        sessionStorage.setItem('currentAttempt', JSON.stringify(result.data))
-        navigate({ to: `/assessment/${result.data.attemptId}` })
-      } else {
-        throw new Error(result.error || 'Failed to start practice assessment')
-      }
-    } catch (error) {
-      console.error('Failed to start practice assessment:', error)
-      setAssessmentError(error instanceof Error ? error.message : 'Failed to start assessment. Please try again.')
-    } finally {
-      setLoadingAssessment(false)
+    return { 
+      status: isCompleted ? 'completed' : isStarted ? 'in-progress' : 'not-started',
+      progress: Math.round((progress?.progress || 0) * 100),
+      isLocked // Enable locking to enforce progression
     }
-  } */
+  }
+
+  // Determine current active lesson for BitBot position
+  const currentLessonId = useMemo(() => {
+    const firstInProgress = lessons.find(l => {
+      const { status } = getLessonStatus(l.id)
+      return status === 'in-progress'
+    })
+    if (firstInProgress) return firstInProgress.id
+
+    const firstNotStarted = lessons.find(l => {
+      const { status, isLocked } = getLessonStatus(l.id)
+      return status === 'not-started' && !isLocked
+    })
+    if (firstNotStarted) return firstNotStarted.id
+
+    // If all completed, stay at last
+    return lessons[lessons.length - 1].id
+  }, [userProgress])
 
   return (
-    <div className="m-auto mt-12 flex flex-col md:flex-row w-2/3 h-[80vh] gap-4 pt-24 overflow-hidden">
-      {/* Left: Lesson Details */}
-      <div className='flex flex-col gap-4 mr-4 shrink-0 max-h-full overflow-y-auto hide-scrollbar'>
-        {!selected ? (
-          /* Introduction State */
-          <Card className="max-w-md w-full p-6 h-min">
-            <CardContent className="p-0 space-y-4">
-              <div className="flex items-center gap-2 mb-2">
-                <h2 className="text-2xl font-bold">Welcome to Your Learning Path!</h2>
-              </div>
-              
-              <div className="space-y-3 text-sm text-muted-foreground">
-                <p>
-                  This roadmap shows your Boolean Algebra learning journey with <strong className="text-foreground">{lessons.length} lessons</strong> covering everything from basics to advanced topics.
-                </p>
-                
-                <p>
-                  <strong className="text-foreground">Click any lesson tile</strong> on the right to explore its topics.
-                </p>
-                
-                <p>
-                  Each lesson has multiple <strong className="text-foreground">topics</strong> (shown as smaller tiles) that break down concepts step-by-step.
-                </p>
-                
-                <p>
-                  <strong className="text-foreground">Scroll down</strong> on the timeline to see all {lessons.length} lessons and their topics.
-                </p>
-              </div>
-
-              <div className="mt-4 p-3 bg-accent/50 rounded-lg border border-border">
-                <p className="text-xs text-muted-foreground">
-                  <strong className="text-foreground">Pro tip:</strong> Start with Lesson 1 and work your way through, or jump to any topic that interests you!
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          /* Selected Lesson Details */
-          <>
-            <Card className="max-w-md w-full p-6 h-min">
-              <CardContent className="p-0 space-y-2">
-                {/* Lesson badge */}
-                {!selected.isTopic && (
-                  <div className="inline-block px-3 py-1 bg-primary/10 text-primary text-xs font-semibold rounded-full mb-2">
-                    Lesson {lessons.findIndex((l) => l.id === selected.id) + 1}
-                  </div>
-                )}
-                
-                {selected.isTopic && (
-                  <div className="inline-block px-3 py-1 bg-accent text-muted-foreground text-xs font-semibold rounded-full mb-2">
-                    Topic of {selected.parentTitle}
-                  </div>
-                )}
-
-                <h2 className="text-2xl font-bold">
-                  {selected.title}
-                </h2>
-                <p className="text-muted-foreground text-sm">
-                  {selected.description}
-                </p>
-                <p className="text-sm text-muted-foreground">{selected.details}</p>
-
-                {/* Start Lesson Button */}
-                <Button 
-                  className="w-full mt-4" 
-                  onClick={handleStartLesson}
-                >
-                  <BookOpen className="w-4 h-4 mr-2" />
-                  Start This Lesson
-                </Button>
-              </CardContent>
-            </Card>
-          </>
-        )}
-
+    <div className="h-screen bg-gray-50 dark:bg-gray-950 pt-20 pb-4 px-4 sm:px-6 lg:px-8 overflow-hidden flex flex-col">
+      <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col space-y-6 overflow-hidden">
         
-        {/* Data Analytics Card - Only show when lesson selected */}
-        {selected && <DataAnalyticsCard lesson={selected} user={user} />}
+        {/* Header Section */}
+        <div className="text-center space-y-2 relative z-10 shrink-0">
+          <h1 className="text-3xl font-extrabold text-gray-900 dark:text-gray-100 tracking-tight">
+            Your Learning Journey
+          </h1>
+          <p className="text-base text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+            Travel through the world of Boolean Algebra. Master each node to unlock the next.
+          </p>
+        </div>
 
-        {/* Adaptive Practice Assessment Card */}
-        <Card className="max-w-md w-full p-6 h-min">
-          <CardContent className="p-0 space-y-4">
-            <div>
-              <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
-                <Brain className="w-5 h-5 text-purple-600" />
-                Adaptive Practice Assessment
-              </h3>
-              <p className="text-sm text-muted-foreground mb-2">
-                Take a personalized assessment that adapts to your skill level and focuses on areas where you need improvement.
-              </p>
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 overflow-hidden">
+          
+          {/* Left Column: Roadmap Map (Takes 8/12 columns) */}
+          <div className="lg:col-span-8 relative w-full h-full bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-800 overflow-y-auto overflow-x-hidden p-8 md:p-12 custom-scrollbar">
+            
+            {/* Background Decorations */}
+            <div className="absolute inset-0 opacity-10 pointer-events-none">
+              <Binary className="absolute top-10 left-10 w-24 h-24 text-blue-500 animate-pulse" />
+              <Cpu className="absolute bottom-20 right-20 w-32 h-32 text-purple-500 animate-pulse" style={{ animationDelay: '1s' }} />
+              <Network className="absolute top-1/2 left-1/3 w-16 h-16 text-green-500 animate-pulse" style={{ animationDelay: '2s' }} />
+              <Zap className="absolute top-20 right-1/4 w-12 h-12 text-yellow-500 animate-pulse" style={{ animationDelay: '0.5s' }} />
+              <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] dark:bg-[radial-gradient(#1f2937_1px,transparent_1px)]" style={{ backgroundSize: '16px 16px' }} />
             </div>
 
-            {!user && !effectiveUser && (
-              <div className="flex items-center gap-2 text-xs text-red-500 bg-red-50 p-2 rounded">
-                <AlertCircle className="w-4 h-4" />
-                You need to login before taking the assessment.
-              </div>
-            )}
+            {/* The Path (Visual Only) */}
+            <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" style={{ strokeLinecap: 'round' }}>
+              {/* Animated Path Effect */}
+              <defs>
+                <linearGradient id="pathGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.2" />
+                  <stop offset="50%" stopColor="#3b82f6" stopOpacity="1" />
+                  <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.2" />
+                </linearGradient>
+              </defs>
+              
+              {/* This is a simplified path for the 2x2 grid layout on desktop */}
+              <path 
+                d="M 20% 30% C 50% 30%, 50% 30%, 80% 30% C 80% 60%, 80% 60%, 80% 70% C 50% 70%, 50% 70%, 20% 70%" 
+                className="stroke-gray-200 dark:stroke-gray-800 stroke-8 fill-none hidden md:block"
+              />
+              {/* Animated Overlay Path */}
+              <motion.path 
+                d="M 20% 30% C 50% 30%, 50% 30%, 80% 30% C 80% 60%, 80% 60%, 80% 70% C 50% 70%, 50% 70%, 20% 70%" 
+                className="stroke-blue-400/50 stroke-4 fill-none hidden md:block"
+                initial={{ pathLength: 0, strokeDasharray: "10 10" }}
+                animate={{ pathLength: 1, strokeDashoffset: -20 }}
+                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+              />
 
-            {assessmentError && (
-              <div className="flex items-center gap-2 text-xs text-red-600 bg-red-50 p-2 rounded">
-                <AlertCircle className="w-4 h-4" />
-                {assessmentError}
-              </div>
-            )}
+              {/* Mobile Path (Vertical) */}
+              <path 
+                d="M 50% 10% L 50% 90%" 
+                className="stroke-gray-200 dark:stroke-gray-800 stroke-4 fill-none md:hidden"
+              />
+            </svg>
 
-            <div className="space-y-2">
-              <Button
-                disabled={!user || loadingAssessment}
-                className="w-full flex items-center justify-center bg-purple-600 hover:bg-purple-700"
-                onClick={handleStartAdaptiveAssessment}
-              >
-                {loadingAssessment ? (
-                  <>
-                    <Loader2 className="animate-spin mr-2 h-4 w-4" />
-                    Generating Assessment...
-                  </>
-                ) : (
-                  <>
-                    <Brain className="mr-2 h-4 w-4" />
-                    Take Adaptive Assessment
-                  </>
-                )}
-              </Button>
+            {/* Map Nodes Grid */}
+            <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-y-16 gap-x-8 h-full place-items-center">
+              {lessons.map((lesson, index) => {
+                const { status, isLocked } = getLessonStatus(lesson.id)
+                const isActive = currentLessonId === lesson.id
+                
+                // Positioning logic for the "winding" feel on desktop
+                // Index 0: Top Left, Index 1: Top Right
+                // Index 2: Bottom Right, Index 3: Bottom Left
+                // This matches the SVG path above
+                const orderClass = 
+                  index === 0 ? 'md:order-1 md:justify-self-start md:ml-20' :
+                  index === 1 ? 'md:order-2 md:justify-self-end md:mr-20' :
+                  index === 2 ? 'md:order-4 md:justify-self-end md:mr-20' :
+                  'md:order-3 md:justify-self-start md:ml-20'
 
-           
-            </div>
+                return (
+                  <div key={lesson.id} className={`relative ${orderClass}`}>
+                    {/* BitBot Avatar - Now Floating */}
+                    {isActive && (
+                      <motion.div
+                        layoutId="bitbot-avatar"
+                        className="absolute -top-20 left-1/2 -translate-x-1/2 z-20 w-24 h-24 pointer-events-none"
+                        animate={{ y: [0, -10, 0] }}
+                        transition={{ 
+                          layout: { type: "spring", stiffness: 300, damping: 30 },
+                          y: { duration: 2, repeat: Infinity, ease: "easeInOut" }
+                        }}
+                      >
+                        <img src={bitbotIdle} alt="BitBot" className="w-full h-full drop-shadow-2xl filter brightness-110" />
+                      </motion.div>
+                    )}
 
-            <div className="text-xs text-muted-foreground">
-              <p className="mb-1">
-                <strong>Adaptive:</strong> Questions adjust to your skill level and focus on weak areas.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+                    {/* Node Button */}
+                    <motion.button
+                      onClick={() => !isLocked && setSelectedLesson(lesson)}
+                      whileHover={!isLocked ? { scale: 1.1 } : {}}
+                      whileTap={!isLocked ? { scale: 0.95 } : {}}
+                      className={`w-20 h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center shadow-lg border-4 transition-all duration-300 relative group ${
+                        isLocked 
+                          ? 'bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed dark:bg-gray-800 dark:border-gray-700'
+                          : status === 'completed'
+                            ? 'bg-green-100 border-green-500 text-green-600 dark:bg-green-900/50 dark:border-green-500'
+                            : 'bg-white border-blue-500 text-blue-600 dark:bg-gray-800 dark:border-blue-500'
+                      }`}
+                    >
+                      {isLocked ? (
+                        <Lock className="w-8 h-8" />
+                      ) : status === 'completed' ? (
+                        <CheckCircle2 className="w-10 h-10" />
+                      ) : (
+                        <span className="text-3xl font-bold">{lesson.id}</span>
+                      )}
+                      
+                      {/* Pulse effect for active node */}
+                      {!isLocked && status !== 'completed' && (
+                        <span className="absolute inset-0 rounded-full animate-ping bg-blue-400 opacity-20" />
+                      )}
 
-      </div>
-
-  {/* Right: Timeline with topics (scrollable only) */}
-      <div
-        className="hide-scrollbar flex-1 flex flex-col justify-start items-center overflow-y-auto relative"
-        style={{ maxHeight: '80vh', minHeight: '400px' }}
-      >
-        {/* Scroll hint - fades after interaction */}
-        {showScrollHint && (
-          <div className="sticky top-0 z-10 w-full flex justify-center py-2 bg-linear-to-b from-background to-transparent pointer-events-none">
-            <div className="flex flex-col items-center gap-1 animate-bounce">
-              <span className="text-xs text-muted-foreground font-medium">Scroll to explore</span>
-              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                      {/* Tooltip-like Label */}
+                      <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 whitespace-nowrap bg-white dark:bg-gray-800 px-3 py-1 rounded-full shadow-md border border-gray-100 dark:border-gray-700 text-sm font-medium text-gray-700 dark:text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity z-30">
+                        {lesson.title}
+                      </div>
+                    </motion.button>
+                  </div>
+                )
+              })}
             </div>
           </div>
-        )}
 
-        <Timeline position="alternate" sx={{ m: 0, p: 0 }}>
-          {timelineItems.map((item, idx) => {
-            const isSelected = selected?.id === item.id
-
-            // Show Bitbot only for the exact selected item (not all items in the same lesson group)
-            const showBitbot = isSelected
-
-            const parentLessonId = item.isTopic ? item.parentId : item.id
-            const lessonProgressData = userProgress.find((p) => p.lessonId === parentLessonId)
-            const topicsForLesson = topicsProgress[parentLessonId] ?? []
-
-            const derivedStatusFromTopics = topicsForLesson.length
-              ? topicsForLesson.every((topic) => topic.userProgress?.status === 'completed')
-                ? 'completed'
-                : topicsForLesson.some((topic) => topic.userProgress?.status !== 'not-started')
-                  ? 'in-progress'
-                  : 'not-started'
-              : undefined
-
-            const status = lessonProgressData?.status ?? derivedStatusFromTopics ?? 'not-started'
-
-            let progressPercent = lessonProgressData ? Math.round(lessonProgressData.progress * 100) : 0
-            if (!lessonProgressData && topicsForLesson.length) {
-              // Calculate progress based on completed topics when lesson summary is absent
-              const completedCount = topicsForLesson.filter((topic) => topic.userProgress?.status === 'completed').length
-              progressPercent = Math.round((completedCount / topicsForLesson.length) * 100)
-            }
-
-            const masteryPercent = lessonProgressData?.masteryScore
-              ? Math.round(lessonProgressData.masteryScore * 100)
-              : null
-
-            const topicProgressEntry = item.isTopic
-              ? topicsForLesson.find((topic: any, index: number) => {
-                  if (topic.title === item.title) return true
-                  return index === item.idx
-                })
-              : undefined
-
-            const topicStatus = item.isTopic ? topicProgressEntry?.userProgress?.status ?? 'not-started' : undefined
-            const isTopicCompleted = topicStatus === 'completed'
-            const isTopicInProgress = topicStatus === 'viewed'
+          {/* Right Column: Sidebar (Takes 4/12 columns) */}
+          <div className="lg:col-span-4 space-y-6 h-full overflow-y-auto custom-scrollbar pr-2">
             
-            const timelineElementId = item.isTopic
-              ? `timeline-item-topic-${item.parentId}-${item.idx}`
-              : `timeline-item-lesson-${item.id}`
+            {/* Adaptive Practice - Highlighted */}
+            <Card className="bg-linear-to-br from-blue-600 to-indigo-700 text-white border-none shadow-xl shadow-blue-500/20 overflow-hidden relative ring-2 ring-blue-400/50 transform hover:scale-[1.02] transition-transform duration-300">
+              <div className="absolute top-0 right-0 p-4 opacity-20">
+                <Brain className="w-32 h-32 animate-pulse" />
+              </div>
+              <CardContent className="p-6 relative z-10">
+                <h3 className="text-xl font-bold mb-2 flex items-center gap-2">
+                  <Brain className="w-6 h-6" />
+                  Adaptive Practice
+                </h3>
+                <p className="text-blue-100 mb-6 text-sm">
+                  Ready for a challenge? Test your skills with AI-generated questions!
+                </p>
+                <AnimatedAssessmentButton 
+                  onClick={handleStartAdaptiveAssessment}
+                  loading={loadingAssessment}
+                  disabled={loadingAssessment}
+                  className="w-full bg-white text-blue-600 hover:bg-blue-50 border-none shadow-lg"
+                />
+              </CardContent>
+            </Card>
 
-            return (
-              <TimelineItem
-                key={item.id}
-                id={timelineElementId}
-                sx={{ 
-                  minHeight: 100, 
-                  mb: item.isTopic ? 2 : 4,
-                  position: 'relative',
-                }}
-              >
-                {/* Bitbot animation in the center for all selected items */}
-                {showBitbot && (
-                  <div 
-                    className={`absolute left-1/2 -translate-x-1/2 w-20 h-20 z-20 animate-bounce pointer-events-none ${
-                      item.isTopic ? '-top-12' : 'top-0 -translate-y-3/4'
-                    }`}
+            {/* Analytics & Stats - Always Visible or Conditional */}
+            <DataAnalyticsCard user={user} lesson={null} />
+
+            {/* BitBot Guide - Floating Overlay Style */}
+            <div className="relative">
+               <div className="absolute -top-6 -right-4 z-10">
+                  <motion.div
+                    animate={{ rotate: [0, 10, 0] }}
+                    transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
                   >
-                    <img src={bitbotIdle} alt="Bitbot" className="w-full h-full" />
-                  </div>
-                )}
+                    <img src={bitbotIdle} className="w-16 h-16 drop-shadow-lg" alt="BitBot" />
+                  </motion.div>
+               </div>
+               <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800">
+                  <CardContent className="p-4 pt-8">
+                    <p className="text-sm text-blue-800 dark:text-blue-200 font-medium">
+                      {overallProgress === 0 
+                        ? "Welcome! I'm BitBot. Start with Lesson 1 to begin your journey into digital logic!" 
+                        : "Great progress! Keep going, you're doing amazing!"}
+                    </p>
+                  </CardContent>
+               </Card>
+            </div>
 
-                <TimelineOppositeContent
-                  sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    alignItems: 'flex-end',
-                    minWidth: item.isTopic ? 100 : 140,
-                    color: item.isTopic ? 'text.secondary' : 'inherit',
-                    position: 'relative',
-                  }}
-                >
+          </div>
+        </div>
 
-                  {/* Main lesson label with progress */}
-                  {!item.isTopic ? (
-                    <div className="flex flex-col items-end gap-1.5">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`text-xs font-medium ${
-                            isSelected 
-                              ? 'text-primary font-bold' 
-                              : 'text-muted-foreground'
-                          }`}
-                        >
-                          Lesson {lessons.findIndex((l) => l.id === item.id) + 1}
-                        </span>
-                        
-                        {/* Status badge */}
-                        {user && status === 'completed' && (
-                          <Badge variant="default" className="h-5 px-1.5 text-[10px] bg-green-500 hover:bg-green-600">
-                            <CheckCircle2 className="w-3 h-3" />
-                          </Badge>
-                        )}
-                        {user && status === 'in-progress' && (
-                          <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
-                            <Clock className="w-3 h-3" />
-                          </Badge>
-                        )}
+        {/* Lesson Details Dialog */}
+        <Dialog open={!!selectedLesson} onOpenChange={(open) => !open && setSelectedLesson(null)}>
+          <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto custom-scrollbar">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+                <Badge variant="outline">Lesson {selectedLesson?.id}</Badge>
+                {selectedLesson?.title}
+              </DialogTitle>
+              <DialogDescription className="text-base pt-2">
+                {selectedLesson?.description}
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg text-sm text-blue-800 dark:text-blue-200">
+                {selectedLesson?.details}
+              </div>
+              
+              <div className="space-y-2">
+                <h4 className="font-semibold text-sm text-gray-500 uppercase tracking-wider">Topics</h4>
+                <div className="grid gap-2">
+                  {selectedLesson?.topics.map((topic) => {
+                     const topicStatus = topicsProgress[selectedLesson.id]?.find((t: any) => t.topicId === parseInt(topic.id.split('-')[1]))
+                     const isTopicCompleted = topicStatus?.status === 'completed'
+                     return (
+                      <div key={topic.id} className="flex items-center gap-3 p-2 rounded-md bg-gray-50 dark:bg-gray-800/50">
+                        {isTopicCompleted ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <div className="w-4 h-4 rounded-full border-2 border-gray-300" />}
+                        <span className="text-sm">{topic.title}</span>
                       </div>
-                      
-                      {/* Progress indicators */}
-                      {user ? (
-                        <div className="flex flex-col items-end gap-1">
-                          {/* Topic viewing progress */}
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[9px] text-muted-foreground w-12 text-right">Topics</span>
-                            <div className="w-16 h-1.5 bg-accent rounded-full overflow-hidden">
-                              <div 
-                                className="h-full bg-blue-500 transition-all duration-300"
-                                style={{ width: `${progressPercent}%` }}
-                              />
-                            </div>
-                            <span className="text-[10px] text-muted-foreground font-medium w-8">
-                              {progressPercent}%
-                            </span>
-                          </div>
-                          
-                          {/* Assessment mastery (if taken) */}
-                          {masteryPercent !== null && (
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-[9px] text-muted-foreground w-12 text-right">Mastery</span>
-                              <div className="w-16 h-1.5 bg-accent rounded-full overflow-hidden">
-                                <div 
-                                  className={`h-full transition-all duration-300 ${
-                                    masteryPercent >= 70 ? 'bg-green-500' : masteryPercent >= 40 ? 'bg-yellow-500' : 'bg-red-500'
-                                  }`}
-                                  style={{ width: `${masteryPercent}%` }}
-                                />
-                              </div>
-                              <span className={`text-[10px] font-medium w-8 ${
-                                masteryPercent >= 70 ? 'text-green-600' : masteryPercent >= 40 ? 'text-yellow-600' : 'text-red-600'
-                              }`}>
-                                {masteryPercent}%
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1 px-2 py-1 bg-primary/10 rounded-md border border-primary/20">
-                          <svg className="w-3 h-3 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                          </svg>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              // Navigate to login
-                            }}
-                            className="text-[10px] text-primary font-medium hover:underline"
-                          >
-                            Log in to track
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                      {isTopicCompleted ? (
-                        <>
-                          <CheckCircle2 className="w-3 h-3 text-green-500" />
-                          <span className="font-medium text-green-600">Completed</span>
-                        </>
-                      ) : isTopicInProgress ? (
-                        <>
-                          <Clock className="w-3 h-3 text-amber-500" />
-                          <span className="font-medium text-amber-600">In progress</span>
-                        </>
-                      ) : (
-                        <span>Not started</span>
-                      )}
-                    </div>
-                  )}
-                </TimelineOppositeContent>
+                     )
+                  })}
+                </div>
+              </div>
+            </div>
 
-                <TimelineSeparator
-                  sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <div className={`relative ${isSelected ? 'scale-110' : ''} transition-transform duration-200`}>
-                    <AnimatedAssessmentButton
-                      onClick={() => handleItemClick(item)}
-                      isSelected={!!isSelected}
-                      locked={false}
-                      isCompleted={false}
-                      className={
-                        item.isTopic 
-                          ? 'w-8 h-8 opacity-80 hover:opacity-100 transition-opacity' 
-                          : 'w-12 h-12 hover:scale-105 transition-transform'
-                      }
-                    />
-                    {/* Ring indicator for selected lesson */}
-                    {isSelected && !item.isTopic && (
-                      <div className="absolute inset-0 rounded-full border-2 border-primary animate-pulse" />
-                    )}
-                  </div>
-                  {idx < timelineItems.length - 1 && (
-                    <TimelineConnector 
-                      sx={{
-                        bgcolor: item.isTopic ? 'grey.300' : 'grey.400',
-                        width: item.isTopic ? 1 : 2,
-                      }}
-                    />
-                  )}
-                </TimelineSeparator>
+            <div className="flex justify-end gap-3 sticky bottom-0 bg-white dark:bg-gray-950 py-2 border-t border-gray-100 dark:border-gray-800">
+              <Button variant="outline" onClick={() => setSelectedLesson(null)}>Close</Button>
+              <Button 
+                onClick={() => {
+                  if (selectedLesson) {
+                    navigate({ 
+                      to: '/lesson/$lessonId', 
+                      params: { lessonId: selectedLesson.id.toString() },
+                      search: { topicId: parseInt(selectedLesson.topics[0].id.split('-')[1]) }
+                    })
+                  }
+                }}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                Start Lesson <Play className="w-4 h-4 ml-2" />
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
 
-                <TimelineContent
-                  sx={{
-                    cursor: 'pointer',
-                    flex: 1,
-                    pl: 2,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    opacity: item.isTopic ? 0.8 : 1,
-                    transition: 'all 0.2s ease',
-                    '&:hover': {
-                      opacity: 1,
-                      transform: item.isTopic ? 'translateX(4px)' : 'translateX(8px)',
-                    },
-                    position: 'relative',
-                  }}
-                  onClick={() => handleItemClick(item)}
-                >
-                  {/* Lesson group badge for main lessons */}
-                  {!item.isTopic && (
-                    <div className={`inline-block w-fit px-2 py-0.5 rounded-full text-[10px] font-bold mb-1 ${
-                      isSelected 
-                        ? 'bg-primary text-primary-foreground' 
-                        : 'bg-accent text-accent-foreground'
-                    }`}>
-                      MAIN LESSON
-                    </div>
-                  )}
-                  
-                  <p
-                    className={`text-sm transition-colors ${
-                      isSelected
-                        ? 'font-bold text-primary'
-                        : 'font-normal hover:text-foreground'
-                    }`}
-                  >
-                    {item.title}
-                  </p>
-                  <p className={`text-xs transition-colors ${
-                    isSelected ? 'text-primary/70' : 'text-muted-foreground'
-                  }`}>
-                    {item.description}
-                  </p>
-
-                  {/* Topic count for main lessons */}
-               {!item.isTopic && item.topics && item.topics.length > 0 && (
-                    <span className="text-[10px] text-muted-foreground mt-1">
-                   {item.topics.length} topics
-                    </span>
-                  )}
-                </TimelineContent>
-              </TimelineItem>
-            )
-          })}
-        </Timeline>
       </div>
     </div>
   )

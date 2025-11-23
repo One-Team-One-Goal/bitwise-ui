@@ -97,6 +97,7 @@ const CircuitRenderer = ({ circuit }: { circuit: Circuit }) => {
   // Layout constants
   const leftX = 60
   const rightX = 600 // Increased width
+  const midX = (leftX + rightX) / 2
   const rowSpacing = 100
   const topOffset = 80
   const levelWidth = (rightX - leftX) / (maxLevel + 2) // Distribute columns

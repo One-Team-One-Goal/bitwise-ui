@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, MessageCircle, Lightbulb } from 'lucide-react';
+import { X } from 'lucide-react';
 import bitbotIdle from '@/assets/bitbot/idle.svg';
 import bitbotRightPoint from '@/assets/bitbot/right-point.svg';
 import bitbotLeftPoint from '@/assets/bitbot/left-point.svg';
@@ -89,7 +89,7 @@ const BitBotGuide: React.FC<BitBotGuideProps> = ({
   );
 };
 
-function Badge({ children, className, variant }: any) {
+function Badge({ children, className }: any) {
     return <span className={`px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 ${className}`}>{children}</span>
 }
 

@@ -1,16 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, useNavigate, Link } from '@tanstack/react-router'
 import { motion } from 'motion/react'
 import AnimatedAssessmentButton from '@/components/buttons/AnimatedAssessmentButton'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Progress } from '@/components/ui/progress'
 import DataAnalyticsCard from '@/components/DataAnalyticsCard'
 import { useAuthContext } from '@/contexts/AuthContext'
-import { useAllUserProgress } from '@/hooks/useUserProgress'
-import { userProgressService } from '@/services/user-progress.service'
+import { useRoadmapData } from '@/hooks/useRoadmapData'
+import { apiService } from '@/services/api.service'
 import { 
-  Brain, CheckCircle2, Lock, Play, Binary, Cpu, Network, Zap
+  Brain, CheckCircle2, Play, Binary, Cpu, Network, Zap, Clock, Target
 } from 'lucide-react'
 import {
   Dialog,
@@ -36,6 +37,14 @@ interface Lesson {
   description: string
   details: string
   topics: RoadmapTopic[]
+}
+
+interface LessonTopicDisplay {
+  id: number
+  title: string
+  description: string
+  status: string
+  timeSpent?: number
 }
 
 // Lessons with topics
@@ -142,59 +151,50 @@ export const Route = createFileRoute('/roadmap')({
   component: RouteComponent,
 })
 
+// Inspirational quotes from computer science pioneers
+const csQuotes = [
+  { text: "The only way to learn a new programming language is by writing programs in it.", author: "Dennis Ritchie" },
+  { text: "Any fool can write code that a computer can understand. Good programmers write code that humans can understand.", author: "Martin Fowler" },
+  { text: "First, solve the problem. Then, write the code.", author: "John Johnson" },
+  { text: "The best way to predict the future is to invent it.", author: "Alan Kay" },
+  { text: "Logic is the beginning of wisdom, not the end.", author: "Leonard Nimoy" }
+]
+
 function RouteComponent() {
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null)
   const [loadingAssessment, setLoadingAssessment] = useState(false)
+  const [currentQuoteIndex, setCurrentQuoteIndex] = useState(0)
   const navigate = useNavigate()
   const { user } = useAuthContext() || { }
   const ALLOW_ANON = import.meta.env.VITE_ALLOW_ANON_ASSESSMENT === 'true'
   const FALLBACK_USER_ID = import.meta.env.VITE_FALLBACK_USER_ID ?? '5ed45890-4804-46fd-bfa1-5695515375ea'
   const effectiveUser = user ?? (ALLOW_ANON ? { id: FALLBACK_USER_ID } : null)
 
-  // Fetch user progress
-  const { data: userProgress = [] } = useAllUserProgress(!!user)
-  const [topicsProgress, setTopicsProgress] = useState<Record<number, any[]>>({})
+  const lessonIds = useMemo(() => lessons.map((lesson) => lesson.id), [])
+  const {
+    lessonProgress,
+    topicsProgress,
+    topicMastery,
+    analytics,
+    statistics,
+    loading: roadmapLoading,
+    error: roadmapError,
+    refresh: refreshRoadmapData,
+  } = useRoadmapData(user?.id, lessonIds)
 
-  // Calculate overall progress
-  const overallProgress = useMemo(() => {
-    if (!userProgress.length) return 0
-    const totalProgress = userProgress.reduce((acc, curr) => acc + (curr.progress || 0), 0)
-    return Math.round((totalProgress / lessons.length) * 100)
-  }, [userProgress])
+  // Rotate quotes every 10 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentQuoteIndex((prev) => (prev + 1) % csQuotes.length)
+    }, 10000)
+    return () => clearInterval(interval)
+  }, [])
 
   useEffect(() => {
-    if (!user) {
-      setTopicsProgress({})
-      return
+    if (roadmapError) {
+      toast.error(roadmapError)
     }
-
-    let cancelled = false
-    const fetchAllLessonTopics = async () => {
-      try {
-        const results = await Promise.all(
-          lessons.map(async (lesson) => {
-            try {
-              const data = await userProgressService.getTopicsForLesson(lesson.id)
-              return [lesson.id, data] as const
-            } catch (error) {
-              console.error(`Failed to load topics for lesson ${lesson.id}`, error)
-              return [lesson.id, []] as const
-            }
-          })
-        )
-        if (cancelled) return
-        const next: Record<number, any[]> = {}
-        for (const [lessonId, data] of results) {
-          next[lessonId] = data
-        }
-        setTopicsProgress(next)
-      } catch (error) {
-        if (!cancelled) console.error('Failed to load topic progress data', error)
-      }
-    }
-    fetchAllLessonTopics()
-    return () => { cancelled = true }
-  }, [user])
+  }, [roadmapError])
 
   const handleStartAdaptiveAssessment = async () => {
     if (!effectiveUser) {
@@ -203,14 +203,14 @@ function RouteComponent() {
     }
     setLoadingAssessment(true)
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/assessment/start-adaptive-practice`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: effectiveUser.id }),
-      })
-      const result = await response.json()
+      const result = await apiService.post<{ success: boolean; data: { attemptId: number }; error?: string }>(
+        '/assessment/start-adaptive-practice',
+        { uid: effectiveUser.id },
+        true
+      )
       if (result.success) {
         navigate({ to: '/assessment/$assessmentId', params: { assessmentId: result.data.attemptId.toString() } })
+        refreshRoadmapData()
       } else {
         throw new Error(result.error || 'Failed to start assessment')
       }
@@ -223,24 +223,57 @@ function RouteComponent() {
   }
 
   const getLessonStatus = (lessonId: number) => {
-    const progress = userProgress.find(p => p.lessonId === lessonId)
+    const progress = lessonProgress.find((p: any) => p.lessonId === lessonId)
     const isCompleted = progress?.status === 'completed' || (progress?.progress || 0) >= 1
     const isStarted = (progress?.progress || 0) > 0
-    
-    // Check if previous lesson is completed (for locking)
-    const prevLesson = lessons.find(l => l.id === lessonId - 1)
-    const prevProgress = prevLesson ? userProgress.find(p => p.lessonId === prevLesson.id) : null
-    const isLocked = prevLesson && (!prevProgress || (prevProgress.progress || 0) < 0.8) // Lock if prev < 80%
+
+    // Calculate mastery from adaptive practice for this lesson
+    const lessonMastery = topicMastery[lessonId]
+    const masteryScore = lessonMastery?.length 
+      ? Math.round((lessonMastery.reduce((sum, topic) => sum + topic.mastery, 0) / lessonMastery.length) * 100)
+      : progress?.masteryScore ? Math.round(progress.masteryScore * 100) : null
 
     return { 
       status: isCompleted ? 'completed' : isStarted ? 'in-progress' : 'not-started',
       progress: Math.round((progress?.progress || 0) * 100),
-      isLocked // Enable locking to enforce progression
+      masteryScore,
+      isLocked: false // No locks - all lessons accessible
     }
+  }
+
+  const getTopicsForLesson = (lesson: Lesson): LessonTopicDisplay[] => {
+    const dynamicTopics = topicsProgress[lesson.id]
+    if (dynamicTopics?.length) {
+      return dynamicTopics.map((topic: any, index: number) => ({
+        id: topic.topicId,
+        title: topic.topic?.title || lesson.topics[index]?.title || `Topic ${index + 1}`,
+        description: topic.topic?.description || lesson.topics[index]?.description || '',
+        status: topic.status || 'not-started',
+        timeSpent: topic.timeSpent,
+      }))
+    }
+
+    return lesson.topics.map((topic, index) => ({
+      id: parseInt(topic.id.split('-')[1]) || index + 1,
+      title: topic.title,
+      description: topic.description,
+      status: 'not-started',
+      timeSpent: 0,
+    }))
+  }
+
+  const getLessonName = (lessonId: number) => lessons.find((lesson) => lesson.id === lessonId)?.title ?? `Lesson ${lessonId}`
+  const toTopicIdParam = (value: number | string | undefined | null) => {
+    if (value === undefined || value === null) return undefined
+    if (typeof value === 'number') return value
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : undefined
   }
 
   // Determine current active lesson for BitBot position
   const currentLessonId = useMemo(() => {
+    if (selectedLesson) return selectedLesson.id
+    
     const firstInProgress = lessons.find(l => {
       const { status } = getLessonStatus(l.id)
       return status === 'in-progress'
@@ -248,14 +281,20 @@ function RouteComponent() {
     if (firstInProgress) return firstInProgress.id
 
     const firstNotStarted = lessons.find(l => {
-      const { status, isLocked } = getLessonStatus(l.id)
-      return status === 'not-started' && !isLocked
+      const { status } = getLessonStatus(l.id)
+      return status === 'not-started'
     })
     if (firstNotStarted) return firstNotStarted.id
 
     // If all completed, stay at last
     return lessons[lessons.length - 1].id
-  }, [userProgress])
+  }, [lessonProgress, selectedLesson])
+
+  const selectedLessonTopics = selectedLesson ? getTopicsForLesson(selectedLesson) : []
+  const activeLessonForAnalytics = selectedLesson ?? lessons.find((lesson) => lesson.id === currentLessonId) ?? null
+  const recommendedDifficulty = analytics?.recommendedDifficulty ?? null
+  const focusTopics = analytics?.focusAreas?.slice(0, 2) ?? []
+  const totalAdaptiveAttempts = statistics?.totalAttempts ?? analytics?.totalAttempts ?? 0
 
   return (
     <div className="h-screen bg-gray-50 dark:bg-gray-950 pt-20 pb-4 px-4 sm:px-6 lg:px-8 overflow-hidden flex flex-col">
@@ -273,8 +312,13 @@ function RouteComponent() {
 
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 overflow-hidden">
           
-          {/* Left Column: Roadmap Map (Takes 8/12 columns) */}
-          <div className="lg:col-span-8 relative w-full h-full bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-800 overflow-y-auto overflow-x-hidden p-8 md:p-12 custom-scrollbar">
+          {/* Left Column: Roadmap Map (Takes 6/12 columns) */}
+          <div className="lg:col-span-6 relative w-full h-full bg-white dark:bg-gray-900 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-800 overflow-y-auto overflow-x-hidden p-6 md:p-8 custom-scrollbar">
+            {roadmapLoading && (
+              <div className="absolute inset-0 z-20 flex items-center justify-center rounded-3xl bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm pointer-events-none">
+                <span className="text-sm font-semibold text-gray-600 dark:text-gray-200">Syncing your journey...</span>
+              </div>
+            )}
             
             {/* Background Decorations */}
             <div className="absolute inset-0 opacity-10 pointer-events-none">
@@ -320,13 +364,13 @@ function RouteComponent() {
             {/* Map Nodes Grid */}
             <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-y-16 gap-x-8 h-full place-items-center">
               {lessons.map((lesson, index) => {
-                const { status, isLocked } = getLessonStatus(lesson.id)
+                const { status, progress: lessonProgressPercent, masteryScore } = getLessonStatus(lesson.id)
                 const isActive = currentLessonId === lesson.id
+                const lessonTopics = getTopicsForLesson(lesson)
                 
                 // Positioning logic for the "winding" feel on desktop
                 // Index 0: Top Left, Index 1: Top Right
                 // Index 2: Bottom Right, Index 3: Bottom Left
-                // This matches the SVG path above
                 const orderClass = 
                   index === 0 ? 'md:order-1 md:justify-self-start md:ml-20' :
                   index === 1 ? 'md:order-2 md:justify-self-end md:mr-20' :
@@ -334,12 +378,12 @@ function RouteComponent() {
                   'md:order-3 md:justify-self-start md:ml-20'
 
                 return (
-                  <div key={lesson.id} className={`relative ${orderClass}`}>
+                  <div key={lesson.id} className={`relative ${orderClass} flex flex-col items-center gap-3`}>
                     {/* BitBot Avatar - Now Floating */}
                     {isActive && (
                       <motion.div
                         layoutId="bitbot-avatar"
-                        className="absolute -top-20 left-1/2 -translate-x-1/2 z-20 w-24 h-24 pointer-events-none"
+                        className="absolute -top-24 left-1/2 -translate-x-1/2 z-20 w-20 h-20 pointer-events-none"
                         animate={{ y: [0, -10, 0] }}
                         transition={{ 
                           layout: { type: "spring", stiffness: 300, damping: 30 },
@@ -352,27 +396,25 @@ function RouteComponent() {
 
                     {/* Node Button */}
                     <motion.button
-                      onClick={() => !isLocked && setSelectedLesson(lesson)}
-                      whileHover={!isLocked ? { scale: 1.1 } : {}}
-                      whileTap={!isLocked ? { scale: 0.95 } : {}}
-                      className={`w-20 h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center shadow-lg border-4 transition-all duration-300 relative group ${
-                        isLocked 
-                          ? 'bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed dark:bg-gray-800 dark:border-gray-700'
-                          : status === 'completed'
-                            ? 'bg-green-100 border-green-500 text-green-600 dark:bg-green-900/50 dark:border-green-500'
-                            : 'bg-white border-blue-500 text-blue-600 dark:bg-gray-800 dark:border-blue-500'
+                      onClick={() => setSelectedLesson(lesson)}
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.95 }}
+                      className={`w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center shadow-lg border-4 transition-all duration-300 relative group ${
+                        status === 'completed'
+                          ? 'bg-green-100 border-green-500 text-green-600 dark:bg-green-900/50 dark:border-green-500'
+                          : status === 'in-progress'
+                            ? 'bg-blue-100 border-blue-500 text-blue-600 dark:bg-blue-900/50 dark:border-blue-500'
+                            : 'bg-white border-gray-300 text-gray-600 dark:bg-gray-800 dark:border-gray-600'
                       }`}
                     >
-                      {isLocked ? (
-                        <Lock className="w-8 h-8" />
-                      ) : status === 'completed' ? (
-                        <CheckCircle2 className="w-10 h-10" />
+                      {status === 'completed' ? (
+                        <CheckCircle2 className="w-8 h-8" />
                       ) : (
-                        <span className="text-3xl font-bold">{lesson.id}</span>
+                        <span className="text-2xl md:text-3xl font-bold">{lesson.id}</span>
                       )}
                       
                       {/* Pulse effect for active node */}
-                      {!isLocked && status !== 'completed' && (
+                      {status !== 'completed' && (
                         <span className="absolute inset-0 rounded-full animate-ping bg-blue-400 opacity-20" />
                       )}
 
@@ -381,42 +423,232 @@ function RouteComponent() {
                         {lesson.title}
                       </div>
                     </motion.button>
+
+                    {/* Progress Indicators - Below Node */}
+                    {user && (
+                      <div className="w-32 space-y-2 mt-2">
+                        {/* Status Badge */}
+                        <div className="flex items-center justify-center gap-1.5">
+                          <Badge variant={status === 'completed' ? 'default' : 'secondary'} className="text-xs px-2 py-0.5 h-5">
+                            {status === 'completed' ? (
+                              <><CheckCircle2 className="w-3 h-3 mr-1" />Done</>
+                            ) : status === 'in-progress' ? (
+                              <><Clock className="w-3 h-3 mr-1" />Active</>
+                            ) : (
+                              'Start'
+                            )}
+                          </Badge>
+                        </div>
+
+                        {/* Topics Progress */}
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-gray-600 dark:text-gray-400 text-[10px]">Topics</span>
+                            <span className="font-semibold text-blue-600 dark:text-blue-400 text-[10px]">{lessonProgressPercent}%</span>
+                          </div>
+                          <Progress value={lessonProgressPercent} className="h-1.5" />
+                        </div>
+
+                        {/* Mastery Score (if available from assessments) */}
+                        {masteryScore !== null && (
+                          <div className="space-y-1">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-gray-600 dark:text-gray-400 text-[10px] flex items-center gap-0.5">
+                                <Target className="w-2.5 h-2.5" />
+                                Mastery
+                              </span>
+                              <span className={`font-semibold text-[10px] ${
+                                masteryScore >= 80 ? 'text-green-600 dark:text-green-400' :
+                                masteryScore >= 60 ? 'text-yellow-600 dark:text-yellow-400' :
+                                'text-red-600 dark:text-red-400'
+                              }`}>{masteryScore}%</span>
+                            </div>
+                            <Progress 
+                              value={masteryScore} 
+                              className={`h-1.5 ${
+                                masteryScore >= 80 ? '[&>div]:bg-green-500' :
+                                masteryScore >= 60 ? '[&>div]:bg-yellow-500' :
+                                '[&>div]:bg-red-500'
+                              }`}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Login prompt for non-logged users */}
+                    {!user && (
+                      <div className="w-32 mt-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            navigate({ to: '/login' })
+                          }}
+                          className="w-full text-[10px] px-2 py-1 bg-primary/10 hover:bg-primary/20 text-primary rounded-md border border-primary/20 transition-colors"
+                        >
+                          Log in to track
+                        </button>
+                      </div>
+                    )}
+
+                    <div className="mt-3 flex flex-wrap items-center justify-center gap-2 max-w-xs">
+                      {lessonTopics.map((topic) => {
+                        const mastery = topicMastery[lesson.id]?.find((m) => m.topicId === topic.id)
+                        const masteryPercent = mastery ? Math.round(mastery.mastery * 100) : null
+                        const statusStyles = topic.status === 'completed'
+                          ? 'border-green-400/60 text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-900/30'
+                          : topic.status === 'viewed'
+                            ? 'border-blue-400/60 text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30'
+                            : 'border-gray-300/60 text-gray-600 dark:text-gray-300 bg-white/30 dark:bg-gray-800/40'
+
+                        return (
+                          <Link
+                            key={`${lesson.id}-${topic.id}`}
+                            to="/lesson/$lessonId"
+                            params={{ lessonId: lesson.id.toString() }}
+                            search={{ topicId: toTopicIdParam(topic.id) }}
+                            className={`text-[10px] md:text-[11px] px-3 py-1 rounded-full border backdrop-blur-sm transition-transform hover:scale-105 inline-flex items-center gap-1 ${statusStyles}`}
+                          >
+                            <span>{topic.title}</span>
+                            <span className="font-semibold text-[10px]">
+                              {masteryPercent !== null ? `${masteryPercent}%` : '—'}
+                            </span>
+                          </Link>
+                        )
+                      })}
+                    </div>
                   </div>
                 )
               })}
             </div>
           </div>
 
-          {/* Right Column: Sidebar (Takes 4/12 columns) */}
-          <div className="lg:col-span-4 space-y-6 h-full overflow-y-auto custom-scrollbar pr-2">
+          {/* Right Column: Sidebar (Takes 6/12 columns) */}
+          <div className="lg:col-span-6 space-y-4 h-full overflow-y-auto custom-scrollbar pr-2 flex flex-col">
             
-            {/* Adaptive Practice - Highlighted */}
-            <Card className="bg-linear-to-br from-blue-600 to-indigo-700 text-white border-none shadow-xl shadow-blue-500/20 overflow-hidden relative ring-2 ring-blue-400/50 transform hover:scale-[1.02] transition-transform duration-300">
-              <div className="absolute top-0 right-0 p-4 opacity-20">
-                <Brain className="w-32 h-32 animate-pulse" />
-              </div>
-              <CardContent className="p-6 relative z-10">
-                <h3 className="text-xl font-bold mb-2 flex items-center gap-2">
-                  <Brain className="w-6 h-6" />
-                  Adaptive Practice
-                </h3>
-                <p className="text-blue-100 mb-6 text-sm">
-                  Ready for a challenge? Test your skills with AI-generated questions!
-                </p>
-                <AnimatedAssessmentButton 
-                  onClick={handleStartAdaptiveAssessment}
-                  loading={loadingAssessment}
-                  disabled={loadingAssessment}
-                  className="w-full bg-white text-blue-600 hover:bg-blue-50 border-none shadow-lg"
+            {/* Adaptive Practice - Enhanced with animations */}
+            <motion.div 
+              className="relative py-8 px-6 rounded-2xl bg-linear-to-br from-purple-50 via-blue-50 to-indigo-50 dark:from-purple-900/20 dark:via-blue-900/20 dark:to-indigo-900/20 border-2 border-purple-200 dark:border-purple-800/50 overflow-hidden group"
+              whileHover={{ scale: 1.02 }}
+              transition={{ duration: 0.2 }}
+            >
+              {/* Animated background particles */}
+              <div className="absolute inset-0 opacity-20">
+                <motion.div
+                  className="absolute top-4 left-4 w-2 h-2 bg-purple-500 rounded-full"
+                  animate={{ y: [0, -20, 0], opacity: [0.5, 1, 0.5] }}
+                  transition={{ duration: 3, repeat: Infinity }}
                 />
-              </CardContent>
-            </Card>
+                <motion.div
+                  className="absolute top-8 right-8 w-3 h-3 bg-blue-500 rounded-full"
+                  animate={{ y: [0, -30, 0], opacity: [0.5, 1, 0.5] }}
+                  transition={{ duration: 4, repeat: Infinity, delay: 1 }}
+                />
+                <motion.div
+                  className="absolute bottom-6 left-12 w-2 h-2 bg-indigo-500 rounded-full"
+                  animate={{ y: [0, -15, 0], opacity: [0.5, 1, 0.5] }}
+                  transition={{ duration: 3.5, repeat: Infinity, delay: 0.5 }}
+                />
+              </div>
 
-            {/* Analytics & Stats - Always Visible or Conditional */}
-            <DataAnalyticsCard user={user} lesson={null} />
+              <div className="relative z-10 space-y-4">
+                <div className="flex items-start gap-3">
+                  <motion.div
+                    animate={{ rotate: [0, 10, -10, 0] }}
+                    transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                  >
+                    <Brain className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+                  </motion.div>
+                  <div className="flex-1">
+                    <h3 className="text-xl font-bold text-purple-900 dark:text-purple-100">
+                      Adaptive AI Practice
+                    </h3>
+                    <p className="text-sm text-purple-700 dark:text-purple-300 mt-1">
+                      Test your current skills with intelligent questions that adapt to your level!
+                    </p>
+                  </div>
+                </div>
 
-            {/* BitBot Guide - Floating Overlay Style */}
-            <div className="relative">
+                <div className="flex items-center gap-2 text-xs text-purple-600 dark:text-purple-400">
+                  <motion.div
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    className="w-2 h-2 bg-purple-500 rounded-full"
+                  />
+                  <span className="font-medium">AI adapts to your performance in real-time</span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+                  <div className="rounded-xl bg-white/70 dark:bg-white/5 border border-purple-100/60 dark:border-purple-800/40 p-3">
+                    <p className="text-[10px] uppercase tracking-wide text-purple-500">Recommended</p>
+                    <p className="text-sm font-semibold text-purple-900 dark:text-purple-100 capitalize">
+                      {recommendedDifficulty ?? 'calibrating'}
+                    </p>
+                  </div>
+                  <div className="rounded-xl bg-white/70 dark:bg-white/5 border border-purple-100/60 dark:border-purple-800/40 p-3">
+                    <p className="text-[10px] uppercase tracking-wide text-purple-500">Adaptive attempts</p>
+                    <p className="text-sm font-semibold text-purple-900 dark:text-purple-100">
+                      {totalAdaptiveAttempts}
+                    </p>
+                  </div>
+                  <div className="rounded-xl bg-white/70 dark:bg-white/5 border border-purple-100/60 dark:border-purple-800/40 p-3 hidden sm:block">
+                    <p className="text-[10px] uppercase tracking-wide text-purple-500">Focus topics</p>
+                    <p className="text-sm font-semibold text-purple-900 dark:text-purple-100">
+                      {focusTopics.length > 0 ? focusTopics.length : 'All clear'}
+                    </p>
+                  </div>
+                </div>
+
+                {focusTopics.length > 0 && (
+                  <div className="rounded-xl border border-purple-200/60 dark:border-purple-800/40 bg-white/60 dark:bg-white/5 p-3 text-xs text-purple-800 dark:text-purple-200">
+                    <p className="font-semibold mb-1">Next best focus:</p>
+                    <ul className="list-disc ml-4 space-y-0.5">
+                      {focusTopics.map((topic) => (
+                        <li key={topic.topicId}>
+                          {getLessonName(topic.lessonId)} — {topic.topicTitle}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="w-full"
+                >
+                  <AnimatedAssessmentButton 
+                    onClick={handleStartAdaptiveAssessment}
+                    loading={loadingAssessment}
+                    disabled={loadingAssessment}
+                    className="w-full shadow-xl shadow-purple-500/30 hover:shadow-purple-500/50 transition-shadow"
+                  />
+                </motion.div>
+              </div>
+            </motion.div>
+
+            {/* Analytics & Stats - Full Width */}
+            <div className="w-full">
+              <DataAnalyticsCard
+                user={user}
+                lesson={activeLessonForAnalytics}
+                analytics={analytics}
+                statistics={statistics}
+                loading={roadmapLoading}
+                errorMessage={roadmapError}
+                onRefresh={refreshRoadmapData}
+              />
+            </div>
+
+            {/* Inspirational Quotes - Rotating */}
+            <motion.div 
+              className="relative mt-auto min-h-[140px]"
+              key={currentQuoteIndex}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.5 }}
+            >
                <div className="absolute -top-6 -right-4 z-10">
                   <motion.div
                     animate={{ rotate: [0, 10, 0] }}
@@ -425,22 +657,34 @@ function RouteComponent() {
                     <img src={bitbotIdle} className="w-16 h-16 drop-shadow-lg" alt="BitBot" />
                   </motion.div>
                </div>
-               <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800">
-                  <CardContent className="p-4 pt-8">
-                    <p className="text-sm text-blue-800 dark:text-blue-200 font-medium">
-                      {overallProgress === 0 
-                        ? "Welcome! I'm BitBot. Start with Lesson 1 to begin your journey into digital logic!" 
-                        : "Great progress! Keep going, you're doing amazing!"}
-                    </p>
+               <Card className="bg-linear-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200/70 dark:border-amber-800 shadow-lg shadow-amber-200/40 h-full overflow-hidden">
+                  <CardContent className="p-4 pt-8 h-full flex flex-col justify-center relative">
+                    <div className="absolute inset-x-0 bottom-0 h-1/3 bg-linear-to-t from-orange-200/40 to-transparent pointer-events-none" />
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.2 }}
+                      className="relative"
+                    >
+                      <p className="text-[11px] uppercase tracking-[0.2em] text-amber-500 font-semibold mb-2">
+                        BitBot's travel tip
+                      </p>
+                      <blockquote className="text-sm text-gray-800 dark:text-gray-100 italic leading-relaxed">
+                        “{csQuotes[currentQuoteIndex].text}”
+                      </blockquote>
+                      <p className="text-xs text-gray-600 dark:text-gray-300 font-semibold text-right mt-3">
+                        — {csQuotes[currentQuoteIndex].author}
+                      </p>
+                    </motion.div>
                   </CardContent>
                </Card>
-            </div>
+            </motion.div>
 
           </div>
         </div>
 
         {/* Lesson Details Dialog */}
-        <Dialog open={!!selectedLesson} onOpenChange={(open) => !open && setSelectedLesson(null)}>
+        <Dialog open={!!selectedLesson} onOpenChange={(open: boolean) => !open && setSelectedLesson(null)}>
           <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto custom-scrollbar">
             <DialogHeader>
               <DialogTitle className="text-2xl font-bold flex items-center gap-2">
@@ -458,16 +702,70 @@ function RouteComponent() {
               </div>
               
               <div className="space-y-2">
-                <h4 className="font-semibold text-sm text-gray-500 uppercase tracking-wider">Topics</h4>
-                <div className="grid gap-2">
-                  {selectedLesson?.topics.map((topic) => {
-                     const topicStatus = topicsProgress[selectedLesson.id]?.find((t: any) => t.topicId === parseInt(topic.id.split('-')[1]))
-                     const isTopicCompleted = topicStatus?.status === 'completed'
+                <h4 className="font-semibold text-sm text-gray-500 uppercase tracking-wider">Topics & Progress</h4>
+                <div className="grid gap-3">
+                  {selectedLessonTopics.map((topic) => {
+                     const topicStatus = topicsProgress[selectedLesson?.id || 0]?.find((t: any) => t.topicId === topic.id)
+                     const mastery = topicMastery[selectedLesson?.id || 0]?.find((m: any) => m.topicId === topic.id)
+                     const isTopicCompleted = (topic.status === 'completed') || topicStatus?.status === 'completed'
+                     const isTopicViewed = isTopicCompleted || topic.status === 'viewed' || topicStatus?.status === 'viewed'
+                     const timeSpent = topic.timeSpent ? Math.round(topic.timeSpent / 60) : topicStatus?.timeSpent ? Math.round(topicStatus.timeSpent / 60) : 0
+                     const masteryPercent = mastery ? Math.round(mastery.mastery * 100) : 0
+                     const hasPracticed = mastery && (mastery.attempts > 0 || mastery.mastery > 0)
+
+                     const getMasteryColor = (percent: number) => {
+                       if (percent >= 80) return 'text-green-600 dark:text-green-400'
+                       if (percent >= 60) return 'text-yellow-600 dark:text-yellow-400'
+                       return 'text-red-600 dark:text-red-400'
+                     }
+
                      return (
-                      <div key={topic.id} className="flex items-center gap-3 p-2 rounded-md bg-gray-50 dark:bg-gray-800/50">
-                        {isTopicCompleted ? <CheckCircle2 className="w-4 h-4 text-green-500" /> : <div className="w-4 h-4 rounded-full border-2 border-gray-300" />}
-                        <span className="text-sm">{topic.title}</span>
-                      </div>
+                      <Link
+                        to="/lesson/$lessonId"
+                        params={{ lessonId: selectedLesson ? selectedLesson.id.toString() : '1' }}
+                        search={{ topicId: toTopicIdParam(topic.id) }}
+                        key={`${selectedLesson?.id}-${topic.id}`}
+                        className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 hover:border-blue-300 hover:bg-blue-50/60 dark:hover:bg-blue-900/10 transition-colors block"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-center gap-3 flex-1">
+                            {isTopicCompleted ? (
+                              <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />
+                            ) : isTopicViewed ? (
+                              <div className="w-5 h-5 rounded-full border-2 border-blue-500 bg-blue-50 dark:bg-blue-900/20 shrink-0" />
+                            ) : (
+                              <div className="w-5 h-5 rounded-full border-2 border-gray-300 dark:border-gray-600 shrink-0" />
+                            )}
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{topic.title}</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{topic.description}</p>
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0">
+                            {isTopicViewed && (
+                              <>
+                                <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                                  {isTopicCompleted ? 'Completed' : 'In Progress'}
+                                </p>
+                                {timeSpent > 0 && (
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">{timeSpent} min</p>
+                                )}
+                              </>
+                            )}
+                            <div className="mt-1">
+                              <p className={`text-xs font-bold ${getMasteryColor(masteryPercent)}`}>
+                                {masteryPercent}% Mastery
+                              </p>
+                              {!hasPracticed && (
+                                <p className="text-xs text-gray-400 dark:text-gray-500 italic">Not Practiced</p>
+                              )}
+                              {mastery && mastery.level > 0 && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400">Level {Math.round(mastery.level * 100) / 100}</p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </Link>
                      )
                   })}
                 </div>
@@ -478,18 +776,37 @@ function RouteComponent() {
               <Button variant="outline" onClick={() => setSelectedLesson(null)}>Close</Button>
               <Button 
                 onClick={() => {
-                  if (selectedLesson) {
-                    navigate({ 
-                      to: '/lesson/$lessonId', 
-                      params: { lessonId: selectedLesson.id.toString() },
-                      search: { topicId: parseInt(selectedLesson.topics[0].id.split('-')[1]) }
-                    })
+                  if (!selectedLesson) return
+
+                  if (!user) {
+                    navigate({ to: '/login' })
+                    return
                   }
+
+                  navigate({ 
+                    to: '/lesson/$lessonId', 
+                    params: { lessonId: selectedLesson.id.toString() },
+                    search: { topicId: parseInt(selectedLesson.topics[0].id.split('-')[1]) }
+                  })
                 }}
                 className="bg-blue-600 hover:bg-blue-700"
               >
-                Start Lesson <Play className="w-4 h-4 ml-2" />
+                <Play className="w-4 h-4 mr-2" />
+                Start Lesson
               </Button>
+            </div>
+            
+            {/* BitBot in Modal */}
+            <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/10 rounded-xl flex items-start gap-4 border border-blue-100 dark:border-blue-800/30">
+              <img src={bitbotIdle} alt="BitBot" className="w-12 h-12 shrink-0" />
+              <div>
+                <p className="text-sm text-blue-900 dark:text-blue-100 font-medium">BitBot says:</p>
+                <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                  {!user 
+                    ? "Please log in to start your journey! I'll be waiting right here."
+                    : "Ready to dive in? This lesson will boost your logic skills!"}
+                </p>
+              </div>
             </div>
           </DialogContent>
         </Dialog>

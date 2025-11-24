@@ -18,7 +18,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             # Run the deploy script located in the bitwise-deploy repo
-            # Assumes folder structure: ~../../bitwise-deploy
-            cd ~../../bitwise-deploy
-            chmod +x deploy/aws/deploy.sh
-            ./deploy/aws/deploy.sh
+            # Assumes folder structure: ~/bitwise/bitwise-deploy
+            cd ~/bitwise/bitwise-deploy
+            chmod +x aws/deploy.sh
+            ./aws/deploy.sh

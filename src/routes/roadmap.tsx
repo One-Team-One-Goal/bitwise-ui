@@ -6,22 +6,15 @@ import { Progress } from '@/components/ui/progress'
 import { useAuthContext } from '@/contexts/AuthContext'
 import { useRoadmapData } from '@/hooks/useRoadmapData'
 import { apiService } from '@/services/api.service'
-import {
-  Brain,
-  CheckCircle2,
-  Play,
-  Target,
-  LayoutGrid,
-  List,
-} from 'lucide-react'
+import { Brain, CheckCircle2, Target, LayoutGrid, List } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
 import bitbotIdle from '@/assets/bitbot/idle.svg'
+import bitboCongrats from '@/assets/bitbot/congrats.svg'
 import introPhoto from '@/assets/photos/intro.png'
 import logicGatesPhoto from '@/assets/photos/logic gates.png'
 import truthTablesPhoto from '@/assets/photos/truth tables.png'
@@ -242,8 +235,8 @@ function RouteComponent() {
       const randomQuote = csQuotes[Math.floor(Math.random() * csQuotes.length)]
       toast.custom(
         (t) => (
-          <div className="bg-white dark:bg-gray-800 border border-amber-200 dark:border-amber-800 rounded-md shadow-md p-4 flex items-start gap-4 max-w-md pointer-events-auto">
-            <img src={bitbotIdle} alt="BitBot" className="w-12 h-12 shrink-0" />
+          <div className="bg-white dark:bg-gray-800 rounded-md shadow-md p-4 flex items-start gap-4 max-w-md pointer-events-auto">
+            <img src={bitboCongrats} alt="BitBot" className="w-12 h-12 shrink-0" />
             <div className="flex-1">
               <p className="font-bold text-amber-600 dark:text-amber-400 text-sm mb-1">
                 BitBot's Travel Tip
@@ -756,138 +749,133 @@ function RouteComponent() {
         open={!!selectedLesson}
         onOpenChange={(open: boolean) => !open && setSelectedLesson(null)}
       >
-        <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto custom-scrollbar">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold flex items-center gap-2">
-              <Badge variant="outline">Lesson {selectedLesson?.id}</Badge>
-              {selectedLesson?.title}
-            </DialogTitle>
-            <DialogDescription className="text-base pt-2">
-              {selectedLesson?.description}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-4">
-            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-md text-sm text-blue-800 dark:text-blue-200">
-              {selectedLesson?.details}
+        <DialogContent className="sm:max-w-md max-h-[80vh] flex flex-col p-0 gap-0 bg-white dark:bg-gray-950 border-gray-200 dark:border-gray-800 shadow-xl overflow-hidden">
+          {/* Compact Header */}
+          <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-800 shrink-0">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] font-bold tracking-widest uppercase text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-full">
+                Lesson {selectedLesson?.id}
+              </span>
             </div>
 
-            <div className="space-y-2">
-              <h4 className="font-semibold text-sm text-gray-500 uppercase tracking-wider">
-                Topics & Progress
-              </h4>
-              <div className="grid gap-3">
-                {selectedLessonTopics.map((topic) => {
-                  const topicStatus = (
-                    topicsProgress[selectedLesson?.id || 0] as
-                      | TopicProgress[]
-                      | undefined
-                  )?.find((t) => t.topicId === topic.id)
-                  const mastery = (
-                    topicMastery[selectedLesson?.id || 0] as
-                      | TopicMastery[]
-                      | undefined
-                  )?.find((m) => m.topicId === topic.id)
-                  const isTopicCompleted =
-                    topic.status === 'completed' ||
-                    topicStatus?.status === 'completed'
-                  const isTopicViewed =
-                    isTopicCompleted ||
-                    topic.status === 'viewed' ||
-                    topicStatus?.status === 'viewed'
-                  const timeSpent = topic.timeSpent
-                    ? Math.round(topic.timeSpent / 60)
-                    : topicStatus?.timeSpent
-                      ? Math.round(topicStatus.timeSpent / 60)
+            <DialogTitle className="text-xl font-bold text-gray-900 dark:text-gray-50 mb-1">
+              {selectedLesson?.title}
+            </DialogTitle>
+            <DialogDescription className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
+              {selectedLesson?.description}
+            </DialogDescription>
+          </div>
+
+          {/* Scrollable Content */}
+          <div className="px-6 py-4 overflow-y-auto flex-1 custom-scrollbar">
+            <div className="space-y-6">
+              {/* Description */}
+              <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                {selectedLesson?.details}
+              </p>
+
+              {/* Topics List - Compact */}
+              <div className="space-y-2">
+                <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
+                  Curriculum
+                </h4>
+
+                <div className="space-y-1">
+                  {selectedLessonTopics.map((topic, index) => {
+                    const topicStatus = (
+                      topicsProgress[selectedLesson?.id || 0] as
+                        | TopicProgress[]
+                        | undefined
+                    )?.find((t) => t.topicId === topic.id)
+                    const mastery = (
+                      topicMastery[selectedLesson?.id || 0] as
+                        | TopicMastery[]
+                        | undefined
+                    )?.find((m) => m.topicId === topic.id)
+                    const isTopicCompleted =
+                      topic.status === 'completed' ||
+                      topicStatus?.status === 'completed'
+                    const isTopicViewed =
+                      isTopicCompleted ||
+                      topic.status === 'viewed' ||
+                      topicStatus?.status === 'viewed'
+                    const masteryPercent = mastery
+                      ? Math.round(mastery.mastery * 100)
                       : 0
-                  const masteryPercent = mastery
-                    ? Math.round(mastery.mastery * 100)
-                    : 0
-                  const hasPracticed =
-                    mastery && (mastery.attempts > 0 || mastery.mastery > 0)
 
-                  const getMasteryColor = (percent: number) => {
-                    if (percent >= 80)
-                      return 'text-green-600 dark:text-green-400'
-                    if (percent >= 60)
-                      return 'text-yellow-600 dark:text-yellow-400'
-                    return 'text-red-600 dark:text-red-400'
-                  }
-
-                  return (
-                    <Link
-                      to="/lesson/$lessonId"
-                      params={{
-                        lessonId: selectedLesson
-                          ? selectedLesson.id.toString()
-                          : '1',
-                      }}
-                      search={{ topicId: toTopicIdParam(topic.id) }}
-                      key={`${selectedLesson?.id}-${topic.id}`}
-                      className="p-3 rounded-md bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700 hover:border-blue-300 hover:bg-blue-50/60 dark:hover:bg-blue-900/10 transition-colors block"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-center gap-3 flex-1">
+                    return (
+                      <Link
+                        to="/lesson/$lessonId"
+                        params={{
+                          lessonId: selectedLesson
+                            ? selectedLesson.id.toString()
+                            : '1',
+                        }}
+                        search={{ topicId: toTopicIdParam(topic.id) }}
+                        key={`${selectedLesson?.id}-${topic.id}`}
+                        className="group flex items-center gap-3 p-2 -mx-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-900 transition-all duration-200"
+                      >
+                        {/* Status Dot */}
+                        <div className="shrink-0 flex items-center justify-center w-5 h-5">
                           {isTopicCompleted ? (
-                            <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />
-                          ) : isTopicViewed ? (
-                            <div className="w-5 h-5 rounded-full border-2 border-blue-500 bg-blue-50 dark:bg-blue-900/20 shrink-0" />
+                            <CheckCircle2 className="w-4 h-4 text-green-500" />
                           ) : (
-                            <div className="w-5 h-5 rounded-full border-2 border-gray-300 dark:border-gray-600 shrink-0" />
+                            <span className="text-xs font-medium text-gray-400 group-hover:text-gray-600 dark:text-gray-600 dark:group-hover:text-gray-400">
+                              {index + 1}
+                            </span>
                           )}
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                              {topic.title}
-                            </p>
-                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                              {topic.description}
-                            </p>
-                          </div>
                         </div>
-                        <div className="text-right shrink-0">
-                          {isTopicViewed && (
-                            <>
-                              <p className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                                {isTopicCompleted ? 'Completed' : 'In Progress'}
-                              </p>
-                              {timeSpent > 0 && (
-                                <p className="text-xs text-gray-500 dark:text-gray-400">
-                                  {timeSpent} min
-                                </p>
-                              )}
-                            </>
+
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <h5 className="text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">
+                            {topic.title}
+                          </h5>
+                        </div>
+
+                        {/* Meta */}
+                        <div className="shrink-0 flex items-center gap-2">
+                          {masteryPercent > 0 && (
+                            <span className="text-[10px] font-medium text-gray-500 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded-sm">
+                              {masteryPercent}%
+                            </span>
                           )}
-                          <div className="mt-1">
-                            <p
-                              className={`text-xs font-bold ${getMasteryColor(masteryPercent)}`}
-                            >
-                              {masteryPercent}% Mastery
-                            </p>
-                            {!hasPracticed && (
-                              <p className="text-xs text-gray-400 dark:text-gray-500 italic">
-                                Not Practiced
-                              </p>
-                            )}
-                            {mastery && mastery.level > 0 && (
-                              <p className="text-xs text-gray-500 dark:text-gray-400">
-                                Level {Math.round(mastery.level * 100) / 100}
-                              </p>
-                            )}
-                          </div>
+                          {isTopicViewed && !isTopicCompleted && (
+                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                          )}
                         </div>
-                      </div>
-                    </Link>
-                  )
-                })}
+                      </Link>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* BitBot - Compact */}
+              <div className="flex gap-3 items-center pt-4 border-t border-gray-100 dark:border-gray-800">
+                <img
+                  src={bitboCongrats}
+                  alt="BitBot"
+                  className="w-6 h-6 opacity-80 grayscale hover:grayscale-0 transition-all"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+                  "{!user ? 'Log in to track progress.' : 'Ready to start?'}"
+                </p>
               </div>
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 sticky bottom-0 bg-white dark:bg-gray-950 py-2 border-t border-gray-100 dark:border-gray-800">
-            <Button variant="outline" onClick={() => setSelectedLesson(null)}>
+          {/* Footer - Compact & Sticky */}
+          <div className="p-4 bg-gray-50/50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-2 shrink-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedLesson(null)}
+              className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 h-9"
+            >
               Close
             </Button>
             <Button
+              size="sm"
               onClick={() => {
                 if (!selectedLesson) return
 
@@ -906,26 +894,10 @@ function RouteComponent() {
                   },
                 })
               }}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-black hover:bg-gray-800 text-white dark:bg-white dark:text-black dark:hover:bg-gray-200 h-9 px-6"
             >
-              <Play className="w-4 h-4 mr-2" />
               Start Lesson
             </Button>
-          </div>
-
-          {/* BitBot in Modal */}
-          <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/10 rounded-lg flex items-start gap-4 border border-blue-100 dark:border-blue-800/30">
-            <img src={bitbotIdle} alt="BitBot" className="w-12 h-12 shrink-0" />
-            <div>
-              <p className="text-sm text-blue-900 dark:text-blue-100 font-medium">
-                BitBot says:
-              </p>
-              <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                {!user
-                  ? "Please log in to start your journey! I'll be waiting right here."
-                  : 'Ready to dive in? This lesson will boost your logic skills!'}
-              </p>
-            </div>
           </div>
         </DialogContent>
       </Dialog>

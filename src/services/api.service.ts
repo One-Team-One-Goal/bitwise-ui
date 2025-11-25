@@ -3,6 +3,7 @@ import { supabase } from '../utils/supabase'
 
 interface RequestOptions {
   requiresAuth?: boolean
+  timeout?: number
 }
 
 class ApiService {
@@ -53,6 +54,9 @@ class ApiService {
     if (options.requiresAuth) {
       config.headers = { 'X-Requires-Auth': 'true' }
     }
+    if (options.timeout) {
+      config.timeout = options.timeout
+    }
     return config
   }
 
@@ -67,9 +71,9 @@ class ApiService {
     return response.data
   }
 
-  async post<T>(url: string, data?: any, requiresAuth = false): Promise<T> {
+  async post<T>(url: string, data?: any, requiresAuth = false, options: Omit<RequestOptions, 'requiresAuth'> = {}): Promise<T> {
     const path = this.normalizePath(url)
-    const response = await this.api.post<T>(path, data, this.createConfig({ requiresAuth }))
+    const response = await this.api.post<T>(path, data, this.createConfig({ requiresAuth, ...options }))
     return response.data
   }
 

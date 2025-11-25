@@ -289,7 +289,12 @@ function RouteComponent() {
         success: boolean
         data: { attemptId: number }
         error?: string
-      }>('/assessment/start-adaptive-practice', { uid: effectiveUser.id }, true)
+      }>(
+        '/assessment/start-adaptive-practice',
+        { uid: effectiveUser.id },
+        true,
+        { timeout: 60000 } // 60 second timeout for AI-powered endpoint
+      )
       if (result.success) {
         navigate({
           to: '/assessment/$assessmentId',

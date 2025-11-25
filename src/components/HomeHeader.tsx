@@ -153,10 +153,6 @@ const HomeHeader = () => {
     )
   }
 
-  if (location.pathname === '/digitalCircuit') {
-    return
-  }
-
   return (
     <header
       className={`fixed top-0 left-0 z-40 w-full h-20 transition-transform duration-300 ${

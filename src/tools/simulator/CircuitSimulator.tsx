@@ -128,19 +128,10 @@ export const CircuitSimulator: React.FC = () => {
   };
 
   return (
-
-
-    <div className="h-full flex flex-col bg-background relative">
-      {/* Toolbar */}
-      <div data-tour="toolbar">
-        <div className="flex items-center gap-2">
-          <SimulatorToolbar />
-        </div>
-      </div>
-
+    <div className="h-full flex flex-col bg-background relative border-t border-border">
       <div className="flex flex-1 overflow-hidden min-h-0">
         {/* Component Palette - Desktop sidebar */}
-        <div className="hidden lg:flex w-64 xl:w-80 flex-shrink-0" data-tour="component-palette">
+        <div className="hidden lg:flex w-64 xl:w-70 flex-shrink-0" data-tour="component-palette">
           <ComponentPalette
             onComponentSelect={handleComponentTypeSelect}
             selectedComponentType={toolbarState.selectedComponentType}
@@ -201,7 +192,7 @@ export const CircuitSimulator: React.FC = () => {
           <SheetHeader className="px-4 py-3 border-b">
             <SheetTitle>Components</SheetTitle>
           </SheetHeader>
-          <div className="h-full">
+          <div className="h-full flex flex-col min-h-0">
             <ComponentPalette
               onComponentSelect={(type) => {
                 handleComponentTypeSelect(type);
@@ -220,7 +211,7 @@ export const CircuitSimulator: React.FC = () => {
           <SheetHeader className="px-4 py-3 border-b">
             <SheetTitle>Properties</SheetTitle>
           </SheetHeader>
-          <div className="h-full">
+          <div className="h-full flex flex-col min-h-0">
             <PropertiesPanel circuitHook={circuitHook} />
           </div>
         </SheetContent>

@@ -670,7 +670,7 @@ function RouteComponent() {
                 </div>
               )}
 
-              <div className="flex justify-between items-center mt-8 pt-6 border-t">
+              <div className="flex justify-between items-center mt-8cd pt-6 border-t">
                 <Button
                   variant="ghost"
                   onClick={() => {

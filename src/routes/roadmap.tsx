@@ -13,7 +13,6 @@ import {
   DialogDescription,
   DialogTitle,
 } from '@/components/ui/dialog'
-import bitbotIdle from '@/assets/bitbot/idle.svg'
 import bitboCongrats from '@/assets/bitbot/congrats.svg'
 import introPhoto from '@/assets/photos/intro.png'
 import logicGatesPhoto from '@/assets/photos/logic gates.png'

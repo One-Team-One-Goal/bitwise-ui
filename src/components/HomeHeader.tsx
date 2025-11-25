@@ -178,7 +178,6 @@ const HomeHeader = () => {
         <div className="hidden lg:flex flex-1 justify-center items-center">
           <nav aria-label="Primary" className="flex items-center gap-6">
             {primaryItems.map((item) => {
-              const Icon = item.icon
               return (
                 <Link
                   key={item.key}
@@ -194,7 +193,6 @@ const HomeHeader = () => {
             })}
 
             {toolItems.map((item) => {
-              const Icon = item.icon
               return (
                 <Link
                   key={item.key}

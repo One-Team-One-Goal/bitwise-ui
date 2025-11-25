@@ -10,7 +10,7 @@
     "render-build": "npm ci --include=dev && npm run build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "postinstall": "test \"$NODE_ENV\" = \"production\" || (test -d .git && husky install || true)",
+    "postinstall": "node -e \"if (process.env.NODE_ENV !== 'production') { const fs = require('fs'); if (fs.existsSync('.git')) { try { require('child_process').execSync('npx husky install', { stdio: 'inherit' }); } catch (e) {} } }\"",
     "start": "serve -s dist -l 3000"
   },
   "lint-staged": {

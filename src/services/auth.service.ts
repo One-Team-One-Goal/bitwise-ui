@@ -27,8 +27,8 @@ export const authService = {
       password: credentials.password!,
       options: {
         data: { display_name: credentials.username },
-        emailRedirectTo: `${import.meta.env.VITE_PUBLIC_APP_URL}/login`
-      }
+        emailRedirectTo: `${import.meta.env.VITE_PUBLIC_APP_URL}/login`,
+      },
     })
 
     if (error) throw new Error(error.message)
@@ -59,7 +59,7 @@ export const authService = {
   async signOut(): Promise<void> {
     const { error } = await supabase.auth.signOut()
     if (error) throw new Error(error.message)
-    
+
     apiService.setAuthToken(null)
   },
 
@@ -67,11 +67,11 @@ export const authService = {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin + '/login',
+        redirectTo: window.location.origin + '/',
       },
-    });
+    })
 
-    if (error) throw new Error(error.message);
+    if (error) throw new Error(error.message)
   },
 
   async resetPassword(email: string): Promise<void> {
@@ -85,7 +85,9 @@ export const authService = {
     try {
       return await apiService.get<BackendUser>('/auth/profile', true)
     } catch (error) {
-      throw new Error(`Failed to get profile: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      throw new Error(
+        `Failed to get profile: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
     }
   },
 
@@ -93,7 +95,9 @@ export const authService = {
     try {
       return await apiService.post('/auth/verify', {}, true)
     } catch (error) {
-      throw new Error(`Token verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      throw new Error(
+        `Token verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
     }
   },
 
@@ -101,18 +105,26 @@ export const authService = {
     try {
       return await apiService.post<AuthResponse>('/auth/refresh', {}, true)
     } catch (error) {
-      throw new Error(`Token refresh failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      throw new Error(
+        `Token refresh failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
     }
   },
 
   async getCurrentSession() {
-    const { data: { session }, error } = await supabase.auth.getSession()
+    const {
+      data: { session },
+      error,
+    } = await supabase.auth.getSession()
     if (error) throw new Error(error.message)
     return session
   },
 
   async getCurrentUser() {
-    const { data: { user }, error } = await supabase.auth.getUser()
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser()
     if (error) throw new Error(error.message)
     return user
   },

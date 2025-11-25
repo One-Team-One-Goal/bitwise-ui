@@ -182,14 +182,12 @@ const HomeHeader = () => {
         <div className="hidden lg:flex flex-1 justify-center items-center">
           <nav aria-label="Primary" className="flex items-center gap-6">
             {primaryItems.map((item) => {
-              const Icon = item.icon
               return (
                 <Link
                   key={item.key}
                   to={item.to}
-                  className="group relative flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border border-border transition-all duration-200"
+                  className="group relative flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200"
                 >
-                  <Icon className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
                   <span className="relative">
                     {item.label}
                     <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary group-hover:w-full transition-all duration-300" />
@@ -199,14 +197,12 @@ const HomeHeader = () => {
             })}
 
             {toolItems.map((item) => {
-              const Icon = item.icon
               return (
                 <Link
                   key={item.key}
                   to={item.to}
-                  className="group relative flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border border-border transition-all duration-200"
+                  className="group relative flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200"
                 >
-                  <Icon className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" />
                   <span className="relative">
                     {item.label}
                     <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary group-hover:w-full transition-all duration-300" />

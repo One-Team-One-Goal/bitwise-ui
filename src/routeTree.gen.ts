@@ -18,6 +18,7 @@ import { Route as DigitalCircuitRouteImport } from './routes/digitalCircuit'
 import { Route as ConverterRouteImport } from './routes/converter'
 import { Route as CalculatorRouteImport } from './routes/calculator'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as RoadmapRefactoredRouteImport } from './routes/roadmap.refactored'
 import { Route as LessonLessonIdRouteImport } from './routes/lesson/$lessonId'
 import { Route as AssessmentAssessmentIdRouteImport } from './routes/assessment/$assessmentId'
 
@@ -66,6 +67,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RoadmapRefactoredRoute = RoadmapRefactoredRouteImport.update({
+  id: '/refactored',
+  path: '/refactored',
+  getParentRoute: () => RoadmapRoute,
+} as any)
 const LessonLessonIdRoute = LessonLessonIdRouteImport.update({
   id: '/lesson/$lessonId',
   path: '/lesson/$lessonId',
@@ -85,10 +91,11 @@ export interface FileRoutesByFullPath {
   '/karnaughMaps': typeof KarnaughMapsRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
-  '/roadmap': typeof RoadmapRoute
+  '/roadmap': typeof RoadmapRouteWithChildren
   '/signup': typeof SignupRoute
   '/assessment/$assessmentId': typeof AssessmentAssessmentIdRoute
   '/lesson/$lessonId': typeof LessonLessonIdRoute
+  '/roadmap/refactored': typeof RoadmapRefactoredRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -98,10 +105,11 @@ export interface FileRoutesByTo {
   '/karnaughMaps': typeof KarnaughMapsRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
-  '/roadmap': typeof RoadmapRoute
+  '/roadmap': typeof RoadmapRouteWithChildren
   '/signup': typeof SignupRoute
   '/assessment/$assessmentId': typeof AssessmentAssessmentIdRoute
   '/lesson/$lessonId': typeof LessonLessonIdRoute
+  '/roadmap/refactored': typeof RoadmapRefactoredRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -112,10 +120,11 @@ export interface FileRoutesById {
   '/karnaughMaps': typeof KarnaughMapsRoute
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
-  '/roadmap': typeof RoadmapRoute
+  '/roadmap': typeof RoadmapRouteWithChildren
   '/signup': typeof SignupRoute
   '/assessment/$assessmentId': typeof AssessmentAssessmentIdRoute
   '/lesson/$lessonId': typeof LessonLessonIdRoute
+  '/roadmap/refactored': typeof RoadmapRefactoredRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -131,6 +140,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/assessment/$assessmentId'
     | '/lesson/$lessonId'
+    | '/roadmap/refactored'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -144,6 +154,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/assessment/$assessmentId'
     | '/lesson/$lessonId'
+    | '/roadmap/refactored'
   id:
     | '__root__'
     | '/'
@@ -157,6 +168,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/assessment/$assessmentId'
     | '/lesson/$lessonId'
+    | '/roadmap/refactored'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -167,7 +179,7 @@ export interface RootRouteChildren {
   KarnaughMapsRoute: typeof KarnaughMapsRoute
   LoginRoute: typeof LoginRoute
   ProfileRoute: typeof ProfileRoute
-  RoadmapRoute: typeof RoadmapRoute
+  RoadmapRoute: typeof RoadmapRouteWithChildren
   SignupRoute: typeof SignupRoute
   AssessmentAssessmentIdRoute: typeof AssessmentAssessmentIdRoute
   LessonLessonIdRoute: typeof LessonLessonIdRoute
@@ -238,6 +250,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/roadmap/refactored': {
+      id: '/roadmap/refactored'
+      path: '/refactored'
+      fullPath: '/roadmap/refactored'
+      preLoaderRoute: typeof RoadmapRefactoredRouteImport
+      parentRoute: typeof RoadmapRoute
+    }
     '/lesson/$lessonId': {
       id: '/lesson/$lessonId'
       path: '/lesson/$lessonId'
@@ -255,6 +274,17 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface RoadmapRouteChildren {
+  RoadmapRefactoredRoute: typeof RoadmapRefactoredRoute
+}
+
+const RoadmapRouteChildren: RoadmapRouteChildren = {
+  RoadmapRefactoredRoute: RoadmapRefactoredRoute,
+}
+
+const RoadmapRouteWithChildren =
+  RoadmapRoute._addFileChildren(RoadmapRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CalculatorRoute: CalculatorRoute,
@@ -263,7 +293,7 @@ const rootRouteChildren: RootRouteChildren = {
   KarnaughMapsRoute: KarnaughMapsRoute,
   LoginRoute: LoginRoute,
   ProfileRoute: ProfileRoute,
-  RoadmapRoute: RoadmapRoute,
+  RoadmapRoute: RoadmapRouteWithChildren,
   SignupRoute: SignupRoute,
   AssessmentAssessmentIdRoute: AssessmentAssessmentIdRoute,
   LessonLessonIdRoute: LessonLessonIdRoute,

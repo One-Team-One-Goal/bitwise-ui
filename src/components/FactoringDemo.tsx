@@ -1,5 +1,5 @@
 import React from 'react'
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 import { calculatorService } from '../services/calculator.service'
 import { Button } from './ui/button';
 import { Switch } from './ui/switch';
@@ -408,7 +408,7 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
   };
 
   return (
-    <div className="p-3 md:p-6 rounded-xl w-full max-w-7xl mx-auto space-y-4 md:space-y-6 mt-0 pt-0">
+    <div className="p-3 md:p-6 rounded-xl w-full max-w-7xl mx-auto space-y-4 md:space-y-6 mt-0 md:py-0">
       {/* Header with Help Button */}
       <div className="flex justify-end">
         <Button
@@ -516,12 +516,12 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
 
 
       {/* Main Visualization Area */}
-      <div ref={visualizationRef} className="bg-card dark:bg-card rounded-lg border-2 border-border p-3 md:p-6 relative min-h-[300px] md:min-h-[400px]">
+      <div ref={visualizationRef} className="bg-card dark:bg-card rounded-lg border-2 border-border p-3 md:p-6 relative min-h-[300px] md:min-h-80 pb-6">
         <div ref={containerRef} className="relative">
         {remoteScript == null ? (
-          <div className="flex flex-col items-center justify-center py-12 md:py-16 text-center px-4">
+          <div className="flex flex-col items-center justify-center py-12 md:py-12 text-center px-4">
             <div className="text-5xl md:text-6xl mb-4 font-bold text-muted dark:text-muted">∅</div>
-            <h3 className="text-lg md:text-xl font-semibold text-foreground mb-2">Ready to Simplify!</h3>
+            <h3 className="text-lg text-muted-foreground md:text-xl font-semibold text-foreground mb-2">Ready to Simplify!</h3>
             <p className="text-sm md:text-base text-muted-foreground">Enter a Boolean expression above and click Solve to see step-by-step simplification.</p>
           </div>
         ) : (

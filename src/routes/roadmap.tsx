@@ -1,23 +1,25 @@
-import { useEffect, useMemo, useState } from 'react'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import {
-  Timeline,
-  TimelineItem,
-  TimelineSeparator,
-  TimelineConnector,
-  TimelineContent,
-  TimelineOppositeContent,
-} from '@mui/lab'
-import AnimatedAssessmentButton from '@/components/buttons/AnimatedAssessmentButton'
-import { Card, CardContent } from '@/components/ui/card'
+import { useEffect, useMemo, useState, useCallback } from 'react'
+import { createFileRoute, useNavigate, Link } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import DataAnalyticsCard from '@/components/DataAnalyticsCard'
+import { Progress } from '@/components/ui/progress'
 import { useAuthContext } from '@/contexts/AuthContext'
-import { useAllUserProgress } from '@/hooks/useUserProgress'
-import { userProgressService } from '@/services/user-progress.service'
-import { Loader2, Brain, AlertCircle, ChevronDown, BookOpen, CheckCircle2, Clock } from 'lucide-react'
-import bitbotIdle from '@/assets/bitbot/idle.svg'
+import { useRoadmapData } from '@/hooks/useRoadmapData'
+import { apiService } from '@/services/api.service'
+import { Brain, CheckCircle2, Target, LayoutGrid, List } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import bitboCongrats from '@/assets/bitbot/congrats.svg'
+import introPhoto from '@/assets/photos/intro.png'
+import logicGatesPhoto from '@/assets/photos/logic gates.png'
+import truthTablesPhoto from '@/assets/photos/truth tables.png'
+import simplificationPhoto from '@/assets/photos/simplification.png'
+
+import { toast } from 'sonner'
 
 // Define types for better TypeScript support
 interface RoadmapTopic {
@@ -34,6 +36,38 @@ interface Lesson {
   topics: RoadmapTopic[]
 }
 
+interface LessonTopicDisplay {
+  id: number
+  title: string
+  description: string
+  status: string
+  timeSpent?: number
+}
+
+interface LessonProgress {
+  lessonId: number
+  status: string
+  progress: number
+  masteryScore?: number
+}
+
+interface TopicProgress {
+  topicId: string | number
+  status: string
+  timeSpent: number
+  topic?: {
+    title: string
+    description: string
+  }
+}
+
+interface TopicMastery {
+  topicId: string | number
+  mastery: number
+  attempts: number
+  level: number
+}
+
 // Lessons with topics
 const lessons: Lesson[] = [
   {
@@ -42,7 +76,7 @@ const lessons: Lesson[] = [
     description: 'Basics, history, and importance in logic.',
     details:
       "Boolean Algebra deals with true/false values. It's key in computer science and circuit design.",
-  topics: [
+    topics: [
       {
         id: '1-1',
         title: 'What is Boolean Algebra?',
@@ -66,7 +100,7 @@ const lessons: Lesson[] = [
     description: 'Learn AND, OR, NOT, and more.',
     details:
       'Logic gates are digital circuit components that execute Boolean functions.',
-  topics: [
+    topics: [
       {
         id: '2-1',
         title: 'AND, OR, NOT',
@@ -90,7 +124,7 @@ const lessons: Lesson[] = [
     description: 'Make and read truth tables.',
     details:
       'Truth tables show all possible input/output combinations for logical expressions.',
-  topics: [
+    topics: [
       {
         id: '3-1',
         title: 'Constructing Truth Tables',
@@ -114,7 +148,7 @@ const lessons: Lesson[] = [
     description: 'Reduce logic expressions efficiently.',
     details:
       'Simplifying logic reduces circuit complexity and improves performance.',
-  topics: [
+    topics: [
       {
         id: '4-1',
         title: 'Boolean Laws',
@@ -134,655 +168,743 @@ const lessons: Lesson[] = [
   },
 ]
 
+// Map lesson id -> photo
+const lessonImages: Record<number, string> = {
+  1: introPhoto,
+  2: logicGatesPhoto,
+  3: truthTablesPhoto,
+  4: simplificationPhoto,
+}
+
 export const Route = createFileRoute('/roadmap')({
   component: RouteComponent,
 })
 
+// Inspirational quotes from computer science pioneers
+const csQuotes = [
+  {
+    text: 'The only way to learn a new programming language is by writing programs in it.',
+    author: 'Dennis Ritchie',
+  },
+  {
+    text: 'Any fool can write code that a computer can understand. Good programmers write code that humans can understand.',
+    author: 'Martin Fowler',
+  },
+  {
+    text: 'First, solve the problem. Then, write the code.',
+    author: 'John Johnson',
+  },
+  {
+    text: 'The best way to predict the future is to invent it.',
+    author: 'Alan Kay',
+  },
+  {
+    text: 'Logic is the beginning of wisdom, not the end.',
+    author: 'Leonard Nimoy',
+  },
+]
+
 function RouteComponent() {
-  const [selected, setSelected] = useState<typeof timelineItems[0] | null>(null)
+  const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null)
   const [loadingAssessment, setLoadingAssessment] = useState(false)
-  const [assessmentError, setAssessmentError] = useState<string | null>(null)
-  const [showScrollHint, setShowScrollHint] = useState(true)
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [statusFilter, setStatusFilter] = useState<string>('All Status')
   const navigate = useNavigate()
-  const { user } = useAuthContext() || { }
+  const { user } = useAuthContext() || {}
   const ALLOW_ANON = import.meta.env.VITE_ALLOW_ANON_ASSESSMENT === 'true'
-  const FALLBACK_USER_ID = import.meta.env.VITE_FALLBACK_USER_ID ?? '5ed45890-4804-46fd-bfa1-5695515375ea'
+  const FALLBACK_USER_ID =
+    import.meta.env.VITE_FALLBACK_USER_ID ??
+    '5ed45890-4804-46fd-bfa1-5695515375ea'
   const effectiveUser = user ?? (ALLOW_ANON ? { id: FALLBACK_USER_ID } : null)
 
-  // Fetch user progress
-  const { data: userProgress = [] } = useAllUserProgress(!!user)
+  const lessonIds = useMemo(() => lessons.map((lesson) => lesson.id), [])
+  const {
+    lessonProgress,
+    topicsProgress,
+    topicMastery,
+    analytics,
+    statistics,
+    error: roadmapError,
+    refresh: refreshRoadmapData,
+  } = useRoadmapData(user?.id, lessonIds)
 
-  const [topicsProgress, setTopicsProgress] = useState<Record<number, any[]>>({})
+  // Rotate quotes every 10 seconds
+  useEffect(() => {
+    const showQuote = () => {
+      const randomQuote = csQuotes[Math.floor(Math.random() * csQuotes.length)]
+      toast.custom(
+        (t) => (
+          <div className="bg-white dark:bg-gray-800 rounded-md shadow-md p-4 flex items-start gap-4 max-w-md pointer-events-auto">
+            <img src={bitboCongrats} alt="BitBot" className="w-12 h-12 shrink-0" />
+            <div className="flex-1">
+              <p className="font-bold text-amber-600 dark:text-amber-400 text-sm mb-1">
+                BitBot's Travel Tip
+              </p>
+              <p className="text-sm text-gray-700 dark:text-gray-300 italic">
+                "{randomQuote.text}"
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                - {randomQuote.author}
+              </p>
+            </div>
+            <button
+              onClick={() => toast.dismiss(t)}
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+            >
+              ×
+            </button>
+          </div>
+        ),
+        { duration: 8000, position: 'bottom-right' }
+      )
+    }
 
-  const userProgressKey = useMemo(
-    () =>
-      userProgress
-        .map((lesson) => `${lesson.lessonId}:${lesson.status}:${Math.round(lesson.progress * 100)}`)
-        .join('|'),
-    [userProgress]
-  )
+    // Show one on mount after a delay
+    const timer = setTimeout(showQuote, 2000)
+    return () => clearTimeout(timer)
+  }, [])
 
   useEffect(() => {
-    if (!user) {
-      setTopicsProgress({})
-      return
+    if (roadmapError) {
+      toast.error(roadmapError)
     }
+  }, [roadmapError])
 
-    let cancelled = false
-
-    const fetchAllLessonTopics = async () => {
-      try {
-        const results = await Promise.all(
-          lessons.map(async (lesson) => {
-            try {
-              const data = await userProgressService.getTopicsForLesson(lesson.id)
-              return [lesson.id, data] as const
-            } catch (error) {
-              console.error(`Failed to load topics for lesson ${lesson.id}`, error)
-              return [lesson.id, []] as const
-            }
-          })
-        )
-
-        if (cancelled) return
-
-        const next: Record<number, any[]> = {}
-        for (const [lessonId, data] of results) {
-          next[lessonId] = data
-        }
-        setTopicsProgress(next)
-      } catch (error) {
-        if (!cancelled) {
-          console.error('Failed to load topic progress data', error)
-        }
-      }
-    }
-
-    fetchAllLessonTopics()
-
-    return () => {
-      cancelled = true
-    }
-  }, [user, userProgressKey])
-
-  // Flatten lessons and topics for the timeline
-  const timelineItems = lessons.flatMap((lesson) => [
-    { ...lesson, isTopic: false as const },
-    ...(lesson.topics || []).map((topic, i) => ({
-      ...topic,
-      parentId: lesson.id,
-      isTopic: true as const,
-      parentTitle: lesson.title,
-      parentIdx: lesson.id,
-      idx: i,
-      details: `Details for ${topic.title}`,
-    })),
-  ])
-
-  const resolveTopicIdForLesson = (lessonId: number, opts: { title?: string; idx?: number } = {}) => {
-    const topicsForLesson = topicsProgress[lessonId] ?? []
-    if (!topicsForLesson.length) return undefined
-
-    const normalizedTitle = opts.title?.trim().toLowerCase()
-    if (normalizedTitle) {
-      const matchedByTitle = topicsForLesson.find((topic: any) => topic.title?.trim().toLowerCase() === normalizedTitle)
-      if (matchedByTitle) return matchedByTitle.id
-    }
-
-    if (typeof opts.idx === 'number' && opts.idx >= 0 && opts.idx < topicsForLesson.length) {
-      return topicsForLesson[opts.idx]?.id
-    }
-
-    return topicsForLesson[0]?.id
-  }
-
-  const navigateToLessonTopic = (lessonId: number, topicId?: number) => {
-    if (typeof topicId === 'number') {
-      navigate({
-        to: '/lesson/$lessonId',
-        params: { lessonId: String(lessonId) },
-        search: { topicId },
-      })
-      return
-    }
-
-    navigate({ to: `/lesson/${lessonId}` })
-  }
-
-  const focusFirstTopicForLesson = (lessonId: number) => {
-  const firstTopic = timelineItems.find((item) => item.isTopic && item.parentId === lessonId)
-  if (!firstTopic || !firstTopic.isTopic) return undefined
-
-    setSelected(firstTopic)
-    setShowScrollHint(false)
-
-    if (typeof window !== 'undefined') {
-      window.requestAnimationFrame(() => {
-        const target = document.getElementById(`timeline-item-topic-${lessonId}-${firstTopic.idx}`)
-        target?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      })
-    }
-
-    return firstTopic
-  }
-
-  // Handle click: do not navigate immediately; update selection
-  const handleItemClick = (item: any) => {
-    setSelected(item)
-    setShowScrollHint(false)
-    // Don't navigate immediately, let user explore first
-  }
-
-  const handleStartLesson = () => {
-    if (!selected) return
-
-    if (!selected.isTopic) {
-      const focusedTopic = focusFirstTopicForLesson(selected.id)
-
-      if (!focusedTopic) {
-        navigateToLessonTopic(selected.id)
-      }
-
-      return
-    }
-
-    const lessonId = selected.parentId
-    const targetTopicId = resolveTopicIdForLesson(lessonId, {
-      title: selected.title,
-      idx: selected.idx,
-    })
-
-    navigateToLessonTopic(lessonId, targetTopicId)
-  }
-
-  // Handle adaptive assessment start
   const handleStartAdaptiveAssessment = async () => {
-    if (!effectiveUser) return
-
+    if (!effectiveUser) {
+      toast.error('Please log in to start an assessment')
+      return
+    }
     setLoadingAssessment(true)
-    setAssessmentError(null)
-
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/assessment/start-adaptive-practice`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uid: effectiveUser.id }),
-      })
-
-      const result = await response.json()
-
-      if (result.success && result.data) {
-        // Store the attempt data for the assessment component
-        sessionStorage.setItem('currentAttempt', JSON.stringify(result.data))
-        
-        // Navigate to the assessment
-        navigate({ to: `/assessment/${result.data.attemptId}` })
+      const result = await apiService.post<{
+        success: boolean
+        data: { attemptId: number }
+        error?: string
+      }>(
+        '/assessment/start-adaptive-practice',
+        { uid: effectiveUser.id },
+        true,
+        { timeout: 60000 } // 60 second timeout for AI-powered endpoint
+      )
+      if (result.success) {
+        navigate({
+          to: '/assessment/$assessmentId',
+          params: { assessmentId: result.data.attemptId.toString() },
+        })
+        refreshRoadmapData()
       } else {
-        throw new Error(result.error || 'Failed to start adaptive assessment')
+        throw new Error(result.error || 'Failed to start assessment')
       }
     } catch (error) {
-      console.error('Failed to start adaptive assessment:', error)
-      setAssessmentError(error instanceof Error ? error.message : 'Failed to start assessment. Please try again.')
+      console.error('Failed to start assessment:', error)
+      toast.error('Failed to start assessment. Please try again.')
     } finally {
       setLoadingAssessment(false)
     }
   }
 
-  // Handle regular practice assessment start (fallback)
-  /* const handleStartRegularAssessment = async () => {
-    if (!user) return
+  const getLessonStatus = useCallback(
+    (lessonId: number) => {
+      const progress = lessonProgress.find(
+        (p: LessonProgress) => p.lessonId === lessonId
+      )
+      const isCompleted =
+        progress?.status === 'completed' || (progress?.progress || 0) >= 1
+      const isStarted = (progress?.progress || 0) > 0
 
-    setLoadingAssessment(true)
-    setAssessmentError(null)
+      // Calculate mastery from adaptive practice for this lesson
+      const lessonMastery = topicMastery[lessonId] as TopicMastery[] | undefined
+      const masteryScore = lessonMastery?.length
+        ? Math.round(
+            (lessonMastery.reduce((sum, topic) => sum + topic.mastery, 0) /
+              lessonMastery.length) *
+              100
+          )
+        : progress?.masteryScore
+          ? Math.round(progress.masteryScore * 100)
+          : null
 
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/assessment/start-practice`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uid: user.id }),
-      })
-
-      const result = await response.json()
-
-      if (result.success && result.data) {
-        sessionStorage.setItem('currentAttempt', JSON.stringify(result.data))
-        navigate({ to: `/assessment/${result.data.attemptId}` })
-      } else {
-        throw new Error(result.error || 'Failed to start practice assessment')
+      return {
+        status: isCompleted
+          ? 'completed'
+          : isStarted
+            ? 'in-progress'
+            : 'not-started',
+        progress: Math.round((progress?.progress || 0) * 100),
+        masteryScore,
+        isLocked: false, // No locks - all lessons accessible
       }
-    } catch (error) {
-      console.error('Failed to start practice assessment:', error)
-      setAssessmentError(error instanceof Error ? error.message : 'Failed to start assessment. Please try again.')
-    } finally {
-      setLoadingAssessment(false)
+    },
+    [lessonProgress, topicMastery]
+  )
+
+  const filteredLessons = useMemo(() => {
+    return lessons.filter((lesson) => {
+      const { status } = getLessonStatus(lesson.id)
+      if (statusFilter === 'All Status') return true
+      if (statusFilter === 'Not Started') return status === 'not-started'
+      if (statusFilter === 'In Progress') return status === 'in-progress'
+      if (statusFilter === 'Completed') return status === 'completed'
+      return true
+    })
+  }, [statusFilter, getLessonStatus])
+
+  const getTopicsForLesson = (lesson: Lesson): LessonTopicDisplay[] => {
+    const dynamicTopics = topicsProgress[lesson.id] as
+      | TopicProgress[]
+      | undefined
+    if (dynamicTopics?.length) {
+      return dynamicTopics.map((topic, index) => ({
+        id:
+          typeof topic.topicId === 'string'
+            ? parseInt(topic.topicId)
+            : topic.topicId,
+        title:
+          topic.topic?.title ||
+          lesson.topics[index]?.title ||
+          `Topic ${index + 1}`,
+        description:
+          topic.topic?.description || lesson.topics[index]?.description || '',
+        status: topic.status || 'not-started',
+        timeSpent: topic.timeSpent,
+      }))
     }
-  } */
+
+    return lesson.topics.map((topic, index) => ({
+      id: parseInt(topic.id.split('-')[1]) || index + 1,
+      title: topic.title,
+      description: topic.description,
+      status: 'not-started',
+      timeSpent: 0,
+    }))
+  }
+
+  const toTopicIdParam = (value: number | string | undefined | null) => {
+    if (value === undefined || value === null) return undefined
+    if (typeof value === 'number') return value
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : undefined
+  }
+
+  const selectedLessonTopics = selectedLesson
+    ? getTopicsForLesson(selectedLesson)
+    : []
+  const recommendedDifficulty = analytics?.recommendedDifficulty ?? null
+  const focusTopics = analytics?.focusAreas?.slice(0, 2) ?? []
+  const totalAdaptiveAttempts =
+    statistics?.totalAttempts ?? analytics?.totalAttempts ?? 0
 
   return (
-    <div className="m-auto mt-12 flex flex-col md:flex-row w-2/3 h-[80vh] gap-4 pt-24 overflow-hidden">
-      {/* Left: Lesson Details */}
-      <div className='flex flex-col gap-4 mr-4 shrink-0 max-h-full overflow-y-auto hide-scrollbar'>
-        {!selected ? (
-          /* Introduction State */
-          <Card className="max-w-md w-full p-6 h-min">
-            <CardContent className="p-0 space-y-4">
-              <div className="flex items-center gap-2 mb-2">
-                <h2 className="text-2xl font-bold">Welcome to Your Learning Path!</h2>
-              </div>
-              
-              <div className="space-y-3 text-sm text-muted-foreground">
-                <p>
-                  This roadmap shows your Boolean Algebra learning journey with <strong className="text-foreground">{lessons.length} lessons</strong> covering everything from basics to advanced topics.
-                </p>
-                
-                <p>
-                  <strong className="text-foreground">Click any lesson tile</strong> on the right to explore its topics.
-                </p>
-                
-                <p>
-                  Each lesson has multiple <strong className="text-foreground">topics</strong> (shown as smaller tiles) that break down concepts step-by-step.
-                </p>
-                
-                <p>
-                  <strong className="text-foreground">Scroll down</strong> on the timeline to see all {lessons.length} lessons and their topics.
-                </p>
-              </div>
-
-              <div className="mt-4 p-3 bg-accent/50 rounded-lg border border-border">
-                <p className="text-xs text-muted-foreground">
-                  <strong className="text-foreground">Pro tip:</strong> Start with Lesson 1 and work your way through, or jump to any topic that interests you!
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          /* Selected Lesson Details */
-          <>
-            <Card className="max-w-md w-full p-6 h-min">
-              <CardContent className="p-0 space-y-2">
-                {/* Lesson badge */}
-                {!selected.isTopic && (
-                  <div className="inline-block px-3 py-1 bg-primary/10 text-primary text-xs font-semibold rounded-full mb-2">
-                    Lesson {lessons.findIndex((l) => l.id === selected.id) + 1}
-                  </div>
-                )}
-                
-                {selected.isTopic && (
-                  <div className="inline-block px-3 py-1 bg-accent text-muted-foreground text-xs font-semibold rounded-full mb-2">
-                    Topic of {selected.parentTitle}
-                  </div>
-                )}
-
-                <h2 className="text-2xl font-bold">
-                  {selected.title}
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pt-20 pb-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto space-y-8 mt-5">
+        {/* Top Section: Adaptive & Analytics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Adaptive Practice Card */}
+          <div className="bg-linear-to-r from-blue-500 to-indigo-600 rounded-lg p-6 text-white relative overflow-hidden shadow-lg group">
+            <div className="relative z-10 flex flex-col h-full justify-between">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge
+                    variant="secondary"
+                    className="bg-white/20 hover:bg-white/30 text-white border-none"
+                  >
+                    <Brain className="w-3 h-3 mr-1" /> AI Powered
+                  </Badge>
+                </div>
+                <h2 className="text-xl font-semibold mb-2">
+                  Adaptive AI Practice
                 </h2>
-                <p className="text-muted-foreground text-sm">
-                  {selected.description}
+                <p className="text-blue-100 max-w-md">
+                  Master Boolean Algebra with personalized questions that adapt
+                  to your skill level in real-time.
                 </p>
-                <p className="text-sm text-muted-foreground">{selected.details}</p>
+              </div>
 
-                {/* Start Lesson Button */}
-                <Button 
-                  className="w-full mt-4" 
-                  onClick={handleStartLesson}
+              <div className="mt-8 flex items-end justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm text-blue-100">
+                    Recommended Difficulty
+                  </p>
+                  <p className="font-semibold text-lg capitalize">
+                    {recommendedDifficulty ?? 'Calibrating...'}
+                  </p>
+                </div>
+                <Button
+                  onClick={handleStartAdaptiveAssessment}
+                  disabled={loadingAssessment}
+                  className="bg-white text-blue-600 hover:bg-blue-50 font-semibold"
                 >
-                  <BookOpen className="w-4 h-4 mr-2" />
-                  Start This Lesson
+                  {loadingAssessment ? 'Loading...' : 'Continue'}
                 </Button>
-              </CardContent>
-            </Card>
-          </>
-        )}
-
-        
-        {/* Data Analytics Card - Only show when lesson selected */}
-        {selected && <DataAnalyticsCard lesson={selected} user={user} />}
-
-        {/* Adaptive Practice Assessment Card */}
-        <Card className="max-w-md w-full p-6 h-min">
-          <CardContent className="p-0 space-y-4">
-            <div>
-              <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
-                <Brain className="w-5 h-5 text-purple-600" />
-                Adaptive Practice Assessment
-              </h3>
-              <p className="text-sm text-muted-foreground mb-2">
-                Take a personalized assessment that adapts to your skill level and focuses on areas where you need improvement.
-              </p>
-            </div>
-
-            {!user && !effectiveUser && (
-              <div className="flex items-center gap-2 text-xs text-red-500 bg-red-50 p-2 rounded">
-                <AlertCircle className="w-4 h-4" />
-                You need to login before taking the assessment.
               </div>
-            )}
+            </div>
 
-            {assessmentError && (
-              <div className="flex items-center gap-2 text-xs text-red-600 bg-red-50 p-2 rounded">
-                <AlertCircle className="w-4 h-4" />
-                {assessmentError}
+            {/* Background Decorations */}
+            <Brain className="absolute -right-8 -bottom-8 w-48 h-48 text-white/10 rotate-12 group-hover:scale-110 transition-transform duration-500" />
+          </div>
+
+          {/* Analytics Card */}
+          <div className="bg-white dark:bg-gray-900 rounded-lg p-6 border border-gray-200 dark:border-gray-800 shadow-sm relative overflow-hidden">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <Badge
+                  variant="outline"
+                  className="mb-2 border-purple-200 text-purple-700 dark:border-purple-800 dark:text-purple-400"
+                >
+                  <Target className="w-3 h-3 mr-1" /> Insights
+                </Badge>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                  Progress & Analytics
+                </h2>
               </div>
-            )}
-
-            <div className="space-y-2">
-              <Button
-                disabled={!user || loadingAssessment}
-                className="w-full flex items-center justify-center bg-purple-600 hover:bg-purple-700"
-                onClick={handleStartAdaptiveAssessment}
-              >
-                {loadingAssessment ? (
-                  <>
-                    <Loader2 className="animate-spin mr-2 h-4 w-4" />
-                    Generating Assessment...
-                  </>
-                ) : (
-                  <>
-                    <Brain className="mr-2 h-4 w-4" />
-                    Take Adaptive Assessment
-                  </>
-                )}
-              </Button>
-
-           
+              <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                <Target className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+              </div>
             </div>
 
-            <div className="text-xs text-muted-foreground">
-              <p className="mb-1">
-                <strong>Adaptive:</strong> Questions adjust to your skill level and focus on weak areas.
-              </p>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="rounded-md">
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+                  Total Attempts
+                </p>
+                <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                  {totalAdaptiveAttempts}
+                </p>
+              </div>
+              <div className="rounded-md">
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+                  Focus Areas
+                </p>
+                <p className="text-base font-medium text-gray-900 dark:text-gray-100 truncate">
+                  {focusTopics.length > 0
+                    ? focusTopics[0].topicTitle
+                    : 'General'}
+                </p>
+              </div>
             </div>
-          </CardContent>
-        </Card>
 
-      </div>
-
-  {/* Right: Timeline with topics (scrollable only) */}
-      <div
-        className="hide-scrollbar flex-1 flex flex-col justify-start items-center overflow-y-auto relative"
-        style={{ maxHeight: '80vh', minHeight: '400px' }}
-      >
-        {/* Scroll hint - fades after interaction */}
-        {showScrollHint && (
-          <div className="sticky top-0 z-10 w-full flex justify-center py-2 bg-linear-to-b from-background to-transparent pointer-events-none">
-            <div className="flex flex-col items-center gap-1 animate-bounce">
-              <span className="text-xs text-muted-foreground font-medium">Scroll to explore</span>
-              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+            <div className="mt-6">
+              <div className="flex justify-between text-sm mb-2">
+                <span className="text-gray-600 dark:text-gray-400">
+                  Overall Mastery
+                </span>
+                <span className="font-medium text-gray-900 dark:text-gray-100">
+                  {analytics?.overallMastery
+                    ? Math.round(analytics.overallMastery * 100)
+                    : 0}
+                  %
+                </span>
+              </div>
+              <Progress
+                value={
+                  analytics?.overallMastery ? analytics.overallMastery * 100 : 0
+                }
+                className="h-2"
+              />
             </div>
           </div>
-        )}
+        </div>
 
-        <Timeline position="alternate" sx={{ m: 0, p: 0 }}>
-          {timelineItems.map((item, idx) => {
-            const isSelected = selected?.id === item.id
+        {/* All Materials Section */}
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+                All Lessons
+              </h2>
+              <Badge variant="secondary" className="rounded-md px-2.5">
+                {filteredLessons.length}
+              </Badge>
+            </div>
+          </div>
 
-            // Show Bitbot only for the exact selected item (not all items in the same lesson group)
-            const showBitbot = isSelected
-
-            const parentLessonId = item.isTopic ? item.parentId : item.id
-            const lessonProgressData = userProgress.find((p) => p.lessonId === parentLessonId)
-            const topicsForLesson = topicsProgress[parentLessonId] ?? []
-
-            const derivedStatusFromTopics = topicsForLesson.length
-              ? topicsForLesson.every((topic) => topic.userProgress?.status === 'completed')
-                ? 'completed'
-                : topicsForLesson.some((topic) => topic.userProgress?.status !== 'not-started')
-                  ? 'in-progress'
-                  : 'not-started'
-              : undefined
-
-            const status = lessonProgressData?.status ?? derivedStatusFromTopics ?? 'not-started'
-
-            let progressPercent = lessonProgressData ? Math.round(lessonProgressData.progress * 100) : 0
-            if (!lessonProgressData && topicsForLesson.length) {
-              // Calculate progress based on completed topics when lesson summary is absent
-              const completedCount = topicsForLesson.filter((topic) => topic.userProgress?.status === 'completed').length
-              progressPercent = Math.round((completedCount / topicsForLesson.length) * 100)
-            }
-
-            const masteryPercent = lessonProgressData?.masteryScore
-              ? Math.round(lessonProgressData.masteryScore * 100)
-              : null
-
-            const topicProgressEntry = item.isTopic
-              ? topicsForLesson.find((topic: any, index: number) => {
-                  if (topic.title === item.title) return true
-                  return index === item.idx
-                })
-              : undefined
-
-            const topicStatus = item.isTopic ? topicProgressEntry?.userProgress?.status ?? 'not-started' : undefined
-            const isTopicCompleted = topicStatus === 'completed'
-            const isTopicInProgress = topicStatus === 'viewed'
-            
-            const timelineElementId = item.isTopic
-              ? `timeline-item-topic-${item.parentId}-${item.idx}`
-              : `timeline-item-lesson-${item.id}`
-
-            return (
-              <TimelineItem
-                key={item.id}
-                id={timelineElementId}
-                sx={{ 
-                  minHeight: 100, 
-                  mb: item.isTopic ? 2 : 4,
-                  position: 'relative',
-                }}
-              >
-                {/* Bitbot animation in the center for all selected items */}
-                {showBitbot && (
-                  <div 
-                    className={`absolute left-1/2 -translate-x-1/2 w-20 h-20 z-20 animate-bounce pointer-events-none ${
-                      item.isTopic ? '-top-12' : 'top-0 -translate-y-3/4'
+          {/* Controls: Filters and View Toggle */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            {/* Filter Pills */}
+            <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+              {['All Status', 'Not Started', 'In Progress', 'Completed'].map(
+                (status) => (
+                  <button
+                    key={status}
+                    onClick={() => setStatusFilter(status)}
+                    className={`px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${
+                      statusFilter === status
+                        ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900'
+                        : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800'
                     }`}
                   >
-                    <img src={bitbotIdle} alt="Bitbot" className="w-full h-full" />
-                  </div>
-                )}
+                    {status}
+                  </button>
+                )
+              )}
+            </div>
 
-                <TimelineOppositeContent
-                  sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    alignItems: 'flex-end',
-                    minWidth: item.isTopic ? 100 : 140,
-                    color: item.isTopic ? 'text.secondary' : 'inherit',
-                    position: 'relative',
-                  }}
-                >
+            {/* View Toggle - Tab Style */}
+            <div className="inline-flex h-9 items-center justify-center rounded-md bg-gray-100 dark:bg-gray-800 p-1 text-gray-500 dark:text-gray-400 shrink-0">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-2 py-1.5 text-sm font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 dark:ring-offset-gray-950 dark:focus-visible:ring-gray-300 ${
+                  viewMode === 'grid'
+                    ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-950 dark:text-gray-50'
+                    : 'hover:bg-gray-50 hover:text-gray-900 dark:hover:bg-gray-800 dark:hover:text-gray-50'
+                }`}
+              >
+                <LayoutGrid className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`inline-flex items-center justify-center whitespace-nowrap rounded-sm px-2 ml-1 py-1.5 text-sm font-medium ring-offset-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 dark:ring-offset-gray-950 dark:focus-visible:ring-gray-300 ${
+                  viewMode === 'list'
+                    ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-950 dark:text-gray-50'
+                    : 'hover:bg-gray-50 hover:text-gray-900 dark:hover:bg-gray-800 dark:hover:text-gray-50'
+                }`}
+              >
+                <List className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
 
-                  {/* Main lesson label with progress */}
-                  {!item.isTopic ? (
-                    <div className="flex flex-col items-end gap-1.5">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`text-xs font-medium ${
-                            isSelected 
-                              ? 'text-primary font-bold' 
-                              : 'text-muted-foreground'
-                          }`}
+          {/* Lessons Grid/List */}
+          {viewMode === 'grid' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {filteredLessons.map((lesson) => {
+                const { status, progress } = getLessonStatus(lesson.id)
+                return (
+                  <div
+                    key={lesson.id}
+                    className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden hover:shadow-lg transition-all duration-300 group flex flex-col"
+                  >
+                    {/* Card Header / Image Placeholder */}
+                    <div
+                      className={`h-32 w-full relative overflow-hidden ${
+                        status === 'completed'
+                          ? 'bg-green-100 dark:bg-green-900/20'
+                          : status === 'in-progress'
+                            ? 'bg-blue-100 dark:bg-blue-900/20'
+                            : 'bg-gray-100 dark:bg-gray-800'
+                      }`}
+                    >
+                      {/* Photo background */}
+                      <img
+                        src={lessonImages[lesson.id]}
+                        alt={lesson.title}
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black/6 dark:bg-black/20" />
+                      <div className="absolute top-3 right-3">
+                        <Badge
+                          variant="secondary"
+                          className="bg-white/90 dark:bg-black/50 backdrop-blur-sm"
                         >
-                          Lesson {lessons.findIndex((l) => l.id === item.id) + 1}
+                          {lesson.topics.length} Topics
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {/* Content */}
+                    <div className="p-5 flex-1 flex flex-col">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+                          Lesson {lesson.id}
                         </span>
-                        
-                        {/* Status badge */}
-                        {user && status === 'completed' && (
-                          <Badge variant="default" className="h-5 px-1.5 text-[10px] bg-green-500 hover:bg-green-600">
-                            <CheckCircle2 className="w-3 h-3" />
-                          </Badge>
-                        )}
-                        {user && status === 'in-progress' && (
-                          <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
-                            <Clock className="w-3 h-3" />
-                          </Badge>
+                        {status === 'in-progress' && (
+                          <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
                         )}
                       </div>
-                      
-                      {/* Progress indicators */}
-                      {user ? (
-                        <div className="flex flex-col items-end gap-1">
-                          {/* Topic viewing progress */}
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-[9px] text-muted-foreground w-12 text-right">Topics</span>
-                            <div className="w-16 h-1.5 bg-accent rounded-full overflow-hidden">
-                              <div 
-                                className="h-full bg-blue-500 transition-all duration-300"
-                                style={{ width: `${progressPercent}%` }}
-                              />
-                            </div>
-                            <span className="text-[10px] text-muted-foreground font-medium w-8">
-                              {progressPercent}%
+
+                      <h3 className="font-bold text-lg text-gray-900 dark:text-gray-100 mb-2 line-clamp-1">
+                        {lesson.title}
+                      </h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2 mb-4 flex-1">
+                        {lesson.description}
+                      </p>
+
+                      {/* Progress */}
+                      <div className="space-y-3 mt-auto">
+                        <div className="flex justify-between text-xs font-medium">
+                          <span
+                            className={
+                              status === 'completed'
+                                ? 'text-green-600'
+                                : status === 'in-progress'
+                                  ? 'text-blue-600'
+                                  : 'text-gray-500'
+                            }
+                          >
+                            {status === 'not-started'
+                              ? 'Not Started'
+                              : `${progress}% Complete`}
+                          </span>
+                        </div>
+                        <Progress value={progress} className="h-1.5" />
+
+                        <Button
+                          onClick={() => setSelectedLesson(lesson)}
+                          variant={
+                            status === 'completed' ? 'outline' : 'default'
+                          }
+                          className="w-full mt-2"
+                        >
+                          {status === 'completed'
+                            ? 'Review'
+                            : status === 'in-progress'
+                              ? 'Continue'
+                              : 'Start'}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {filteredLessons.map((lesson) => {
+                const { status, progress } = getLessonStatus(lesson.id)
+                return (
+                  <div
+                    key={lesson.id}
+                    className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-md hover:border-gray-300 dark:hover:border-gray-700 transition-colors group"
+                  >
+                    <div className="p-4 flex items-center gap-4">
+                      {/* Status Icon */}
+                      <div className="shrink-0 relative">
+                        <div className="w-10 h-10 rounded-md overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                          <img
+                            src={lessonImages[lesson.id]}
+                            alt={lesson.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        {status === 'in-progress' && (
+                          <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-blue-500 animate-pulse" />
+                        )}
+                      </div>
+
+                      {/* Lesson Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                            Lesson {lesson.id}
+                          </span>
+                          <span className="text-gray-300 dark:text-gray-700">
+                            •
+                          </span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {lesson.topics.length} Topics
+                          </span>
+                        </div>
+                        <h3 className="font-semibold text-base text-gray-900 dark:text-gray-100 mb-1">
+                          {lesson.title}
+                        </h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">
+                          {lesson.description}
+                        </p>
+                      </div>
+
+                      {/* Progress Section */}
+                      <div className="shrink-0 w-32">
+                        <div className="text-right mb-2">
+                          <span
+                            className={`text-xs font-medium ${
+                              status === 'completed'
+                                ? 'text-green-600 dark:text-green-400'
+                                : status === 'in-progress'
+                                  ? 'text-blue-600 dark:text-blue-400'
+                                  : 'text-gray-500 dark:text-gray-400'
+                            }`}
+                          >
+                            {status === 'not-started'
+                              ? 'Not Started'
+                              : `${progress}%`}
+                          </span>
+                        </div>
+                        <Progress value={progress} className="h-1.5" />
+                      </div>
+
+                      {/* Action Button */}
+                      <div className="shrink-0">
+                        <Button
+                          onClick={() => setSelectedLesson(lesson)}
+                          variant={
+                            status === 'completed' ? 'outline' : 'default'
+                          }
+                          size="sm"
+                        >
+                          {status === 'completed'
+                            ? 'Review'
+                            : status === 'in-progress'
+                              ? 'Continue'
+                              : 'Start'}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Lesson Details Dialog */}
+      <Dialog
+        open={!!selectedLesson}
+        onOpenChange={(open: boolean) => !open && setSelectedLesson(null)}
+      >
+        <DialogContent className="sm:max-w-md max-h-[80vh] flex flex-col p-0 gap-0 bg-white dark:bg-gray-950 border-gray-200 dark:border-gray-800 shadow-xl overflow-hidden">
+          {/* Compact Header */}
+          <div className="px-6 py-5 border-b border-gray-100 dark:border-gray-800 shrink-0">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[10px] font-bold tracking-widest uppercase text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded-full">
+                Lesson {selectedLesson?.id}
+              </span>
+            </div>
+
+            <DialogTitle className="text-xl font-bold text-gray-900 dark:text-gray-50 mb-1">
+              {selectedLesson?.title}
+            </DialogTitle>
+            <DialogDescription className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
+              {selectedLesson?.description}
+            </DialogDescription>
+          </div>
+
+          {/* Scrollable Content */}
+          <div className="px-6 py-4 overflow-y-auto flex-1 custom-scrollbar">
+            <div className="space-y-6">
+              {/* Description */}
+              <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                {selectedLesson?.details}
+              </p>
+
+              {/* Topics List - Compact */}
+              <div className="space-y-2">
+                <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
+                  Curriculum
+                </h4>
+
+                <div className="space-y-1">
+                  {selectedLessonTopics.map((topic, index) => {
+                    const topicStatus = (
+                      topicsProgress[selectedLesson?.id || 0] as
+                        | TopicProgress[]
+                        | undefined
+                    )?.find((t) => t.topicId === topic.id)
+                    const mastery = (
+                      topicMastery[selectedLesson?.id || 0] as
+                        | TopicMastery[]
+                        | undefined
+                    )?.find((m) => m.topicId === topic.id)
+                    const isTopicCompleted =
+                      topic.status === 'completed' ||
+                      topicStatus?.status === 'completed'
+                    const isTopicViewed =
+                      isTopicCompleted ||
+                      topic.status === 'viewed' ||
+                      topicStatus?.status === 'viewed'
+                    const masteryPercent = mastery
+                      ? Math.round(mastery.mastery * 100)
+                      : 0
+
+                    return (
+                      <Link
+                        to="/lesson/$lessonId"
+                        params={{
+                          lessonId: selectedLesson
+                            ? selectedLesson.id.toString()
+                            : '1',
+                        }}
+                        search={{ topicId: toTopicIdParam(topic.id) }}
+                        key={`${selectedLesson?.id}-${topic.id}`}
+                        className="group flex items-center gap-3 p-2 -mx-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-900 transition-all duration-200"
+                      >
+                        {/* Status Dot */}
+                        <div className="shrink-0 flex items-center justify-center w-5 h-5">
+                          {isTopicCompleted ? (
+                            <CheckCircle2 className="w-4 h-4 text-green-500" />
+                          ) : (
+                            <span className="text-xs font-medium text-gray-400 group-hover:text-gray-600 dark:text-gray-600 dark:group-hover:text-gray-400">
+                              {index + 1}
                             </span>
-                          </div>
-                          
-                          {/* Assessment mastery (if taken) */}
-                          {masteryPercent !== null && (
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-[9px] text-muted-foreground w-12 text-right">Mastery</span>
-                              <div className="w-16 h-1.5 bg-accent rounded-full overflow-hidden">
-                                <div 
-                                  className={`h-full transition-all duration-300 ${
-                                    masteryPercent >= 70 ? 'bg-green-500' : masteryPercent >= 40 ? 'bg-yellow-500' : 'bg-red-500'
-                                  }`}
-                                  style={{ width: `${masteryPercent}%` }}
-                                />
-                              </div>
-                              <span className={`text-[10px] font-medium w-8 ${
-                                masteryPercent >= 70 ? 'text-green-600' : masteryPercent >= 40 ? 'text-yellow-600' : 'text-red-600'
-                              }`}>
-                                {masteryPercent}%
-                              </span>
-                            </div>
                           )}
                         </div>
-                      ) : (
-                        <div className="flex items-center gap-1 px-2 py-1 bg-primary/10 rounded-md border border-primary/20">
-                          <svg className="w-3 h-3 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                          </svg>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              // Navigate to login
-                            }}
-                            className="text-[10px] text-primary font-medium hover:underline"
-                          >
-                            Log in to track
-                          </button>
+
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <h5 className="text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">
+                            {topic.title}
+                          </h5>
                         </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                      {isTopicCompleted ? (
-                        <>
-                          <CheckCircle2 className="w-3 h-3 text-green-500" />
-                          <span className="font-medium text-green-600">Completed</span>
-                        </>
-                      ) : isTopicInProgress ? (
-                        <>
-                          <Clock className="w-3 h-3 text-amber-500" />
-                          <span className="font-medium text-amber-600">In progress</span>
-                        </>
-                      ) : (
-                        <span>Not started</span>
-                      )}
-                    </div>
-                  )}
-                </TimelineOppositeContent>
 
-                <TimelineSeparator
-                  sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <div className={`relative ${isSelected ? 'scale-110' : ''} transition-transform duration-200`}>
-                    <AnimatedAssessmentButton
-                      onClick={() => handleItemClick(item)}
-                      isSelected={!!isSelected}
-                      locked={false}
-                      isCompleted={false}
-                      className={
-                        item.isTopic 
-                          ? 'w-8 h-8 opacity-80 hover:opacity-100 transition-opacity' 
-                          : 'w-12 h-12 hover:scale-105 transition-transform'
-                      }
-                    />
-                    {/* Ring indicator for selected lesson */}
-                    {isSelected && !item.isTopic && (
-                      <div className="absolute inset-0 rounded-full border-2 border-primary animate-pulse" />
-                    )}
-                  </div>
-                  {idx < timelineItems.length - 1 && (
-                    <TimelineConnector 
-                      sx={{
-                        bgcolor: item.isTopic ? 'grey.300' : 'grey.400',
-                        width: item.isTopic ? 1 : 2,
-                      }}
-                    />
-                  )}
-                </TimelineSeparator>
+                        {/* Meta */}
+                        <div className="shrink-0 flex items-center gap-2">
+                          {masteryPercent > 0 && (
+                            <span className="text-[10px] font-medium text-gray-500 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded-sm">
+                              {masteryPercent}%
+                            </span>
+                          )}
+                          {isTopicViewed && !isTopicCompleted && (
+                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                          )}
+                        </div>
+                      </Link>
+                    )
+                  })}
+                </div>
+              </div>
 
-                <TimelineContent
-                  sx={{
-                    cursor: 'pointer',
-                    flex: 1,
-                    pl: 2,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    opacity: item.isTopic ? 0.8 : 1,
-                    transition: 'all 0.2s ease',
-                    '&:hover': {
-                      opacity: 1,
-                      transform: item.isTopic ? 'translateX(4px)' : 'translateX(8px)',
-                    },
-                    position: 'relative',
-                  }}
-                  onClick={() => handleItemClick(item)}
-                >
-                  {/* Lesson group badge for main lessons */}
-                  {!item.isTopic && (
-                    <div className={`inline-block w-fit px-2 py-0.5 rounded-full text-[10px] font-bold mb-1 ${
-                      isSelected 
-                        ? 'bg-primary text-primary-foreground' 
-                        : 'bg-accent text-accent-foreground'
-                    }`}>
-                      MAIN LESSON
-                    </div>
-                  )}
-                  
-                  <p
-                    className={`text-sm transition-colors ${
-                      isSelected
-                        ? 'font-bold text-primary'
-                        : 'font-normal hover:text-foreground'
-                    }`}
-                  >
-                    {item.title}
-                  </p>
-                  <p className={`text-xs transition-colors ${
-                    isSelected ? 'text-primary/70' : 'text-muted-foreground'
-                  }`}>
-                    {item.description}
-                  </p>
+              {/* BitBot - Compact */}
+              <div className="flex gap-3 items-center pt-4 border-t border-gray-100 dark:border-gray-800">
+                <img
+                  src={bitboCongrats}
+                  alt="BitBot"
+                  className="w-6 h-6 opacity-80 grayscale hover:grayscale-0 transition-all"
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 italic">
+                  "{!user ? 'Log in to track progress.' : 'Ready to start?'}"
+                </p>
+              </div>
+            </div>
+          </div>
 
-                  {/* Topic count for main lessons */}
-               {!item.isTopic && item.topics && item.topics.length > 0 && (
-                    <span className="text-[10px] text-muted-foreground mt-1">
-                   {item.topics.length} topics
-                    </span>
-                  )}
-                </TimelineContent>
-              </TimelineItem>
-            )
-          })}
-        </Timeline>
-      </div>
+          {/* Footer - Compact & Sticky */}
+          <div className="p-4 bg-gray-50/50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-2 shrink-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedLesson(null)}
+              className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 h-9"
+            >
+              Close
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => {
+                if (!selectedLesson) return
+
+                if (!user) {
+                  navigate({ to: '/login' })
+                  return
+                }
+
+                navigate({
+                  to: '/lesson/$lessonId',
+                  params: { lessonId: selectedLesson.id.toString() },
+                  search: {
+                    topicId: parseInt(
+                      selectedLesson.topics[0].id.split('-')[1]
+                    ),
+                  },
+                })
+              }}
+              className="bg-black hover:bg-gray-800 text-white dark:bg-white dark:text-black dark:hover:bg-gray-200 h-9 px-6"
+            >
+              Start Lesson
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

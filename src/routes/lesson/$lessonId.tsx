@@ -2,37 +2,52 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState, useEffect, useRef } from 'react'
 import LessonHeader from '@/components/LessonHeader'
 import { useGetLesson } from '@/hooks/useLesson'
-import { useMarkTopicViewed, useMarkTopicCompleted, useTopicsForLesson } from '@/hooks/useUserProgress'
+import {
+  useMarkTopicViewed,
+  useMarkTopicCompleted,
+  useTopicsForLesson,
+} from '@/hooks/useUserProgress'
 import { useAuthContext } from '@/contexts/AuthContext'
 
 import { Button } from '@/components/ui/button'
 import { ChevronRight, ChevronLeft, Check } from 'lucide-react'
 import { Confetti, type ConfettiRef } from '@/components/magicui/confetti'
-import bitbotRightPoint from '@/assets/bitbot/right-point.svg'
+import BitBotGuide from '@/components/BitBotGuide'
+import ToolSpotlight from '@/components/ToolSpotlight'
 import ContentDisplay from '@/components/ContentDisplay'
 
 // Local content types (keeps file self-contained)
 interface ContentBlock {
-  type: 'text' | 'inlineCode' | 'codeBlock' | 'image' | 'list' | 'table' | 'formula' | 'callout' | 'divider' | 'custom';
-  text?: string;
-  code?: string;
-  language?: string;
-  image?: string;
-  alt?: string;
-  list?: string[] | { text: string; subItems?: string[] }[];
+  type:
+    | 'text'
+    | 'inlineCode'
+    | 'codeBlock'
+    | 'image'
+    | 'list'
+    | 'table'
+    | 'formula'
+    | 'callout'
+    | 'divider'
+    | 'custom'
+  text?: string
+  code?: string
+  language?: string
+  image?: string
+  alt?: string
+  list?: string[] | { text: string; subItems?: string[] }[]
   table?: {
-    headers: string[];
-    rows: string[][];
-    caption?: string;
-  };
-  formula?: string;
+    headers: string[]
+    rows: string[][]
+    caption?: string
+  }
+  formula?: string
   callout?: {
-    type: 'info' | 'warning' | 'tip' | 'important';
-    title?: string;
-    content: string;
-  };
-  content?: React.ReactNode;
-  className?: string;
+    type: 'info' | 'warning' | 'tip' | 'important'
+    title?: string
+    content: string
+  }
+  content?: React.ReactNode
+  className?: string
 }
 
 export interface Topic {
@@ -65,7 +80,10 @@ export const Route = createFileRoute('/lesson/$lessonId')({
           : undefined
 
     return {
-      topicId: typeof parsed === 'number' && !Number.isNaN(parsed) ? parsed : undefined,
+      topicId:
+        typeof parsed === 'number' && !Number.isNaN(parsed)
+          ? parsed
+          : undefined,
     }
   },
   component: RouteComponent,
@@ -99,10 +117,13 @@ function RouteComponent() {
 
   const goToTopic = (nextIndex: number) => {
     if (!lesson?.topics?.length) return
-    const clampedIndex = Math.max(0, Math.min(nextIndex, lesson.topics.length - 1))
+    const clampedIndex = Math.max(
+      0,
+      Math.min(nextIndex, lesson.topics.length - 1)
+    )
     setTopicIdx(clampedIndex)
     setFinished(false)
-  setCompletionError(null)
+    setCompletionError(null)
 
     const nextTopic = lesson.topics[clampedIndex]
     if (nextTopic) {
@@ -128,7 +149,9 @@ function RouteComponent() {
       onSuccess()
     } catch (error) {
       console.error('❌ Error marking topic as completed:', error)
-      setCompletionError('Failed to mark this topic as completed. Please try again.')
+      setCompletionError(
+        'Failed to mark this topic as completed. Please try again.'
+      )
     } finally {
       setIsCompleting(false)
     }
@@ -141,7 +164,9 @@ function RouteComponent() {
     }
 
     if (typeof initialTopicId === 'number') {
-      const matchingIndex = lesson.topics.findIndex((t) => t.id === initialTopicId)
+      const matchingIndex = lesson.topics.findIndex(
+        (t) => t.id === initialTopicId
+      )
       if (matchingIndex >= 0) {
         setTopicIdx(matchingIndex)
         setFinished(false)
@@ -167,7 +192,7 @@ function RouteComponent() {
           },
           onError: (error) => {
             console.error('❌ Error marking topic as viewed:', error)
-          }
+          },
         })
       }, 2000)
       return () => clearTimeout(timer)
@@ -181,25 +206,25 @@ function RouteComponent() {
       confettiRef.current?.fire({
         particleCount: 100,
         spread: 70,
-        origin: { y: 0.6 }
+        origin: { y: 0.6 },
       })
-      
+
       // Fire again after a short delay
       setTimeout(() => {
         confettiRef.current?.fire({
           particleCount: 50,
           angle: 60,
           spread: 55,
-          origin: { x: 0 }
+          origin: { x: 0 },
         })
       }, 250)
-      
+
       setTimeout(() => {
         confettiRef.current?.fire({
           particleCount: 50,
           angle: 120,
           spread: 55,
-          origin: { x: 1 }
+          origin: { x: 1 },
         })
       }, 400)
     }
@@ -223,7 +248,9 @@ function RouteComponent() {
   if (error || !lesson) {
     return (
       <div className="pt-36 max-w-4xl mx-auto flex flex-col items-center">
-        <p className="text-lg text-gray-500 dark:text-gray-400">{error ? (error as Error).message : 'Lesson not found.'}</p>
+        <p className="text-lg text-gray-500 dark:text-gray-400">
+          {error ? (error as Error).message : 'Lesson not found.'}
+        </p>
       </div>
     )
   }
@@ -231,22 +258,28 @@ function RouteComponent() {
   if (topicIdx < 0 || topicIdx >= (lesson.topics?.length ?? 0)) {
     return (
       <div className="pt-36 max-w-4xl mx-auto flex flex-col items-center">
-        <p className="text-lg text-gray-500 dark:text-gray-400">Invalid topic.</p>
+        <p className="text-lg text-gray-500 dark:text-gray-400">
+          Invalid topic.
+        </p>
       </div>
     )
   }
 
   const topic = lesson.topics?.[topicIdx]
-  
+
   if (!topic) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
-        <p className="text-lg text-gray-500 dark:text-gray-400">Topic not found.</p>
+        <p className="text-lg text-gray-500 dark:text-gray-400">
+          Topic not found.
+        </p>
       </div>
     )
   }
 
-  const currentTopicProgress = lessonTopicsProgress?.find((topicEntry: any) => topicEntry.id === topic.id)?.userProgress
+  const currentTopicProgress = lessonTopicsProgress?.find(
+    (topicEntry: any) => topicEntry.id === topic.id
+  )?.userProgress
   const isCurrentTopicCompleted = currentTopicProgress?.status === 'completed'
 
   const handleMarkTopicComplete = () => {
@@ -297,11 +330,15 @@ function RouteComponent() {
   const calculateProgress = () => {
     if (finished) return 100
 
-    const totalTopics = lessonTopicsProgress?.length ?? lesson.topics?.length ?? 0
+    const totalTopics =
+      lessonTopicsProgress?.length ?? lesson.topics?.length ?? 0
     if (totalTopics === 0) return 0
 
     if (user && lessonTopicsProgress) {
-      const completedTopics = lessonTopicsProgress.filter((topicProgress: any) => topicProgress.userProgress?.status === 'completed').length
+      const completedTopics = lessonTopicsProgress.filter(
+        (topicProgress: any) =>
+          topicProgress.userProgress?.status === 'completed'
+      ).length
       return Math.round((completedTopics / totalTopics) * 100)
     }
 
@@ -309,21 +346,32 @@ function RouteComponent() {
     return Math.round(fallbackProgress)
   }
 
+  const getToolForLesson = (lessonId: number) => {
+    switch (lessonId) {
+      case 1:
+        return 'calculator'
+      case 2:
+        return 'circuit'
+      case 3:
+        return 'kmap'
+      default:
+        return null
+    }
+  }
+
+  const toolToSpotlight = lesson ? getToolForLesson(lesson.id) : null
+
   return (
     <div>
-      <LessonHeader
-        progress={calculateProgress()}
-        title={lesson.title}
-      />
+      <LessonHeader progress={calculateProgress()} title={lesson.title} />
       <div className="pt-24 max-w-4xl mx-auto flex flex-col">
         {!finished ? (
           <div className="w-full p-6 pb-20 flex flex-col relative">
-            <img
-              src={bitbotRightPoint}
-              alt="Bitbot Right Point"
-              className="fixed left-[calc(50%-600px)] top-32 w-28 z-50 opacity-90 pointer-events-none select-none animate-float"
-              style={{ transition: 'top 0.3s, left 0.3s' }}
-              draggable="false"
+            <BitBotGuide
+              message={`Let's learn about ${topic.title}!`}
+              emotion="pointing-left"
+              position="bottom-right"
+              className="fixed bottom-8 right-8 z-50"
             />
 
             {/* Topic Header */}
@@ -331,52 +379,58 @@ function RouteComponent() {
               <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
                 {topic.title}
               </h1>
-              <div className="flex items-center text-sm text-gray-500 dark:text-gray-400 space-x-4">
+              <div className="flex justify-between items-center text-sm text-gray-500 dark:text-gray-400 space-x-4">
                 {/* Show topic counter for all topics */}
-                <span>Topic {topicIdx + 1} of {lesson.topics?.length || 0}</span>
-                {(topic.tags?.length || 0) > 0 && (
-                  <div className="flex space-x-1">
-                    {topic.tags?.map((tag, i) => (
-                      <span
-                        key={i}
-                        className="bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 px-2 py-1 rounded text-xs"
-                      >
-                        {tag}
-                      </span>
-                    ))}
+                <div className="flex space-x-4">
+                  <span>
+                    Topic {topicIdx + 1} of {lesson.topics?.length || 0}
+                  </span>
+                  {(topic.tags?.length || 0) > 0 && (
+                    <div className="flex space-x-1">
+                      {topic.tags?.map((tag, i) => (
+                        <span
+                          key={i}
+                          className="bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 px-2 py-1 rounded text-xs"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {user && (
+                  <div className="flex justify-end">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={handleMarkTopicComplete}
+                      disabled={isCompleting || isCurrentTopicCompleted}
+                      className="flex items-center gap-2"
+                    >
+                      <Check className="w-4 h-4" />
+                      {isCurrentTopicCompleted
+                        ? 'Topic Completed'
+                        : 'Mark Topic Complete'}
+                    </Button>
                   </div>
                 )}
               </div>
             </div>
 
-            {user && (
-              <div className="flex justify-end mb-4">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={handleMarkTopicComplete}
-                  disabled={isCompleting || isCurrentTopicCompleted}
-                  className="flex items-center gap-2"
-                >
-                  <Check className="w-4 h-4" />
-                  {isCurrentTopicCompleted ? 'Topic Completed' : 'Mark Topic Complete'}
-                </Button>
-              </div>
-            )}
-
             {completionError && (
-              <div className="mb-4 text-sm text-red-500">
-                {completionError}
-              </div>
+              <div className="mb-4 text-sm text-red-500">{completionError}</div>
             )}
 
             {/* Content Display */}
             {Array.isArray(topic.displayContent) ? (
               <ContentDisplay blocks={topic.displayContent as any} />
             ) : (
-              <div className="text-gray-500 dark:text-gray-400 italic">No content available</div>
+              <div className="text-gray-500 dark:text-gray-400 italic">
+                No content available
+              </div>
             )}
 
+            {toolToSpotlight && <ToolSpotlight tool={toolToSpotlight as any} />}
           </div>
         ) : (
           <div className="w-full p-6 pt-16 flex flex-col items-center justify-between min-h-[600px] relative">
@@ -435,7 +489,7 @@ function RouteComponent() {
                   navigate({ to: '/roadmap' })
                 }}
               >
-                Back to Roadmap
+                Back to Dashboard
               </Button>
             </div>
           </div>
@@ -497,4 +551,3 @@ function RouteComponent() {
     </div>
   )
 }
-// ...existing code...

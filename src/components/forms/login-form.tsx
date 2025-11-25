@@ -33,10 +33,10 @@ export function LoginForm({
   })
 
   useEffect(() => {
-    if (signInMutation.isSuccess || logInWithGoogleMutation.isSuccess) {
-      navigate({ to: '/profile' })
+    if (signInMutation.isSuccess) {
+      navigate({ to: '/' })
     }
-  }, [signInMutation.isSuccess, logInWithGoogleMutation.isSuccess, navigate])
+  }, [signInMutation.isSuccess, navigate])
 
   const onSubmit = (data: z.infer<typeof signInSchema>) => {
     signInMutation.mutate({ email: data.email, password: data.password })

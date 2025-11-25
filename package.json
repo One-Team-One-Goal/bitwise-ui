@@ -10,14 +10,7 @@
     "render-build": "npm run build:ci",
     "lint": "eslint .",
     "preview": "vite preview",
-    "postinstall": "test \"$NODE_ENV\" = \"production\" || (test -d .git && husky install || true)",
     "start": "serve -s dist -l 3000"
-  },
-  "lint-staged": {
-    "**/*.{ts,tsx,js,jsx}": [
-      "eslint --fix",
-      "prettier --write"
-    ]
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -107,9 +100,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^16.0.0",
-    "husky": "^8.0.0",
     "kubb": "^3.0.77",
-    "lint-staged": "^16.1.0",
     "magicui-cli": "^0.1.6",
     "postcss": "^8.5.4",
     "prettier": "^3.5.3",

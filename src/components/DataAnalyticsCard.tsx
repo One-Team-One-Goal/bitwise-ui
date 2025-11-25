@@ -1,57 +1,10 @@
 // ...existing code...
 import { Card, CardContent } from '@/components/ui/card'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Progress } from '@/components/ui/progress'
-import { TrendingUp, TrendingDown, Target, BarChart3, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react'
+import { TrendingUp, TrendingDown, Target, BarChart3, AlertCircle, ChevronDown, ChevronUp, RefreshCcw } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
-import { apiService } from '@/services/api.service'
-
-interface AnalyticsData {
-  overallMastery: number
-  recommendedDifficulty: string
-  skillsByLesson: Array<{
-    lessonId: number
-    lessonTitle: string
-    skills: Array<{
-      topicId: number
-      topicTitle: string
-      mastery: number
-      level: number
-      attempts: number
-      correct: number
-      accuracy: number
-    }>
-  }>
-  focusAreas: Array<{
-    topicId: number
-    topicTitle: string
-    lessonId: number
-    mastery: number
-    level: number
-  }>
-  reinforcementNeeded: Array<{
-    topicId: number
-    topicTitle: string
-    level: number
-  }>
-  totalAttempts: number
-  totalCorrect: number
-}
-
-interface StatisticsData {
-  totalAttempts: number
-  averageScore: number
-  bestScore: number
-  overallMastery: number
-  skillBreakdown: Array<{
-    topicTitle: string
-    lessonTitle: string
-    mastery: number
-    level: number
-    attempts: number
-    correct: number
-  }>
-}
+import type { AdaptiveAnalytics as AnalyticsData, AssessmentStatistics as StatisticsData } from '@/services/roadmap.service'
 
 const lessonNames: Record<number, string> = {
   1: "Introduction to Boolean Algebra",
@@ -60,69 +13,39 @@ const lessonNames: Record<number, string> = {
   4: "Simplification"
 }
 
-export default function DataAnalyticsCard({ lesson, user }: { lesson: any; user: any }) {
-  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
-  const [statistics, setStatistics] = useState<StatisticsData | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+interface DataAnalyticsCardProps {
+  user: any
+  lesson: { id: number; title: string } | null
+  analytics?: AnalyticsData | null
+  statistics?: StatisticsData | null
+  loading?: boolean
+  errorMessage?: string | null
+  onRefresh?: () => void | Promise<void>
+}
+
+export default function DataAnalyticsCard({
+  lesson,
+  user,
+  analytics: analyticsProp = null,
+  statistics: statisticsProp = null,
+  loading = false,
+  errorMessage = null,
+  onRefresh,
+}: DataAnalyticsCardProps) {
   const [open, setOpen] = useState(false)
-
-  useEffect(() => {
-    if (!user?.id) {
-      setAnalytics(null)
-      setStatistics(null)
-      return
-    }
-
-    const fetchAnalytics = async () => {
-      setLoading(true)
-      setError(null)
-      try {
-        // Use apiService which normalizes base URL and avoids duplicate /api
-        const [analyticsResult, statisticsResult] = await Promise.all([
-          apiService.get(`/adaptive/analytics/${user.id}`),
-          apiService.get(`/assessment/statistics/${user.id}`)
-        ])
-
-        // Keep existing success/data shape checks to remain compatible with backend response format
-        if (analyticsResult && (analyticsResult as any).success !== undefined) {
-          if ((analyticsResult as any).success) {
-            setAnalytics((analyticsResult as any).data)
-          } else {
-            throw new Error((analyticsResult as any).error || 'Failed to fetch analytics')
-          }
-        } else {
-          // assume apiService returned the data directly
-          setAnalytics(analyticsResult as AnalyticsData)
-        }
-
-        if (statisticsResult && (statisticsResult as any).success !== undefined) {
-          if ((statisticsResult as any).success) {
-            setStatistics((statisticsResult as any).data)
-          } else {
-            throw new Error((statisticsResult as any).error || 'Failed to fetch statistics')
-          }
-        } else {
-          setStatistics(statisticsResult as StatisticsData)
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch data')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchAnalytics()
-  }, [user?.id])
+  const analytics = analyticsProp
+  const statistics = statisticsProp
+  const error = errorMessage
 
 
   const getCurrentLessonAnalytics = () => {
-    if (!analytics || !lesson) return null
-    // Find analytics for the current lesson
-    const currentLessonData = analytics.skillsByLesson.find(
-      l => l.lessonId === lesson.id || l.lessonTitle === lesson.title
-    )
-    return currentLessonData
+    if (!analytics) return null
+    if (lesson) {
+      return analytics.skillsByLesson.find(
+        (l) => l.lessonId === lesson.id || l.lessonTitle === lesson.title
+      ) || null
+    }
+    return analytics.skillsByLesson[0] || null
   }
 
   const getWeakTopicsForCurrentLesson = () => {
@@ -256,7 +179,7 @@ export default function DataAnalyticsCard({ lesson, user }: { lesson: any; user:
     Math.round(currentLessonData.skills.reduce((sum, skill) => sum + skill.mastery, 0) / currentLessonData.skills.length * 100) : 0
 
   return (
-    <Card className="p-0 max-w-md rounded-sm">
+    <Card className="p-0 w-full rounded-sm">
       <button
         className="w-full flex items-center justify-between px-6 py-3 bg-primary-foreground border-b rounded-md"
         onClick={() => setOpen((o) => !o)}
@@ -280,6 +203,21 @@ export default function DataAnalyticsCard({ lesson, user }: { lesson: any; user:
               <span className="italic">Mastery</span> is a long-term skill estimate, not just your latest score.
             </div>
           </div>
+
+          {onRefresh && (
+            <div className="flex justify-end">
+              <button
+                type="button"
+                className="text-xs font-medium text-blue-600 hover:text-blue-800 inline-flex items-center gap-1"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onRefresh()
+                }}
+              >
+                <RefreshCcw className="w-3 h-3" /> Sync data
+              </button>
+            </div>
+          )}
 
           {/* Overall Progress */}
           <div className="space-y-2">
@@ -373,7 +311,7 @@ export default function DataAnalyticsCard({ lesson, user }: { lesson: any; user:
                   <li key={topic.topicId} className="text-xs">
                     <Link
                       to="/lesson/$lessonId"
-                      params={{ lessonId: String(lesson.id) }}
+                      params={{ lessonId: lesson ? String(lesson.id) : '1' }}
                       search={{ topicId: topic.topicId }}
                       className="text-blue-600 underline hover:text-blue-800"
                       title={`Review ${topic.topicTitle} in this lesson`}

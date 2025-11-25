@@ -23,7 +23,7 @@ import {
   type TopicMastery,
 } from '@/components/roadmap'
 
-export const Route = createFileRoute('/roadmap')({
+export const Route = createFileRoute('/roadmap/refactored')({
   component: RouteComponent,
 })
 

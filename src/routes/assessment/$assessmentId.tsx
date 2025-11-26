@@ -1,6 +1,6 @@
 import { useAuthContext } from '@/contexts/AuthContext'
 import { createFileRoute, useNavigate, Link } from '@tanstack/react-router'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
@@ -17,8 +17,18 @@ import {
   Lightbulb,
   Loader2,
   ArrowRight,
+  Volume2,
+  VolumeX,
 } from 'lucide-react'
+import confetti from 'canvas-confetti'
 import CircuitRenderer from '@/components/CircuitRenderer'
+import { useSound } from '@/hooks/useSound'
+import congratsBitbot from '@/assets/bitbot/congrats.svg'
+import rightPoint from '@/assets/bitbot/right-point.svg'
+
+import correctSound from '@/assets/audio/correct.mp3'
+import incorrectSound from '@/assets/audio/incorrect.mp3'
+import celebrationSound from '@/assets/audio/partypopper.mp3'
 
 async function fetchAttempt(attemptId: number) {
   const response = await fetch(
@@ -247,6 +257,12 @@ function RouteComponent() {
   const [submittedAnswers, setSubmittedAnswers] = useState<Set<number>>(
     new Set()
   )
+  const [soundEnabled, setSoundEnabled] = useState(true)
+  const imageRef = useRef<HTMLImageElement>(null)
+
+  const [playCorrect] = useSound(correctSound, { soundEnabled })
+  const [playIncorrect] = useSound(incorrectSound, { soundEnabled })
+  const [playCelebration] = useSound(celebrationSound, { soundEnabled })
 
   useEffect(() => {
     if (!user) {
@@ -309,26 +325,40 @@ function RouteComponent() {
     setSelectedOption(null)
   }, [current])
 
-  if (loading) {
-    return (
-      <div className="pt-36 max-w-4xl mx-auto flex flex-col items-center">
-        <div className="animate-pulse space-y-4 w-full">
-          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-64 mx-auto"></div>
-          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-48 mx-auto"></div>
-          <Card className="w-full">
-            <CardContent className="p-6 space-y-4">
-              <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded"></div>
-              <div className="space-y-2">
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    )
-  }
+  useEffect(() => {
+    if (showResult && !processingResults && imageRef.current) {
+      playCelebration()
+      const rect = imageRef.current.getBoundingClientRect()
+      const x = (rect.left + rect.right) / 2 / window.innerWidth
+      const y = (rect.top + rect.bottom) / 2 / window.innerHeight
+      confetti({
+        particleCount: 150,
+        spread: 70,
+        origin: { x, y },
+      })
+    }
+  }, [showResult, processingResults, playCelebration])
+
+  // if (loading) {
+  //   return (
+  //     <div className="pt-36 max-w-4xl mx-auto flex flex-col items-center">
+  //       <div className="animate-pulse space-y-4 w-full">
+  //         <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-64 mx-auto"></div>
+  //         <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-48 mx-auto"></div>
+  //         <Card className="w-full border-none shadow-none">
+  //           <CardContent className="p-6 space-y-4">
+  //             <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded"></div>
+  //             <div className="space-y-2">
+  //               <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
+  //               <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
+  //               <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
+  //             </div>
+  //           </CardContent>
+  //         </Card>
+  //       </div>
+  //     </div>
+  //   )
+  // }
 
   if (!questions.length) {
     return (
@@ -364,6 +394,17 @@ function RouteComponent() {
 
   const handleSubmitAnswer = () => {
     if (!selectedOption) return
+
+    const isCorrect = question.options.find(
+      (opt: any) => opt.id === selectedOption
+    )?.isCorrect
+
+    if (isCorrect) {
+      playCorrect()
+    } else {
+      playIncorrect()
+    }
+
     setAnswers({ ...answers, [question.id ?? current]: selectedOption })
     setSubmittedAnswers(new Set([...submittedAnswers, question.id ?? current]))
   }
@@ -409,6 +450,8 @@ function RouteComponent() {
         if (result.data.topicPerformance) {
           setTopicPerformance(result.data.topicPerformance)
         }
+
+        // Trigger confetti and sound
       } else {
         throw new Error(result.error || 'Failed to submit assessment')
       }
@@ -482,80 +525,94 @@ function RouteComponent() {
         className={`pt-24 ${hasVisualElements() ? 'max-w-5xl' : 'max-w-3xl'} mx-auto px-4 flex flex-col items-center`}
       >
         {/* Header Section */}
-        <div className="w-full mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3 text-foreground">
-              {adaptiveInfo ? (
-                <>
-                  <div className="p-2 rounded-lg bg-purple-500/10 text-purple-600">
-                    <Brain className="w-6 h-6" />
+        {!showResult && (
+          <div className="w-full mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3 text-foreground">
+                {adaptiveInfo ? (
+                  <>
+                    <div className="rounded-lg text-purple-800">
+                      <Brain className="w-6 h-6" />
+                    </div>
+                    <p className="font-semibold">Adaptive Assessment</p>
+                  </>
+                ) : (
+                  <>
+                    <div className="p-2 rounded-lg bg-blue-500/10 text-blue-600">
+                      <Target className="w-6 h-6" />
+                    </div>
+                    Practice Assessment
+                  </>
+                )}
+              </h1>
+              {adaptiveInfo && (
+                <div className="flex items-center gap-3 mt-3 text-muted-foreground">
+                  <div
+                    className={`px-2.5 py-0.5 rounded-full border text-xs font-semibold capitalize ${getDifficultyColor(adaptiveInfo.recommendedDifficulty)}`}
+                  >
+                    {adaptiveInfo.recommendedDifficulty}
                   </div>
-                  Adaptive Assessment
-                </>
-              ) : (
-                <>
-                  <div className="p-2 rounded-lg bg-blue-500/10 text-blue-600">
-                    <Target className="w-6 h-6" />
-                  </div>
-                  Practice Assessment
-                </>
-              )}
-            </h1>
-            {adaptiveInfo && (
-              <div className="flex items-center gap-3 mt-3 text-muted-foreground">
-                <div
-                  className={`px-2.5 py-0.5 rounded-full border text-xs font-semibold capitalize ${getDifficultyColor(adaptiveInfo.recommendedDifficulty)}`}
-                >
-                  {adaptiveInfo.recommendedDifficulty}
+                  <span className="text-sm font-medium">
+                    Mastery: {Math.round(adaptiveInfo.overallMastery * 100)}%
+                  </span>
                 </div>
-                <span className="text-sm font-medium">
-                  Mastery: {Math.round(adaptiveInfo.overallMastery * 100)}%
-                </span>
-              </div>
-            )}
-          </div>
-          <div className="flex flex-col items-end gap-2 min-w-[200px]">
-            <div className="text-sm font-medium text-muted-foreground">
-              Question {showResult ? total : current + 1} of {total}
+              )}
             </div>
-            <Progress value={progress} className="h-2 w-full" />
+            <div className="flex flex-col items-end gap-2 min-w-[200px]">
+              <div className="text-sm font-medium text-muted-foreground">
+                Question {showResult ? total : current + 1} of {total}
+              </div>
+              <Progress value={progress} className="h-2 w-full" />
+            </div>
           </div>
-        </div>
+        )}
 
         {!showResult ? (
-          <Card className="w-full shadow-sm border bg-card">
-            <CardContent>
+          <Card className="w-full border-0 shadow-none p-0 m-0 pb-10">
+            <CardContent className="p-0">
               <div>
-                <div className="flex items-center flex-wrap gap-2 mb-6">
-                  <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80">
-                    Lesson {question.lessonId}
-                  </span>
-                  <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80">
-                    Topic {question.topicId}
-                  </span>
-                  {question.difficulty && (
-                    <span
-                      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors ${getDifficultyColor(question.difficulty)}`}
-                    >
-                      {question.difficulty}
+                <div className="flex justify-between pb-4">
+                  <div className="flex items-center flex-wrap gap-2">
+                    <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80">
+                      Lesson {question.lessonId}
                     </span>
-                  )}
-                  {hasVisualElements() && (
-                    <span className="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors border-transparent bg-orange-500/10 text-orange-700 dark:text-orange-400">
-                      {typeof question.stem === 'object' &&
-                      question.stem?.type === 'table' ? (
-                        <>
-                          <Table className="w-3 h-3" />
-                          Truth Table
-                        </>
-                      ) : (
-                        <>
-                          <Grid3X3 className="w-3 h-3" />
-                          K-Map
-                        </>
-                      )}
+                    <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80">
+                      Topic {question.topicId}
                     </span>
-                  )}
+                    {question.difficulty && (
+                      <span
+                        className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors ${getDifficultyColor(question.difficulty)}`}
+                      >
+                        {question.difficulty}
+                      </span>
+                    )}
+                    {hasVisualElements() && (
+                      <span className="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors border-transparent bg-orange-500/10 text-orange-700 dark:text-orange-400">
+                        {typeof question.stem === 'object' &&
+                        question.stem?.type === 'table' ? (
+                          <>
+                            <Table className="w-3 h-3" />
+                            Truth Table
+                          </>
+                        ) : (
+                          <>
+                            <Grid3X3 className="w-3 h-3" />
+                            K-Map
+                          </>
+                        )}
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setSoundEnabled((prev) => !prev)}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    {soundEnabled ? (
+                      <Volume2 className="h-4.5 w-4.5" />
+                    ) : (
+                      <VolumeX className="h-4.5 w-4.5" />
+                    )}
+                  </button>
                 </div>
 
                 <div className="prose dark:prose-invert max-w-none">
@@ -670,7 +727,7 @@ function RouteComponent() {
                 </div>
               )}
 
-              <div className="flex justify-between items-center mt-8cd pt-6 border-t">
+              <div className="flex justify-between items-center mt-8cd pt-6">
                 <Button
                   variant="ghost"
                   onClick={() => {
@@ -701,17 +758,18 @@ function RouteComponent() {
                 </Button>
               </div>
             </CardContent>
+            <img src={rightPoint} alt="Right Pointing" className="absolute bottom-10 ml-[-150px] w-32 h-32 pointer-events-none select-none" />
           </Card>
         ) : processingResults ? (
-          <Card className="w-full mb-8 shadow-sm border bg-card">
+          <Card className="w-full mb-8 border bg-transparent p-0 border-none shadow-none pt-20">
             <CardContent className="p-12 text-center flex flex-col items-center justify-center min-h-[400px]">
               <div className="relative mb-6">
                 <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl animate-pulse"></div>
                 <Loader2 className="relative w-16 h-16 text-primary animate-spin" />
               </div>
-              <h2 className="text-2xl font-bold mb-3 text-foreground">
+              <p className="text-2xl font-bold mb-3 text-foreground">
                 Analyzing Performance
-              </h2>
+              </p>
               <p className="text-muted-foreground max-w-md mx-auto">
                 We're processing your answers to generate personalized feedback
                 and study recommendations.
@@ -719,15 +777,20 @@ function RouteComponent() {
             </CardContent>
           </Card>
         ) : (
-          <Card className="w-full mb-8 shadow-sm border bg-card">
-            <CardContent className="p-8">
+          <Card className="w-full mb-8 shadow-none border-none bg-transparent p-0 py-10">
+            <CardContent className="p-0">
               <div className="text-center mb-10">
-                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-100 dark:bg-green-900/30 mb-6">
-                  <CheckCircle2 className="w-10 h-10 text-green-600 dark:text-green-400" />
+                <div className="inline-flex items-center justify-center mb-6">
+                  <img
+                    ref={imageRef}
+                    src={congratsBitbot}
+                    alt="Congratulations Bitbot"
+                    className="w-30 h-30"
+                  />
                 </div>
-                <h2 className="text-3xl font-bold mb-2 text-foreground">
+                <p className="text-3xl font-bold mb-2 text-foreground font-semibold">
                   Assessment Complete!
-                </h2>
+                </p>
                 <div className="flex items-center justify-center gap-2 text-muted-foreground">
                   {adaptiveInfo && (
                     <span className="flex items-center gap-1 text-sm">
@@ -738,7 +801,7 @@ function RouteComponent() {
                 </div>
               </div>
 
-              <div className="grid gap-6 md:grid-cols-2">
+              <div className="grid gap-6 md:grid-cols-2 pb-6">
                 <div className="p-6 rounded-xl border bg-card text-center">
                   <div className="text-sm font-medium text-muted-foreground mb-1">
                     Final Score
@@ -867,11 +930,11 @@ function RouteComponent() {
 
                 {/* Topic Performance Breakdown */}
                 {topicPerformance.length > 0 && (
-                  <div className="rounded-xl border bg-card p-6">
-                    <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+                  <div className="rounded-xl py-6">
+                    <p className="font-semibold text-foreground mb-4 flex items-center gap-4">
                       <BookOpen className="w-5 h-5 text-muted-foreground" />
                       Detailed Breakdown
-                    </h3>
+                    </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {topicPerformance.map((perf, idx) => (
                         <div
@@ -879,7 +942,7 @@ function RouteComponent() {
                           className="flex justify-between items-center p-3 rounded-lg border bg-muted/30"
                         >
                           <span className="text-sm font-medium text-foreground">
-                            Topic {perf.topicId}
+                            Question {perf.topicId}
                           </span>
                           <span
                             className={`text-sm font-bold ${getScoreColor(perf.correct, perf.total)}`}

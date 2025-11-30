@@ -209,7 +209,7 @@ export const COMPONENT_DEFINITIONS: Record<ComponentType, ComponentDefinition> =
     description: 'Binary-to-decimal display. Shows the decimal value of binary input (4-bit, 8-bit, or 16-bit).'
   },
 
-  // Premade Circuits
+  // Premade Circuits (rendered as single black-box components)
   HALF_ADDER: {
     type: 'HALF_ADDER',
     name: 'Half Adder',
@@ -217,9 +217,8 @@ export const COMPONENT_DEFINITIONS: Record<ComponentType, ComponentDefinition> =
     icon: '½+',
     inputs: 2,
     outputs: 2,
-    defaultSize: { width: 120, height: 80 },
-    description: 'Adds two 1-bit binary numbers (A + B = Sum, Carry). Building block for larger arithmetic circuits.',
-    isTemplate: true
+    defaultSize: { width: 100, height: 70 },
+    description: 'Adds two 1-bit binary numbers (A + B = Sum, Carry). Building block for larger arithmetic circuits.'
   },
   FULL_ADDER: {
     type: 'FULL_ADDER',
@@ -228,9 +227,8 @@ export const COMPONENT_DEFINITIONS: Record<ComponentType, ComponentDefinition> =
     icon: '1+',
     inputs: 3,
     outputs: 2,
-    defaultSize: { width: 120, height: 80 },
-    description: 'Adds two 1-bit numbers plus carry-in (A + B + Cin = Sum, Cout). Used for multi-bit addition in cascaded configurations.',
-    isTemplate: true
+    defaultSize: { width: 100, height: 80 },
+    description: 'Adds two 1-bit numbers plus carry-in (A + B + Cin = Sum, Cout). Used for multi-bit addition in cascaded configurations.'
   },
   FOUR_BIT_ADDER: {
     type: 'FOUR_BIT_ADDER',
@@ -239,9 +237,8 @@ export const COMPONENT_DEFINITIONS: Record<ComponentType, ComponentDefinition> =
     icon: '4+',
     inputs: 9, // 4 + 4 + carry in
     outputs: 5, // 4 + carry out
-    defaultSize: { width: 200, height: 120 },
-    description: 'Adds two 4-bit binary numbers with carry-in (A[3:0] + B[3:0] + Cin). Produces 4-bit sum and carry-out.',
-    isTemplate: true
+    defaultSize: { width: 120, height: 140 },
+    description: 'Adds two 4-bit binary numbers with carry-in (A[3:0] + B[3:0] + Cin). Produces 4-bit sum and carry-out.'
   },
   MULTIPLEXER_2TO1: {
     type: 'MULTIPLEXER_2TO1',
@@ -250,9 +247,8 @@ export const COMPONENT_DEFINITIONS: Record<ComponentType, ComponentDefinition> =
     icon: 'MUX',
     inputs: 3, // 2 data + 1 select
     outputs: 1,
-    defaultSize: { width: 100, height: 80 },
-    description: 'Data selector. Routes one of two inputs (I0 or I1) to output based on select signal. Used for data routing and signal selection.',
-    isTemplate: true
+    defaultSize: { width: 80, height: 70 },
+    description: 'Data selector. Routes one of two inputs (I0 or I1) to output based on select signal. Used for data routing and signal selection.'
   },
   DECODER_2TO4: {
     type: 'DECODER_2TO4',
@@ -261,9 +257,8 @@ export const COMPONENT_DEFINITIONS: Record<ComponentType, ComponentDefinition> =
     icon: 'DEC',
     inputs: 2,
     outputs: 4,
-    defaultSize: { width: 100, height: 100 },
-    description: 'Binary decoder. Converts 2-bit input to one-hot 4-bit output (00→Y0, 01→Y1, 10→Y2, 11→Y3). Used for address decoding.',
-    isTemplate: true
+    defaultSize: { width: 80, height: 100 },
+    description: 'Binary decoder. Converts 2-bit input to one-hot 4-bit output (00→Y0, 01→Y1, 10→Y2, 11→Y3). Used for address decoding.'
   },
 
   // Other

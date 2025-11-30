@@ -109,6 +109,14 @@ export const LAW_ANIMATIONS: Record<string, LawAnimation> = {
     highlightColor: '#6366f1', // indigo
     description: 'Term slides and distributes across others',
   },
+
+  // Start/Initial state - Already simplified
+  start: {
+    type: 'glow',
+    duration: 0.5,
+    highlightColor: '#22c55e', // green
+    description: 'Expression is already in simplest form',
+  },
 };
 
 /**

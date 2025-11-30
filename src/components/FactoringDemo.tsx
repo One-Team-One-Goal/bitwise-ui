@@ -8,19 +8,42 @@ import RuleCard from './calculator/RuleCard';
 import StepNarration from './calculator/StepNarration';
 import ProgressTimeline from './calculator/ProgressTimeline';
 import ExamplesPanel from './calculator/ExamplesPanel';
+import { SymbolHelpTooltip, SymbolHelpModal } from './calculator/SymbolHelp';
+import { ErrorModal } from './calculator/ErrorModal';
+import { SimplifiedBanner } from './calculator/SimplifiedBanner';
+import { QUICK_INSERT_SYMBOLS } from '@/constants/operatorSymbols';
 import { getLawAnimation } from '@/constants/lawAnimations';
 import introJs from 'intro.js';
 import 'intro.js/introjs.css';
-import { HelpCircle } from 'lucide-react';
+import { HelpCircle, BookOpen } from 'lucide-react';
 import LeftPointSvg from '@/assets/bitbot/left-point.svg?url'
 
+// ============================================================================
 // Types
-export interface ScriptToken { id: string; text: string; kind?: 'var' | 'op' | 'paren' | 'other'; highlight?: boolean; isNew?: boolean }
+// ============================================================================
+export interface ScriptToken { 
+  id: string; 
+  text: string; 
+  kind?: 'var' | 'op' | 'paren' | 'other'; 
+  highlight?: boolean; 
+  isNew?: boolean 
+}
 export interface ScriptExpressionState { raw: string; tokens: ScriptToken[] }
-export interface ScriptStep { id: string; law: string; description?: string; before: ScriptExpressionState; after: ScriptExpressionState }
-export interface FactoringDirectionScript { defaultExpression: string; steps: ScriptStep[] }
+export interface ScriptStep { 
+  id: string; 
+  law: string; 
+  description?: string; 
+  before: ScriptExpressionState; 
+  after: ScriptExpressionState 
+}
+export interface FactoringDirectionScript { 
+  defaultExpression: string; 
+  steps: ScriptStep[] 
+}
 
-// Token component with enhanced visual styling and law-specific animations
+// ============================================================================
+// CharMotion Component - Animated token with law-specific styling
+// ============================================================================
 const CharMotion = React.forwardRef(function CharMotion(
   { token, lawId, layoutIdOverride, onEnter, onLeave }: { 
     token: ScriptToken; 
@@ -31,20 +54,17 @@ const CharMotion = React.forwardRef(function CharMotion(
   },
   ref: React.Ref<HTMLSpanElement>
 ) {
-  // Enhanced color-coding based on token state and type
   const getTokenClass = () => {
     const baseClasses = 'inline-block px-0.5 font-mono select-none rounded leading-none transition-all duration-300';
     
     // State-based highlighting with law-specific colors
     if (token.isNew && lawId) {
-      // Law-specific animation exists
       return `${baseClasses} font-bold scale-110`;
     }
     if (token.isNew) {
       return `${baseClasses} text-emerald-600 font-bold scale-110 animate-pulse`;
     }
     if (token.highlight && lawId) {
-      // Law-specific highlighting
       return `${baseClasses} font-semibold px-1`;
     }
     if (token.highlight) {
@@ -78,7 +98,8 @@ const CharMotion = React.forwardRef(function CharMotion(
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
       style={{
-        color: token.isNew && lawId ? getLawAnimation(lawId).highlightColor : undefined
+        color: token.isNew && lawId ? getLawAnimation(lawId).highlightColor : undefined,
+        fontFamily: "'JetBrains Mono', 'Segoe UI Symbol', 'Apple Symbols', ui-monospace, monospace"
       }}
     >
       {token.text}
@@ -86,10 +107,25 @@ const CharMotion = React.forwardRef(function CharMotion(
   )
 })
 
+// ============================================================================
+// Types for internal state
+// ============================================================================
 interface FactoringDemoProps { script?: FactoringDirectionScript }
-interface TimelineState { key: string; phase: 'before' | 'after'; step: ScriptStep; tokens: ScriptToken[]; raw: string; law: string }
+interface TimelineState { 
+  key: string; 
+  phase: 'before' | 'after'; 
+  step: ScriptStep; 
+  tokens: ScriptToken[]; 
+  raw: string; 
+  law: string 
+}
+type DOMRectLike = { left: number; top: number; width: number; height: number }
 
+// ============================================================================
+// Main FactoringDemo Component
+// ============================================================================
 export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
+  // Expression state
   const [expressionInput, setExpressionInput] = React.useState<string>('(A ∨ B) ∧ (A ∨ ¬B)')
   const [loadingRemote, setLoadingRemote] = React.useState<boolean>(false)
   const [errorRemote, setErrorRemote] = React.useState<string | null>(null)
@@ -100,20 +136,23 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
   const [showNarration, setShowNarration] = React.useState<boolean>(true)
   const [autoPlay, setAutoPlay] = React.useState<boolean>(false)
   const [showExamples, setShowExamples] = React.useState<boolean>(false)
+  const [showSymbolHelp, setShowSymbolHelp] = React.useState<boolean>(false)
+  const [showErrorModal, setShowErrorModal] = React.useState<boolean>(false)
 
-  // ref to the text input so we can insert symbols at the caret
+  // Refs for DOM elements
   const inputRef = React.useRef<HTMLInputElement | null>(null)
   const visualizationRef = React.useRef<HTMLDivElement | null>(null)
-
   const tokenRefs = React.useRef<Map<string, HTMLElement>>(new Map())
   const containerRef = React.useRef<HTMLDivElement | null>(null)
 
+  // Animation state
   const [clones, setClones] = React.useState<Array<{ key: string; text: string; from: DOMRectLike; to: DOMRectLike; lawId?: string }>>([])
-  type DOMRectLike = { left: number; top: number; width: number; height: number }
-
   const pendingFromRects = React.useRef<Map<string, DOMRectLike>>(new Map())
   const pendingMappings = React.useRef<Map<string, string>>(new Map())
 
+  // ============================================================================
+  // Helper Functions
+  // ============================================================================
   const getRelativeRect = (el: HTMLElement | null): DOMRectLike | null => {
     if (!el || !containerRef.current) return null
     const c = containerRef.current.getBoundingClientRect()
@@ -121,9 +160,104 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
     return { left: r.left - c.left, top: r.top - c.top, width: r.width, height: r.height }
   }
 
+  // Tokenize a raw expression string into display tokens
+  const tokenizeExpression = (expr: string): ScriptToken[] => {
+    const tokens: ScriptToken[] = [];
+    // Standard Boolean operators only (AND, OR, NOT)
+    const operators = ['∧', '∨', '¬'];
+    const parens = ['(', ')'];
+    
+    // Use Array.from to properly handle multi-byte Unicode characters
+    const chars = Array.from(expr);
+    let i = 0;
+    let tokenIndex = 0;
+    
+    while (i < chars.length) {
+      const char = chars[i];
+      
+      // Skip whitespace
+      if (char === ' ') {
+        i++;
+        continue;
+      }
+      
+      // Check for operators (including multi-byte Unicode like ⊕, →, ↔)
+      if (operators.includes(char)) {
+        tokens.push({
+          id: `op_${tokenIndex++}`,
+          text: char,
+          kind: 'op',
+          highlight: false
+        });
+        i++;
+        continue;
+      }
+      
+      // Check for parentheses
+      if (parens.includes(char)) {
+        tokens.push({
+          id: `paren_${tokenIndex++}`,
+          text: char,
+          kind: 'paren',
+          highlight: false
+        });
+        i++;
+        continue;
+      }
+      
+      // Collect variable name (letters)
+      if (/[A-Za-z]/.test(char)) {
+        let varName = '';
+        while (i < chars.length && /[A-Za-z0-9]/.test(chars[i])) {
+          varName += chars[i];
+          i++;
+        }
+        // Handle T and F as special constants
+        const kind = (varName === 'T' || varName === 'F') ? 'other' : 'var';
+        tokens.push({
+          id: `var_${varName}_${tokenIndex++}`,
+          text: varName,
+          kind,
+          highlight: false
+        });
+        continue;
+      }
+      
+      // Skip unknown characters
+      i++;
+    }
+    
+    return tokens;
+  };
+
+  // ============================================================================
+  // Timeline Computation
+  // ============================================================================
   const timeline = React.useMemo<TimelineState[]>(() => {
     const arr: TimelineState[] = []
     const steps = remoteScript?.steps ?? []
+    
+    // Handle case when there are no steps (expression is already simplified or can't be simplified)
+    if (steps.length === 0 && remoteScript?.defaultExpression) {
+      // Create tokens from the default expression for display
+      const defaultTokens = tokenizeExpression(remoteScript.defaultExpression);
+      arr.push({
+        key: 'initial-0',
+        phase: 'before',
+        step: {
+          id: '0',
+          law: 'simplified',
+          description: 'Expression is already in its simplest form',
+          before: { raw: remoteScript.defaultExpression, tokens: defaultTokens },
+          after: { raw: remoteScript.defaultExpression, tokens: defaultTokens },
+        },
+        tokens: defaultTokens,
+        raw: remoteScript.defaultExpression,
+        law: 'simplified'
+      });
+      return arr;
+    }
+    
     steps.forEach((step, idx) => {
       const beforeIds = new Set(step.before.tokens.map(t => t.id))
       const beforeTokens = step.before.tokens.map(t => ({ ...t }))
@@ -188,16 +322,27 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
     return () => clearTimeout(timer);
   }, [autoPlay, index, maxIndex, remoteScript]);
 
-  // fetch
+  // ============================================================================
+  // API Handlers
+  // ============================================================================
   const fetchRemoteScript = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()
     setErrorRemote(null)
     setLoadingRemote(true)
     setRemoteScript(null)
+    // Reset timeline to step 0 when starting a new solve
+    setIndex(0)
+    setClones([])
+    tokenRefs.current.clear()
+    pendingFromRects.current = new Map()
+    pendingMappings.current = new Map()
+    
     try {
       const res = await calculatorService.simplify(expressionInput)
-      if (!res || !res.success) setErrorRemote(res?.error || 'failed')
-      else {
+      if (!res || !res.success) {
+        setErrorRemote(res?.error || 'Failed to simplify expression')
+        setShowErrorModal(true)
+      } else {
         setRemoteScript(res.result as FactoringDirectionScript)
         // Auto-scroll to visualization area after solving
         setTimeout(() => {
@@ -206,10 +351,13 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
       }
     } catch (err) {
       setErrorRemote(String(err))
+      setShowErrorModal(true)
     } finally { setLoadingRemote(false) }
   }
 
-  // animate: capture from rects, compute mappings by id or text, update index, then spawn clones
+  // ============================================================================
+  // Animation Logic
+  // ============================================================================
   const animateToIndex = (newIndex: number) => {
     if (newIndex < 0 || newIndex > maxIndex) return
     const prev = timeline[index]
@@ -354,7 +502,7 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
         {
           element: '.quick-insert',
           title: '⚡ Quick Insert Buttons',
-          intro: baseIntro('Click these buttons to quickly insert Boolean operators: ∧ (AND), ∨ (OR), ¬ (NOT), ⊕ (XOR), → (IMPLIES), ↔ (IFF), and parentheses.'),
+          intro: baseIntro('<strong>Hover over any button</strong> to see alternative ways to write that symbol! For example, AND (∧) can also be written as ^, ·, or &. Click the <strong>Symbol Guide</strong> button for a complete reference.'),
           position: 'bottom'
         },
         {
@@ -463,19 +611,33 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
             </div>
           </div>
 
-          {/* Quick operator buttons */}
-          <div className="flex flex-wrap gap-2 quick-insert">
+          {/* Quick operator buttons with symbol help tooltips */}
+          <div className="flex flex-wrap gap-2 quick-insert items-center">
             <span className="text-xs md:text-sm text-muted-foreground font-medium self-center mr-1 md:mr-2 w-full sm:w-auto">Quick insert:</span>
-            {['∧','∨','¬','⊕','→','↔','(',')'].map(sym => (
-              <button
-                key={sym}
-                type="button"
-                onClick={() => insertOperator(sym)}
-                className="px-2 md:px-3 py-1 md:py-1.5 border-2 border-border rounded-md text-sm md:text-base bg-background hover:bg-primary/10 hover:border-primary dark:hover:bg-primary/20 transition-colors font-mono font-bold text-foreground flex-1 sm:flex-none min-w-10 cursor-pointer"
-                aria-label={`Insert ${sym}`}>
-                {sym}
-              </button>
+            {QUICK_INSERT_SYMBOLS.map(sym => (
+              <SymbolHelpTooltip key={sym} symbol={sym}>
+                <button
+                  type="button"
+                  onClick={() => insertOperator(sym)}
+                  className="px-2 md:px-3 py-1 md:py-1.5 border-2 border-border rounded-md text-sm md:text-base bg-background hover:bg-primary/10 hover:border-primary dark:hover:bg-primary/20 transition-colors font-mono font-bold text-foreground flex-1 sm:flex-none min-w-10 cursor-pointer"
+                  aria-label={`Insert ${sym}`}
+                >
+                  {sym}
+                </button>
+              </SymbolHelpTooltip>
             ))}
+            {/* Symbol Reference Button */}
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowSymbolHelp(true)}
+              className="ml-auto text-muted-foreground hover:text-primary"
+              title="Symbol Reference Guide"
+            >
+              <BookOpen className="h-4 w-4 mr-1" />
+              <span className="hidden sm:inline text-xs">Symbol Guide</span>
+            </Button>
           </div>
 
           {/* Display Options - Compact */}
@@ -507,13 +669,18 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
             </div>
           </div>
         </form>
-        {errorRemote && (
-          <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-lg p-3 text-sm md:text-base text-red-700 dark:text-red-400">
-            <span className="font-semibold">Error:</span> {errorRemote}
-          </div>
-        )}
       </div>
 
+      {/* Symbol Help Modal */}
+      <SymbolHelpModal isOpen={showSymbolHelp} onClose={() => setShowSymbolHelp(false)} />
+
+      {/* Error Modal */}
+      <ErrorModal
+        isOpen={showErrorModal}
+        onClose={() => setShowErrorModal(false)}
+        onOpenExamples={() => setShowExamples(true)}
+        errorMessage={errorRemote || undefined}
+      />
 
       {/* Main Visualization Area */}
       <div ref={visualizationRef} className="bg-card dark:bg-card rounded-lg border-2 border-border p-3 md:p-6 relative min-h-[300px] md:min-h-80 pb-6">
@@ -521,13 +688,19 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
         {remoteScript == null ? (
           <div className="flex flex-col items-center justify-center py-12 md:py-12 text-center px-4">
             <div className="text-5xl md:text-6xl mb-4 font-bold text-muted dark:text-muted">∅</div>
-            <h3 className="text-lg text-muted-foreground md:text-xl font-semibold text-foreground mb-2">Ready to Simplify!</h3>
+            <h3 className="text-lg md:text-xl font-semibold text-foreground mb-2">Ready to Simplify!</h3>
             <p className="text-sm md:text-base text-muted-foreground">Enter a Boolean expression above and click Solve to see step-by-step simplification.</p>
           </div>
         ) : (
           <div className="space-y-4 md:space-y-6">
+            {/* Simplified Banner - shown when expression can't be simplified further */}
+            <SimplifiedBanner
+              expression={remoteScript.defaultExpression}
+              isVisible={remoteScript.steps.length === 0}
+            />
+
             {/* Rule Card */}
-            {showRuleCard && timeline[index] && (
+            {showRuleCard && timeline[index] && remoteScript.steps.length > 0 && (
               <RuleCard
                 lawId={timeline[index].law}
                 isVisible={true}
@@ -540,21 +713,21 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
             {/* Expression Display with Timeline & Controls - All in One */}
             <div className="bg-card dark:bg-gray-800 rounded-lg border-2 border-border dark:border-gray-700 overflow-hidden">
               {/* Header */}
-              <div className="bg-linear-to-r from-primary to-accent text-primary-foreground px-3 md:px-4 py-2">
+              <div className="bg-primary text-primary-foreground px-3 md:px-4 py-2">
                 <h4 className="text-xs md:text-sm font-semibold uppercase tracking-wide">Current Expression</h4>
               </div>
               
               {/* Expression */}
               <div className="p-4 md:p-8 expression-display">
-                <div className="bg-linear-to-br from-primary/5 to-accent/5 dark:from-primary/10 dark:to-accent/10 rounded-lg p-4 md:p-8 border-2 min-h-16 md:min-h-24 flex items-center justify-center relative overflow-hidden"
+                <div className="bg-primary/5 dark:bg-primary/10 rounded-lg p-4 md:p-8 border-2 min-h-16 md:min-h-24 flex items-center justify-center relative overflow-hidden"
                   style={{
-                    borderColor: timeline[index]?.law && index > 0 
+                    borderColor: timeline[index]?.law && (index > 0 || timeline[index].law === 'start' || timeline[index].law === 'simplified')
                       ? getLawAnimation(timeline[index].law).highlightColor 
                       : 'var(--border)'
                   }}
                 >
                   {/* Law color indicator bar */}
-                  {timeline[index]?.law && index > 0 && (
+                  {timeline[index]?.law && (index > 0 || timeline[index].law === 'start' || timeline[index].law === 'simplified') && (
                     <div
                       className="absolute top-0 left-0 right-0 h-1"
                       style={{ backgroundColor: getLawAnimation(timeline[index].law).highlightColor }}
@@ -575,7 +748,7 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
                 </div>
                 
                 {/* Law animation description */}
-                {timeline[index]?.law && index > 0 && (
+                {timeline[index]?.law && (index > 0 || timeline[index].law === 'start' || timeline[index].law === 'simplified') && (
                   <div className="mt-3 text-center text-xs md:text-sm italic"
                     style={{ color: getLawAnimation(timeline[index].law).highlightColor }}
                   >

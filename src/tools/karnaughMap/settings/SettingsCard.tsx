@@ -10,7 +10,6 @@ interface SettingsCardProps {
   onVariableCountChange: (count: number) => void;
   onFormTypeChange: (type: string) => void;
   onSetAllCells: (value: number | string) => void;
-  onProcess: () => void;
 }
 
 const SettingsCard: React.FC<SettingsCardProps> = ({
@@ -19,7 +18,6 @@ const SettingsCard: React.FC<SettingsCardProps> = ({
   onVariableCountChange,
   onFormTypeChange,
   onSetAllCells,
-  onProcess
 }) => {
   return (
     <Card className="w-full max-w-md border-0 shadow-none">
@@ -75,19 +73,6 @@ const SettingsCard: React.FC<SettingsCardProps> = ({
               </Button>
             ))}
           </div>
-        </div>
-
-        {/* Process Button */}
-        <div className="space-y-3">
-          <p className="text-sm font-medium text-muted-foreground">Get the result:</p>
-          <Button 
-            onClick={onProcess}
-            variant="default"
-            className="w-full"
-            size="lg"
-          >
-            Process
-          </Button>
         </div>
       </CardContent>
     </Card>

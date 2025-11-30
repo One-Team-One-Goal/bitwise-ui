@@ -9,6 +9,51 @@ import { InteractiveExplanation } from '@/components/InteractiveExplanation'
 import type { Component, Connection } from '../types'
 import { COMPONENT_DEFINITIONS } from '../utils/componentFactory'
 
+// Keyboard shortcuts data
+const shortcutCategories = [
+  {
+    category: 'Tools',
+    shortcuts: [
+      { keys: ['V'], description: 'Select tool' },
+      { keys: ['H'], description: 'Pan tool' },
+      { keys: ['W'], description: 'Wire tool' },
+      { keys: ['Space'], description: 'Hold to pan' },
+    ],
+  },
+  {
+    category: 'Selection',
+    shortcuts: [
+      { keys: ['Ctrl', 'A'], description: 'Select all' },
+      { keys: ['Shift', 'Click'], description: 'Multi-select' },
+      { keys: ['Esc'], description: 'Clear selection' },
+    ],
+  },
+  {
+    category: 'Edit',
+    shortcuts: [
+      { keys: ['Ctrl', 'C'], description: 'Copy' },
+      { keys: ['Ctrl', 'V'], description: 'Paste' },
+      { keys: ['Delete'], description: 'Delete' },
+    ],
+  },
+  {
+    category: 'View',
+    shortcuts: [
+      { keys: ['Ctrl', '+'], description: 'Zoom in' },
+      { keys: ['Ctrl', '-'], description: 'Zoom out' },
+      { keys: ['Ctrl', '0'], description: 'Reset zoom' },
+    ],
+  },
+];
+
+// Symbol reference data
+const symbolGuide = [
+  { symbol: '∧', name: 'AND', color: 'text-blue-600', bgColor: 'bg-blue-100', description: 'All inputs HIGH' },
+  { symbol: '∨', name: 'OR', color: 'text-green-600', bgColor: 'bg-green-100', description: 'Any input HIGH' },
+  { symbol: '¬', name: 'NOT', color: 'text-red-600', bgColor: 'bg-red-100', description: 'Inverts input' },
+  { symbol: '⊕', name: 'XOR', color: 'text-purple-600', bgColor: 'bg-purple-100', description: 'Inputs differ' },
+];
+
 interface PropertiesPanelProps {
   circuitHook: any
 }

@@ -7,7 +7,7 @@ export interface CalculatorExample {
   id: string;
   title: string;
   expression: string;
-  difficulty: 'beginner' | 'intermediate' | 'advanced' | 'expert';
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
   description: string;
   lawsUsed: string[]; // Law IDs that will be applied
   learningFocus: string;
@@ -202,80 +202,6 @@ export const CALCULATOR_EXAMPLES: CalculatorExample[] = [
     category: 'simplification',
     tags: ['absorption', 'identity', 'combo'],
   },
-
-  // ========== EXPERT ==========
-  {
-    id: 'expert-1',
-    title: 'The Classic Challenge',
-    expression: '¬((A ∨ B) ∧ (¬C ∨ D)) ∨ (E ∧ (A ∨ ¬D))',
-    difficulty: 'expert',
-    description: 'A complex expression using multiple laws',
-    lawsUsed: ['deMorgans', 'distributive', 'doubleNegation', 'associative'],
-    learningFocus: 'Complete simplification workflow',
-    estimatedSteps: 8,
-    category: 'advanced',
-    tags: ['complex', 'multi-law', 'challenge'],
-  },
-  {
-    id: 'expert-2',
-    title: 'Nested Distribution',
-    expression: '(A ∧ (B ∨ C)) ∨ (A ∧ (B ∨ D))',
-    difficulty: 'expert',
-    description: 'Factor and distribute with nested expressions',
-    lawsUsed: ['distributive', 'associative', 'idempotent'],
-    learningFocus: 'Advanced factoring techniques',
-    estimatedSteps: 6,
-    category: 'distribution',
-    tags: ['nested', 'factoring', 'expert'],
-  },
-  {
-    id: 'expert-3',
-    title: 'De Morgan\'s Cascade',
-    expression: '¬(¬(A ∧ B) ∨ ¬(C ∧ D))',
-    difficulty: 'expert',
-    description: 'Multiple De Morgan\'s and double negations',
-    lawsUsed: ['deMorgans', 'doubleNegation', 'associative'],
-    learningFocus: 'Cascading De Morgan transformations',
-    estimatedSteps: 7,
-    category: 'logic',
-    tags: ['demorgans', 'cascade', 'expert'],
-  },
-  {
-    id: 'expert-4',
-    title: 'Everything Combined',
-    expression: '(¬¬A ∨ (A ∧ ¬A)) ∧ (B ∨ T) ∨ F',
-    difficulty: 'expert',
-    description: 'Uses nearly every simplification law',
-    lawsUsed: ['doubleNegation', 'negation', 'universalBound', 'identity'],
-    learningFocus: 'Comprehensive law application',
-    estimatedSteps: 5,
-    category: 'advanced',
-    tags: ['comprehensive', 'all-laws', 'master'],
-  },
-  {
-    id: 'expert-5',
-    title: 'The Absorber',
-    expression: '(X ∧ (Y ∨ Z)) ∨ X',
-    difficulty: 'expert',
-    description: 'Tricky absorption after distribution',
-    lawsUsed: ['absorption', 'commutative'],
-    learningFocus: 'Non-obvious absorption patterns',
-    estimatedSteps: 2,
-    category: 'simplification',
-    tags: ['absorption', 'tricky', 'pattern'],
-  },
-  {
-    id: 'expert-6',
-    title: 'Symmetry Breaker',
-    expression: '(A ∧ B ∧ C) ∨ (A ∧ B ∧ D) ∨ (A ∧ E)',
-    difficulty: 'expert',
-    description: 'Complex multi-level factoring',
-    lawsUsed: ['distributive', 'associative'],
-    learningFocus: 'Advanced factoring with partial overlaps',
-    estimatedSteps: 5,
-    category: 'distribution',
-    tags: ['factoring', 'partial', 'expert'],
-  },
 ];
 
 // Helper functions
@@ -305,8 +231,6 @@ export function getDifficultyColor(difficulty: CalculatorExample['difficulty']):
       return 'bg-blue-100 text-blue-800 border-blue-300';
     case 'advanced':
       return 'bg-purple-100 text-purple-800 border-purple-300';
-    case 'expert':
-      return 'bg-red-100 text-red-800 border-red-300';
   }
 }
 
@@ -319,7 +243,5 @@ export function getDifficultyIcon(difficulty: CalculatorExample['difficulty']): 
       return '●●';
     case 'advanced':
       return '●●●';
-    case 'expert':
-      return '★';
   }
 }

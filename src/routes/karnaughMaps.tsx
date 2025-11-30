@@ -8,6 +8,8 @@ import introJs from 'intro.js'
 import 'intro.js/introjs.css'
 import { HelpCircle } from 'lucide-react'
 import { Button } from "@/components/ui/button"
+import { useState } from "react"
+import BitBotExpressionPrompt, { BitBotMiniButton } from "@/tools/karnaughMap/expression/BitBotExpressionPrompt"
 
 export const Route = createFileRoute("/karnaughMaps")({
   component: RouteComponent,
@@ -29,7 +31,11 @@ function RouteComponent() {
     handleCellClick,
     handleTruthTableChange,
     handleSetAllCells,
+    handleExpressionApply,
   } = useKMaps();
+
+  // Track whether the BitBot prompt is visible
+  const [showBitBotPrompt, setShowBitBotPrompt] = useState(true);
 
   // Start the intro.js tutorial
   const startTutorial = () => {
@@ -85,8 +91,17 @@ function RouteComponent() {
   return (
     <TooltipProvider>
       <div className="relative">
-        {/* Floating Action Button - Top Right */}
-        <div className="fixed top-20 right-4 z-50">
+        {/* Floating Action Buttons - Top Right */}
+        <div className="fixed top-20 right-4 z-50 flex gap-2">
+          {/* BitBot Mini Button - Always visible with glow, opens expression input */}
+          {!showBitBotPrompt && (
+            <BitBotMiniButton
+              variableCount={variableCount}
+              onApplyExpression={handleExpressionApply}
+            />
+          )}
+          
+          {/* Help Button */}
           <Button
             type="button"
             onClick={startTutorial}
@@ -110,9 +125,17 @@ function RouteComponent() {
         )}
 
         {/* Title Section */}
-        <div className="mb-10 mt-30">
+        <div className="mb-6 mt-30">
           <p className="font-semibold text-center text-3xl">Karnaugh Map Solver</p>
         </div>
+
+        {/* BitBot Expression Prompt - Prominent placement, can be dismissed */}
+        <BitBotExpressionPrompt
+          variableCount={variableCount}
+          onApplyExpression={handleExpressionApply}
+          isVisible={showBitBotPrompt}
+          onDismiss={() => setShowBitBotPrompt(false)}
+        />
       
       {/* Content Section - Horizontal layout */}
       <div className="flex justify-center items-start gap-8 flex-wrap">
@@ -171,7 +194,6 @@ function RouteComponent() {
                 handleSetAllCells(value as any);
               }
             }}
-            onProcess={() => {}} // Auto-solving enabled, no manual process needed
           />
         </div>
 

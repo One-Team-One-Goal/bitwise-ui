@@ -1,13 +1,63 @@
 import React from 'react';
-import { Settings, Info, Trash2 } from 'lucide-react';
+import { Settings, Info, Trash2, Keyboard, BookOpen, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { InteractiveExplanation } from '@/components/InteractiveExplanation';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import type { Component, Connection } from '../types';
 import { COMPONENT_DEFINITIONS } from '../utils/componentFactory';
+
+// Keyboard shortcuts data
+const shortcutCategories = [
+  {
+    category: 'Tools',
+    shortcuts: [
+      { keys: ['V'], description: 'Select tool' },
+      { keys: ['H'], description: 'Pan tool' },
+      { keys: ['W'], description: 'Wire tool' },
+      { keys: ['Space'], description: 'Hold to pan' },
+    ],
+  },
+  {
+    category: 'Selection',
+    shortcuts: [
+      { keys: ['Ctrl', 'A'], description: 'Select all' },
+      { keys: ['Shift', 'Click'], description: 'Multi-select' },
+      { keys: ['Esc'], description: 'Clear selection' },
+    ],
+  },
+  {
+    category: 'Edit',
+    shortcuts: [
+      { keys: ['Ctrl', 'C'], description: 'Copy' },
+      { keys: ['Ctrl', 'V'], description: 'Paste' },
+      { keys: ['Delete'], description: 'Delete' },
+    ],
+  },
+  {
+    category: 'View',
+    shortcuts: [
+      { keys: ['Ctrl', '+'], description: 'Zoom in' },
+      { keys: ['Ctrl', '-'], description: 'Zoom out' },
+      { keys: ['Ctrl', '0'], description: 'Reset zoom' },
+    ],
+  },
+];
+
+// Symbol reference data
+const symbolGuide = [
+  { symbol: '∧', name: 'AND', color: 'text-blue-600', bgColor: 'bg-blue-100', description: 'All inputs HIGH' },
+  { symbol: '∨', name: 'OR', color: 'text-green-600', bgColor: 'bg-green-100', description: 'Any input HIGH' },
+  { symbol: '¬', name: 'NOT', color: 'text-red-600', bgColor: 'bg-red-100', description: 'Inverts input' },
+  { symbol: '⊕', name: 'XOR', color: 'text-purple-600', bgColor: 'bg-purple-100', description: 'Inputs differ' },
+];
 
 interface PropertiesPanelProps {
   circuitHook: any;
@@ -293,12 +343,95 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({ circuitHook })
           ) : selectedConnection ? (
             renderConnectionProperties(selectedConnection)
           ) : (
-            <div className="text-center py-8 my-auto">
-              <div className='h-60'></div>
-              <Settings className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground">
-                Select a component or connection to view its properties
-              </p>
+            <div className="space-y-4">
+              {/* Header */}
+              <div className="text-center py-4">
+                <Settings className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
+                <p className="text-xs text-muted-foreground">
+                  Select an element to view properties
+                </p>
+              </div>
+
+              <Separator />
+
+              {/* Keyboard Shortcuts Dropdown */}
+              <Collapsible defaultOpen>
+                <CollapsibleTrigger className="flex items-center justify-between w-full p-2 rounded-lg hover:bg-muted/50 transition-colors group">
+                  <div className="flex items-center gap-2">
+                    <Keyboard className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Keyboard Shortcuts</span>
+                  </div>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-3 pt-2">
+                  {shortcutCategories.map((category) => (
+                    <div key={category.category} className="space-y-1">
+                      <div className="text-xs font-semibold text-muted-foreground px-1">
+                        {category.category}
+                      </div>
+                      <div className="space-y-1">
+                        {category.shortcuts.map((shortcut, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-muted/50 transition-colors"
+                          >
+                            <span className="text-xs text-muted-foreground">
+                              {shortcut.description}
+                            </span>
+                            <div className="flex gap-0.5">
+                              {shortcut.keys.map((key, keyIndex) => (
+                                <React.Fragment key={keyIndex}>
+                                  <kbd className="px-1.5 py-0.5 text-[10px] font-semibold bg-muted border border-border rounded shadow-sm">
+                                    {key}
+                                  </kbd>
+                                  {keyIndex < shortcut.keys.length - 1 && (
+                                    <span className="text-muted-foreground text-[10px] self-center">+</span>
+                                  )}
+                                </React.Fragment>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </CollapsibleContent>
+              </Collapsible>
+
+              <Separator />
+
+              {/* Symbol Reference Dropdown */}
+              <Collapsible defaultOpen>
+                <CollapsibleTrigger className="flex items-center justify-between w-full p-2 rounded-lg hover:bg-muted/50 transition-colors group">
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Symbol Reference</span>
+                  </div>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-2 pt-2">
+                  {symbolGuide.map((item) => (
+                    <div
+                      key={item.name}
+                      className="flex items-center gap-2 p-2 rounded-md hover:bg-muted/50 transition-colors"
+                    >
+                      <div className={`w-8 h-8 flex items-center justify-center rounded-md ${item.bgColor}`}>
+                        <span className={`font-mono text-lg ${item.color}`}>{item.symbol}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-semibold">{item.name}</div>
+                        <div className="text-[10px] text-muted-foreground">{item.description}</div>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="p-2 bg-muted/30 rounded-lg">
+                    <p className="text-[10px] text-muted-foreground">
+                      <strong>Example:</strong>{' '}
+                      <span className="font-mono bg-background px-1 py-0.5 rounded">(A∧B)∨¬C</span>
+                    </p>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             </div>
           )}
         </div>

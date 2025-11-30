@@ -81,7 +81,7 @@ export const ExamplesPanel: React.FC<ExamplesPanelProps> = ({
                   DIFFICULTY
                 </label>
                 <div className="flex flex-wrap gap-2">
-                  {(['all', 'beginner', 'intermediate', 'advanced', 'expert'] as const).map(diff => (
+                  {(['all', 'beginner', 'intermediate', 'advanced'] as const).map(diff => (
                     <button
                       key={diff}
                       onClick={() => setSelectedDifficulty(diff)}

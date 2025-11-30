@@ -214,8 +214,8 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
         circuitHook.resetSimulation()
       }
 
-      // S key for select tool
-      if (event.key === 's' || event.key === 'S') {
+      // V key for select tool
+      if (event.key === 'v' || event.key === 'V') {
         if (
           event.target instanceof HTMLInputElement ||
           event.target instanceof HTMLTextAreaElement
@@ -236,8 +236,8 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
         onToolSelect?.('wire')
       }
 
-      // P key for pan tool
-      if (event.key === 'p' || event.key === 'P') {
+      // H key for pan/hand tool
+      if (event.key === 'h' || event.key === 'H') {
         if (
           event.target instanceof HTMLInputElement ||
           event.target instanceof HTMLTextAreaElement
@@ -340,18 +340,28 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
         )
           return
         
+        // Determine which components to copy
+        let componentIdsToCopy: Set<string> = new Set()
+        
         if (selectedComponents.size > 0) {
+          componentIdsToCopy = new Set(selectedComponents)
+        } else if (circuitHook.circuitState.selectedComponent) {
+          componentIdsToCopy = new Set([circuitHook.circuitState.selectedComponent])
+        }
+        
+        if (componentIdsToCopy.size > 0) {
           event.preventDefault()
-          // Copy selected components and their internal connections
-          const componentsToCopy = circuitHook.circuitState.components.filter(
-            (c: Component) => selectedComponents.has(c.id)
-          )
+          // Deep clone selected components and their internal connections
+          const componentsToCopy = circuitHook.circuitState.components
+            .filter((c: Component) => componentIdsToCopy.has(c.id))
+            .map((c: Component) => JSON.parse(JSON.stringify(c)))
           
-          const connectionsToCopy = circuitHook.circuitState.connections.filter(
-            (conn: Connection) => 
-              selectedComponents.has(conn.from.componentId) &&
-              selectedComponents.has(conn.to.componentId)
-          )
+          const connectionsToCopy = circuitHook.circuitState.connections
+            .filter((conn: Connection) => 
+              componentIdsToCopy.has(conn.from.componentId) &&
+              componentIdsToCopy.has(conn.to.componentId)
+            )
+            .map((conn: Connection) => JSON.parse(JSON.stringify(conn)))
           
           setClipboard({
             components: componentsToCopy,
@@ -374,6 +384,7 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
           // Create ID mapping for pasted components
           const idMap = new Map<string, string>()
           const newSelectedIds = new Set<string>()
+          const newComponents: Component[] = []
           
           // Calculate offset for pasted components (30px down and right)
           const PASTE_OFFSET = 30
@@ -388,6 +399,7 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
             if (newComp) {
               idMap.set(comp.id, newComp.id)
               newSelectedIds.add(newComp.id)
+              newComponents.push(newComp)
               
               // Copy label if it exists
               if (comp.label) {
@@ -396,13 +408,14 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
             }
           })
           
-          // Add connections between pasted components
+          // Add connections between pasted components (use a longer delay to ensure state is updated)
           setTimeout(() => {
             clipboard.connections.forEach((conn) => {
               const newFromId = idMap.get(conn.from.componentId)
               const newToId = idMap.get(conn.to.componentId)
               
               if (newFromId && newToId) {
+                // Find components from the fresh state
                 const fromComp = circuitHook.circuitState.components.find(
                   (c: Component) => c.id === newFromId
                 )
@@ -411,30 +424,29 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
                 )
                 
                 if (fromComp && toComp) {
-                  // Find matching connection points by their relative index
+                  // Find matching connection points by their relative index using the cloned clipboard data
                   const oldFromComp = clipboard.components.find(c => c.id === conn.from.componentId)
                   const oldToComp = clipboard.components.find(c => c.id === conn.to.componentId)
                   
                   if (oldFromComp && oldToComp) {
                     const fromOutputIndex = oldFromComp.outputs.findIndex(
-                      o => o.id === conn.from.connectionPointId
+                      (o: any) => o.id === conn.from.connectionPointId
                     )
                     const toInputIndex = oldToComp.inputs.findIndex(
-                      i => i.id === conn.to.connectionPointId
+                      (i: any) => i.id === conn.to.connectionPointId
                     )
                     
-                    if (fromOutputIndex !== -1 && toInputIndex !== -1) {
+                    if (fromOutputIndex !== -1 && toInputIndex !== -1 && 
+                        fromComp.outputs[fromOutputIndex] && toComp.inputs[toInputIndex]) {
                       const newFromOutput = fromComp.outputs[fromOutputIndex]
                       const newToInput = toComp.inputs[toInputIndex]
                       
-                      if (newFromOutput && newToInput) {
-                        circuitHook.addConnection(
-                          newFromId,
-                          newFromOutput.id,
-                          newToId,
-                          newToInput.id
-                        )
-                      }
+                      circuitHook.addConnection(
+                        newFromId,
+                        newFromOutput.id,
+                        newToId,
+                        newToInput.id
+                      )
                     }
                   }
                 }
@@ -443,7 +455,7 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
             
             // Select the pasted components
             setSelectedComponents(newSelectedIds)
-          }, 100)
+          }, 150)
         }
       }
 
@@ -1356,7 +1368,7 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
           />
           {/* Multi-selection highlight */}
           {selectedComponents.has(component.id) && (
-            <div className="absolute inset-0 border-3 border-blue-500 bg-blue-400/30 rounded-lg pointer-events-none shadow-lg shadow-blue-500/50">
+            <div className="absolute inset-0 border-2 border-blue-500 bg-blue-500/10 rounded-lg pointer-events-none">
               <div className="absolute -top-2 -right-2 w-5 h-5 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold shadow-md">
                 ✓
               </div>
@@ -1548,7 +1560,7 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
               className="h-9 p-0"
             >
               <Calculator className="h-6 w-6 mr-2" />
-              Boolean to Circuit
+              Expression to Circuit
             </Button>
           </TooltipTrigger>
           <TooltipContent>Toggle Boolean Expression Input</TooltipContent>
@@ -1729,7 +1741,7 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
         {/* Box Selection Rectangle */}
         {selectionBox?.isSelecting && (
           <div
-            className="absolute border-2 border-blue-500 bg-blue-100 bg-opacity-20 pointer-events-none"
+            className="absolute border-2 border-blue-500 bg-blue-500/10 pointer-events-none"
             style={{
               left:
                 Math.min(

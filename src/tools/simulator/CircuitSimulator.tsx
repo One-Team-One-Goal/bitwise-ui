@@ -15,12 +15,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { parseExpression } from './utils/expressionParser'
 import { generateCircuitFromExpression } from './utils/circuitGenerator'
-import type {
-  Component,
-  ComponentType,
-  ToolbarState,
-  Connection,
-} from './types'
+import type { ComponentType, ToolbarState, Connection } from './types'
+
 import { MousePointer, Hand, Cable, Cpu, Boxes, Settings } from 'lucide-react'
 
 export const CircuitSimulator: React.FC = () => {
@@ -97,19 +93,6 @@ export const CircuitSimulator: React.FC = () => {
     }
   }, [circuitHook.circuitState.components.length])
 
-  // Auto-close properties drawer on deselection
-  React.useEffect(() => {
-    if (
-      !circuitHook.circuitState.selectedComponent &&
-      !circuitHook.circuitState.selectedConnection
-    ) {
-      setShowPropertiesDrawer(false)
-    }
-  }, [
-    circuitHook.circuitState.selectedComponent,
-    circuitHook.circuitState.selectedConnection,
-  ])
-
   const tools = [
     {
       id: 'select' as const,
@@ -171,7 +154,7 @@ export const CircuitSimulator: React.FC = () => {
       <div className="flex flex-1 overflow-hidden min-h-0">
         {/* Component Palette - Desktop sidebar */}
         <div
-          className="hidden lg:flex w-56 xl:w-64 shrink-0"
+          className="hidden lg:flex w-64 xl:w-70 flex-shrink-0"
           data-tour="component-palette"
         >
           <ComponentPalette
@@ -201,15 +184,12 @@ export const CircuitSimulator: React.FC = () => {
         </div>
 
         {/* Properties Panel - Desktop sidebar */}
-        {(circuitHook.circuitState.selectedComponent ||
-          circuitHook.circuitState.selectedConnection) && (
-          <div
-            className="hidden xl:flex w-72 2xl:w-80 shrink-0"
-            data-tour="properties"
-          >
-            <PropertiesPanel circuitHook={circuitHook} />
-          </div>
-        )}
+        <div
+          className="hidden xl:flex w-72 2xl:w-80 flex-shrink-0"
+          data-tour="properties"
+        >
+          <PropertiesPanel circuitHook={circuitHook} />
+        </div>
       </div>
 
       {/* Mobile Side Drawer Buttons - Fixed Bottom Right */}
@@ -309,17 +289,15 @@ export const CircuitSimulator: React.FC = () => {
 
                   // Clear existing circuit only if clearExisting is true (default)
                   if (options?.clearExisting !== false) {
-                    circuitHook.circuitState.components.forEach(
-                      (comp: Component) => {
-                        circuitHook.removeComponent(comp.id)
-                      }
-                    )
+                    circuitHook.circuitState.components.forEach((comp: any) => {
+                      circuitHook.removeComponent(comp.id)
+                    })
                   }
 
                   // Load generated components and connections
                   // Store all components first, keeping track of both new and generated IDs
                   const componentIdMap = new Map<string, string>()
-                  const addedComponents: Component[] = []
+                  const addedComponents: any[] = []
 
                   circuitResult.components.forEach((generatedComp) => {
                     const newComp = circuitHook.addComponent(
@@ -418,12 +396,12 @@ export const CircuitSimulator: React.FC = () => {
                       // Trigger immediate propagation by toggling a switch output (if any)
                       const switches =
                         circuitHook.circuitState.components.filter(
-                          (c: Component) => c.type === 'SWITCH'
+                          (c: any) => c.type === 'SWITCH'
                         )
                       if (switches.length > 0) {
                         // Force re-evaluation by updating the simulator
                         circuitHook.circuitState.components.forEach(
-                          (comp: Component) => {
+                          (comp: any) => {
                             circuitHook.updateComponent(comp.id, {})
                           }
                         )

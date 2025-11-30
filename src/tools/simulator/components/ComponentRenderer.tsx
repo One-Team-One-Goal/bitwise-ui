@@ -123,6 +123,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = React.memo(
 
     const renderGateShape = () => {
       const { width, height } = component.size
+      const strokeWidth = isSelected ? (3 / zoom) : (2 / zoom);
 
       switch (component.type) {
         case 'AND':
@@ -150,7 +151,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = React.memo(
               />
               <line
                 x1="15"
-                y1={(2 * height) / 3}
+                y1={(2 * height) / 3}cd 
                 x2="8"
                 y2={(2 * height) / 3}
                 stroke="black"
@@ -1750,7 +1751,7 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = React.memo(
         {/* Connected inputs indicator - greenish glow */}
         {hasConnectedInputs && (
           <div
-            className={`absolute -inset-1 rounded-lg transition-all duration-300 pointer-events-none ${
+            className={`absolute -inset-1 rounded-sm transition-all duration-300 pointer-events-none ${
               hasActiveInputs
                 ? 'bg-green-400/20 shadow-lg shadow-green-400/30 ring-2 ring-green-400/40'
                 : 'bg-emerald-300/15 ring-1 ring-emerald-400/30'

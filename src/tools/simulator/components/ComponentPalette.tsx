@@ -190,12 +190,9 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
 
   // Desktop vertical layout
   return (
-    <aside className="h-full bg-background border-r flex flex-col min-h-0">
+    <aside className="h-full bg-background border-r flex flex-col min-h-0 w-full">
       <header className="p-4 border-b shrink-0">
-        <h3 className="text-base font-semibold">Components</h3>
-        <p className="text-xs text-muted-foreground mt-1">
-          Select a component to place on the canvas.
-        </p>
+        <p className="text-base font-semibold">Components</p>
       </header>
 
       <ScrollArea className="flex-1 min-h-0 h-full">
@@ -219,7 +216,7 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
                     <IconComponent
                       className={`h-4 w-4 transition-colors ${isExpanded ? 'text-primary' : 'text-muted-foreground'}`}
                     />
-                    <span className="text-sm font-medium">{category.name}</span>
+                    <span className="text-xs font-medium">{category.name}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground">

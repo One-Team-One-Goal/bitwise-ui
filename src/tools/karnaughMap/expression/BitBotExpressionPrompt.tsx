@@ -17,10 +17,6 @@ interface BitBotExpressionPromptProps {
   onDismiss: () => void;
 }
 
-/**
- * BitBot-guided expression input prompt
- * A prominent, eye-catching component that encourages users to try expression input
- */
 export const BitBotExpressionPrompt: React.FC<BitBotExpressionPromptProps> = ({
   variableCount,
   onApplyExpression,

@@ -247,7 +247,6 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
         onToolSelect?.('pan')
       }
 
-      // Space bar to enable pan mode temporarily
       if (event.key === ' ' && !event.repeat) {
         if (
           event.target instanceof HTMLInputElement ||
@@ -256,7 +255,6 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
           return
         event.preventDefault()
         
-        // If there's a selected switch/button, toggle it
         const component = circuitHook.circuitState.components.find(
           (c: Component) => c.id === circuitHook.circuitState.selectedComponent
         )

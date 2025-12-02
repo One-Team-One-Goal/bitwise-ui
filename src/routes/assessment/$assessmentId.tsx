@@ -241,7 +241,7 @@ function RouteComponent() {
   const [current, setCurrent] = useState(0)
   const [answers, setAnswers] = useState<{ [qId: number]: string }>({})
   const [showResult, setShowResult] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const [_loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [score, setScore] = useState<number | null>(null)
   const [feedback, setFeedback] = useState<string | null>(null)

@@ -235,7 +235,11 @@ function RouteComponent() {
       toast.custom(
         (t) => (
           <div className="bg-white dark:bg-gray-800 rounded-md shadow-md p-4 flex items-start gap-4 max-w-md pointer-events-auto">
-            <img src={bitboCongrats} alt="BitBot" className="w-12 h-12 shrink-0" />
+            <img
+              src={bitboCongrats}
+              alt="BitBot"
+              className="w-12 h-12 shrink-0"
+            />
             <div className="flex-1">
               <p className="font-bold text-amber-600 dark:text-amber-400 text-sm mb-1">
                 BitBot's Travel Tip
@@ -275,31 +279,68 @@ function RouteComponent() {
       toast.error('Please log in to start an assessment')
       return
     }
+    console.log('[Roadmap] handleStartAdaptiveAssessment invoked', {
+      effectiveUser,
+      ALLOW_ANON,
+      FALLBACK_USER_ID,
+    })
     setLoadingAssessment(true)
     try {
+      const payload = { uid: effectiveUser.id }
+      const startTime = Date.now()
+      console.log(
+        '[Roadmap] calling API',
+        '/assessment/start-adaptive-practice',
+        payload,
+        'at',
+        new Date().toISOString()
+      )
+
       const result = await apiService.post<{
         success: boolean
         data: { attemptId: number }
         error?: string
       }>(
         '/assessment/start-adaptive-practice',
-        { uid: effectiveUser.id },
+        payload,
         true,
         { timeout: 60000 } // 60 second timeout for AI-powered endpoint
       )
+      console.log(
+        '[Roadmap] API response received after',
+        Date.now() - startTime,
+        'ms:',
+        result
+      )
       if (result.success) {
-        navigate({
+        const target = {
           to: '/assessment/$assessmentId',
           params: { assessmentId: result.data.attemptId.toString() },
-        })
+        }
+        console.log('[Roadmap] navigate to', target)
+        navigate(target)
         refreshRoadmapData()
       } else {
+        console.error('[Roadmap] API returned failure', result)
         throw new Error(result.error || 'Failed to start assessment')
       }
     } catch (error) {
-      console.error('Failed to start assessment:', error)
-      toast.error('Failed to start assessment. Please try again.')
+      console.error(
+        '[Roadmap] handleStartAdaptiveAssessment caught error:',
+        error
+      )
+      // Check for rate limit error and show a more helpful message
+      const errorMessage =
+        error instanceof Error ? error.message : String(error)
+      if (errorMessage.toLowerCase().includes('rate limit')) {
+        toast.error(
+          'AI service is temporarily busy. Please try again in a few minutes.'
+        )
+      } else {
+        toast.error('Failed to start assessment. Please try again.')
+      }
     } finally {
+      console.log('[Roadmap] handleStartAdaptiveAssessment finished')
       setLoadingAssessment(false)
     }
   }

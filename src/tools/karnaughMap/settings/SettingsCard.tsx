@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
   Settings,
-  Zap,
   Shuffle,
   CheckCircle,
   XCircle,
@@ -202,7 +201,7 @@ const SettingsCard: React.FC<SettingsCardProps> = ({
           </div>
         </div>
 
-        <Separator className='mt-5'/>
+        <Separator className="mt-5" />
 
         {/* Expression Input Section */}
         <div className="space-y-3">
@@ -228,7 +227,7 @@ const SettingsCard: React.FC<SettingsCardProps> = ({
 
             {/* Status */}
             <div className="flex items-center justify-between">
-              <div className='mr-2'>{getStatusBadge()}</div>
+              <div className="mr-2">{getStatusBadge()}</div>
               {validation?.error && (
                 <span className="text-xs text-red-500">{validation.error}</span>
               )}

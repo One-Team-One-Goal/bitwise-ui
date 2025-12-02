@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import { CircuitCanvas } from './components/CircuitCanvas'
 import { ComponentPalette } from './components/ComponentPalette'
-import { SimulatorToolbar } from './components/SimulatorToolbar'
 import { PropertiesPanel } from './components/PropertiesPanel'
 import { BooleanExpressionInput } from './components/BooleanExpressionInput'
 import { useCircuitSimulator } from './hooks/useCircuitSimulator'

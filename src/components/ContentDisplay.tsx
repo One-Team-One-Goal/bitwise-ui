@@ -62,9 +62,18 @@ interface ContentBlock {
     description?: string
   }
   circuitDiagram?: {
-    description: string
+    description?: string
     imageUrl?: string
     components?: string[] // list of components
+    inputs?: string[]
+    gates?: Array<{
+      id: string
+      type: string
+      inputs: string[]
+      output: string
+    }>
+    finalOutput?: string
+    caption?: string
   }
   formula?: string
   callout?: {
@@ -104,8 +113,7 @@ const ContentDisplay: React.FC<ContentDisplayProps> = ({
 
     switch (block.type) {
       case 'heading':
-        const headingLevel = block.level || 2
-        const headingTag = `h${headingLevel}`
+        const level = block.level || 2
         const headingSizes: Record<number, string> = {
           1: 'text-4xl font-extrabold',
           2: 'text-3xl font-bold',
@@ -114,15 +122,15 @@ const ContentDisplay: React.FC<ContentDisplayProps> = ({
           5: 'text-lg font-semibold',
           6: 'text-base font-semibold',
         }
+        const headingClass = `${headingSizes[level]} text-gray-900 dark:text-gray-100 tracking-tight`
         return (
           <div key={key} className={`mb-6 ${block.className || ''}`}>
-            {React.createElement(
-              headingTag,
-              {
-                className: `${headingSizes[headingLevel]} text-gray-900 dark:text-gray-100 tracking-tight`,
-              },
-              block.text
-            )}
+            {level === 1 && <h1 className={headingClass}>{block.text}</h1>}
+            {level === 2 && <h2 className={headingClass}>{block.text}</h2>}
+            {level === 3 && <h3 className={headingClass}>{block.text}</h3>}
+            {level === 4 && <h4 className={headingClass}>{block.text}</h4>}
+            {level === 5 && <h5 className={headingClass}>{block.text}</h5>}
+            {level === 6 && <h6 className={headingClass}>{block.text}</h6>}
           </div>
         )
 
@@ -469,24 +477,18 @@ const ContentDisplay: React.FC<ContentDisplayProps> = ({
           </div>
         )
 
-      case 'karnaughMap':
-        const variables = block.karnaughMap?.variables || []
-        const values = block.karnaughMap?.values || []
-        const numVars = variables.length
-        const cols =
-          numVars >= 2
-            ? Math.pow(2, Math.floor(numVars / 2))
-            : Math.pow(2, numVars)
+   case 'karnaughMap':
+  const variables = block.karnaughMap?.variables || []
+  const values = block.karnaughMap?.values || []
+  const numVars = variables.length
+  const cols = numVars >= 2 ? Math.pow(2, Math.floor(numVars / 2)) : Math.pow(2, numVars)
 
-        // Gray code generation
-        const grayCode = (n: number): string[] => {
-          if (n === 1) return ['0', '1']
-          const prev = grayCode(n - 1)
-          return [
-            ...prev.map((x) => '0' + x),
-            ...prev.reverse().map((x) => '1' + x),
-          ]
-        }
+  // Gray code generation
+  const grayCode = (n: number): string[] => {
+    if (n === 1) return ['0', '1']
+    const prev = grayCode(n - 1)
+    return [...prev.map(x => '0' + x), ...prev.reverse().map(x => '1' + x)]
+  }
 
         const rowLabels = numVars >= 2 ? grayCode(Math.ceil(numVars / 2)) : ['']
         const colLabels =

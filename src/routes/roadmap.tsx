@@ -343,7 +343,11 @@ function RouteComponent() {
       toast.custom(
         (t) => (
           <div className="bg-white dark:bg-gray-800 rounded-md shadow-md p-4 flex items-start gap-4 max-w-md pointer-events-auto">
-            <img src={bitboCongrats} alt="BitBot" className="w-12 h-12 shrink-0" />
+            <img
+              src={bitboCongrats}
+              alt="BitBot"
+              className="w-12 h-12 shrink-0"
+            />
             <div className="flex-1">
               <p className="font-bold text-amber-600 dark:text-amber-400 text-sm mb-1">
                 BitBot's Travel Tip
@@ -404,7 +408,7 @@ function RouteComponent() {
         '/assessment/start-lesson-practice',
         { uid: effectiveUser.id, lessonId },
         true,
-        { timeout: 60000 } // 60 second timeout for AI-powered endpoint
+        { timeout: 60000 }
       )
       if (result.success) {
         setShowLessonSelectModal(false)
@@ -418,7 +422,12 @@ function RouteComponent() {
       }
     } catch (error) {
       console.error('Failed to start lesson practice:', error)
-      toast.error('Failed to start practice. Please try again.')
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      if (errorMessage.toLowerCase().includes('rate limit')) {
+        toast.error('AI service is temporarily busy. Please try again in a few minutes.')
+      } else {
+        toast.error('Failed to start practice. Please try again.')
+      }
     } finally {
       setLoadingAssessment(false)
       setSelectedPracticeLesson(null)

@@ -258,7 +258,7 @@ function RouteComponent() {
   const [current, setCurrent] = useState(0)
   const [answers, setAnswers] = useState<{ [qId: number]: string }>({})
   const [showResult, setShowResult] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const [_loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [score, setScore] = useState<number | null>(null)
   const [feedback, setFeedback] = useState<string | null>(null)
@@ -286,7 +286,6 @@ function RouteComponent() {
       navigate({ to: '/roadmap' })
       return
     }
-    setLoading(true)
 
     // Try to get attempt data from sessionStorage first (for newly created assessments)
     const cachedAttempt = sessionStorage.getItem('currentAttempt')
@@ -307,7 +306,6 @@ function RouteComponent() {
           if (data.adaptiveInfo) {
             setAdaptiveInfo(data.adaptiveInfo)
           }
-          setLoading(false)
           return
         }
       } catch (error) {
@@ -328,11 +326,9 @@ function RouteComponent() {
         if (data.performance) {
           setAdaptiveInfo(data.performance)
         }
-        setLoading(false)
       })
       .catch((error) => {
         console.error('Failed to fetch attempt:', error)
-        setLoading(false)
         navigate({ to: '/roadmap' })
       })
   }, [assessmentId, navigate, user])
@@ -586,7 +582,7 @@ function RouteComponent() {
 
         {!showResult ? (
           <Card className="w-full border-0 shadow-none p-0 m-0 pb-10">
-            <CardContent className="p-0">
+            <CardContent className="p-0 bg-transparent">
               <div>
                 <div className="flex justify-between pb-4">
                   <div className="flex items-center flex-wrap gap-2">
@@ -775,7 +771,11 @@ function RouteComponent() {
                 </Button>
               </div>
             </CardContent>
-            <img src={rightPoint} alt="Right Pointing" className="absolute bottom-10 ml-[-150px] w-32 h-32 pointer-events-none select-none" />
+            <img
+              src={rightPoint}
+              alt="Right Pointing"
+              className="absolute bottom-10 ml-[-150px] w-32 h-32 pointer-events-none select-none"
+            />
           </Card>
         ) : processingResults ? (
           <Card className="w-full mb-8 border bg-transparent p-0 border-none shadow-none pt-20">
@@ -795,7 +795,7 @@ function RouteComponent() {
           </Card>
         ) : (
           <Card className="w-full mb-8 shadow-none border-none bg-transparent p-0 py-10">
-            <CardContent className="p-0">
+            <CardContent className="p-0 bg-transparent">
               <div className="text-center mb-10">
                 <div className="inline-flex items-center justify-center mb-6">
                   <img

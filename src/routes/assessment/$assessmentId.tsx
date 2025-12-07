@@ -66,6 +66,23 @@ const topicToLessonId: Record<string, number> = {
   'karnaugh-maps': 4,
 }
 
+// Mapping from topic ID to topic name
+// Topic IDs: Lesson 1 = 1,2,3, Lesson 2 = 4,5,6, Lesson 3 = 7,8,9, Lesson 4 = 10,11,12
+const topicIdToName: Record<number, string> = {
+  1: 'Introduction',
+  2: 'Boolean Values',
+  3: 'Applications',
+  4: 'AND Gate',
+  5: 'OR Gate',
+  6: 'NOT Gate',
+  7: 'Truth Table Construction',
+  8: 'Truth Table Reading',
+  9: 'Truth Tables for Gates',
+  10: 'Boolean Laws',
+  11: 'Simplification',
+  12: 'Karnaugh Maps',
+}
+
 // Component to render truth tables
 const TruthTableRenderer = ({ tableData }: { tableData: any }) => {
   return (
@@ -942,7 +959,7 @@ function RouteComponent() {
                           className="flex justify-between items-center p-3 rounded-lg border bg-muted/30"
                         >
                           <span className="text-sm font-medium text-foreground">
-                            Question {perf.topicId}
+                            {topicIdToName[perf.topicId] || `Topic ${perf.topicId}`}
                           </span>
                           <span
                             className={`text-sm font-bold ${getScoreColor(perf.correct, perf.total)}`}

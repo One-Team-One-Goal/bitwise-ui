@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "prebuild": "npm ci --include=dev || true",
-    "render-build": "npm ci --include=dev && npm run build",
+    "build:ci": "npm ci --include=dev && npm run build",
+    "render-build": "npm run build:ci",
     "lint": "eslint .",
     "preview": "vite preview",
     "start": "serve -s dist -l 3000"

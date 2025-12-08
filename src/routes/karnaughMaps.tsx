@@ -149,7 +149,7 @@ function RouteComponent() {
                 <p className="font-semibold mb-2 text-sm text-muted-foreground">
                   {formType} Solution:
                 </p>
-                <div className="font-mono text-lg mb-2 border rounded-sm pl-2 p-1">
+                <div className="font-mono text-lg mb-2 border rounded-sm pl-2 p-1 overflow-x-auto whitespace-nowrap max-w-[400px]">
                   {solution.expression}
                 </div>
                 <div className="flex mt-2 gap-12">

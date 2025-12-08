@@ -1,52 +1,51 @@
-import React, { useState } from 'react';
-import { 
-  Zap, 
-  RotateCcw, 
-  Download, 
-  Upload, 
+import React, { useState } from 'react'
+import {
+  Zap,
+  RotateCcw,
+  Download,
+  Upload,
   Settings,
   ChevronDown,
   ChevronRight,
   Cpu,
-  Info
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { 
+} from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip';
-import type { ComponentType } from '../types';
-import { ComponentFactory } from '../utils/componentFactory';
+} from '@/components/ui/tooltip'
+import type { ComponentType, ComponentDefinition } from '../types'
+import { ComponentFactory } from '../utils/componentFactory'
 
 interface ComponentPaletteProps {
-  onComponentSelect: (componentType: ComponentType) => void;
-  selectedComponentType: ComponentType | null;
-  isMobile?: boolean;
+  onComponentSelect: (componentType: ComponentType) => void
+  selectedComponentType: ComponentType | null
+  isMobile?: boolean
 }
 
 export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
   onComponentSelect,
   selectedComponentType,
-  isMobile = false
+  isMobile = false,
 }) => {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
-    new Set()
-  );
+    new Set(['gates']) // Default to open 'Logic Gates'
+  )
 
   const toggleCategory = (category: string) => {
-    setExpandedCategories(prev => {
-      const newSet = new Set(prev);
+    setExpandedCategories((prev) => {
+      const newSet = new Set(prev)
       if (newSet.has(category)) {
-        newSet.delete(category);
+        newSet.delete(category)
       } else {
-        newSet.add(category);
+        newSet.add(category)
       }
-      return newSet;
-    });
-  };
+      return newSet
+    })
+  }
 
   const categories = [
     { id: 'gates', name: 'Logic Gates', icon: Zap },
@@ -54,188 +53,193 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
     { id: 'inputs', name: 'Input Controls', icon: Download },
     { id: 'outputs', name: 'Output Controls', icon: Upload },
     { id: 'circuits', name: 'Premade Circuits', icon: Cpu },
-    { id: 'other', name: 'Other', icon: Settings }
-  ];
+    { id: 'other', name: 'Other', icon: Settings },
+  ]
 
-  const renderComponentButton = (definition: any) => {
-    const isSelected = selectedComponentType === definition.type;
-    const baseClasses = 'w-full justify-between h-10 px-2 flex-shrink-0 rounded-md transition-all border';
+  const renderComponentButton = (definition: ComponentDefinition) => {
+    const isSelected = selectedComponentType === definition.type
     const stateClasses = isSelected
-      ? 'border-primary/40 bg-primary/10 text-primary shadow-lg shadow-primary/50 ring-2 ring-primary/30 hover:bg-primary/15 animate-in fade-in duration-200'
-      : 'border-transparent hover:bg-muted/60';
-    
+      ? 'bg-muted text-primary'
+      : 'hover:bg-muted/50'
+
     return (
-      <TooltipProvider key={definition.type}>
+      <TooltipProvider key={definition.type} delayDuration={300}>
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
               variant="ghost"
               size="sm"
-              className={`${baseClasses} ${stateClasses}`}
+              className={`w-full justify-start h-9 px-2 rounded-md transition-colors ${stateClasses}`}
               onClick={() => onComponentSelect(definition.type)}
             >
-              <div className="flex items-center gap-2 min-w-0">
-                <div className={`text-sm font-mono rounded px-1.5 py-0.5 min-w-[1.5rem] text-center flex-shrink-0 ${isSelected ? 'bg-primary/20 text-primary' : 'bg-muted/80 text-foreground'}`}>
+              <div className="flex items-center gap-2.5">
+                <div
+                  className={`flex items-center justify-center h-6 w-6 rounded text-xs font-mono shrink-0 ${isSelected ? 'bg-primary/20' : 'bg-muted'}`}
+                >
                   {definition.icon}
                 </div>
-                <div className={`text-xs font-medium truncate ${isSelected ? 'text-primary' : 'text-foreground'}`}>{definition.name}</div>
+                <span className="text-xs font-medium truncate">
+                  {definition.name}
+                </span>
               </div>
-              <Info className={`h-3 w-3 flex-shrink-0 ml-1 ${isSelected ? 'text-primary' : 'text-muted-foreground'}`} />
             </Button>
           </TooltipTrigger>
-          <TooltipContent side="right" className="max-w-xs">
-            <p className="text-xs">{definition.description}</p>
+          <TooltipContent side="right" className="max-w-xs" align="start">
+            <p className="font-semibold text-sm">{definition.name}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {definition.description}
+            </p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
-    );
-  };
+    )
+  }
 
   // Mobile horizontal layout with categories
   if (isMobile) {
     return (
-      <div className="bg-background">
+      <div className="bg-background border-t flex flex-col max-h-[50vh] min-h-0">
         {/* Category Tabs */}
-        <div className="border-b border-border overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
-          <div className="flex gap-1 px-3 py-2 min-w-max">
-            {categories.map(category => {
-              const isExpanded = expandedCategories.has(category.id);
-              const IconComponent = category.icon;
-              const components = ComponentFactory.getDefinitionsByCategory(category.id as any);
-              
+        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent border-b">
+          <div className="flex gap-2 px-3 py-2 min-w-max">
+            {categories.map((category) => {
+              const isExpanded = expandedCategories.has(category.id)
+              const IconComponent = category.icon
+
               return (
                 <Button
                   key={category.id}
-                  variant={isExpanded ? "default" : "outline"}
+                  variant="ghost"
                   size="sm"
-                  className="flex items-center gap-1.5 h-9 px-3 flex-shrink-0"
+                  className={`flex items-center gap-1.5 h-8 px-3 rounded-full transition-colors ${
+                    isExpanded
+                      ? 'bg-muted text-foreground'
+                      : 'text-muted-foreground'
+                  }`}
                   onClick={() => toggleCategory(category.id)}
                 >
                   <IconComponent className="h-3.5 w-3.5" />
                   <span className="text-xs font-medium">{category.name}</span>
-                  <span className="text-xs opacity-60">({components.length})</span>
                 </Button>
-              );
+              )
             })}
           </div>
         </div>
 
         {/* Component Grid */}
-        <div className="px-3 py-3">
-          {Array.from(expandedCategories).length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <p className="text-sm font-medium">Select a category above</p>
-              <p className="text-xs mt-1">Tap a category to view its components</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {categories.filter(cat => expandedCategories.has(cat.id)).map(category => {
-                const components = ComponentFactory.getDefinitionsByCategory(category.id as any);
-                
-                return (
-                  <div key={category.id}>
-                    <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-                      {components.map(definition => {
-                        const isSelected = selectedComponentType === definition.type;
-                        return (
-                          <TooltipProvider key={definition.type}>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant={isSelected ? "default" : "outline"}
-                                  size="sm"
-                                  className={`h-20 w-full flex flex-col items-center justify-center gap-1.5 p-2 transition-all ${
-                                    isSelected ? 'shadow-lg shadow-primary/50 ring-2 ring-primary/30 scale-105 animate-in fade-in duration-200' : ''
-                                  }`}
-                                  onClick={() => onComponentSelect(definition.type)}
-                                >
-                                  <div className="text-2xl font-mono">{definition.icon}</div>
-                                  <div className="text-[10px] font-medium leading-tight text-center line-clamp-2 w-full">
-                                    {definition.name}
-                                  </div>
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent side="top" className="max-w-xs">
-                                <p className="text-xs font-semibold">{definition.name}</p>
-                                <p className="text-xs text-muted-foreground mt-1">{definition.description}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+        <ScrollArea className="flex-1 min-h-0 h-full">
+          <div className="p-3">
+            {Array.from(expandedCategories).length === 0 ? (
+              <div className="text-center py-6 text-muted-foreground">
+                <p className="text-sm font-medium">Select a category</p>
+                <p className="text-xs mt-1">
+                  Tap on a category to view its components
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                {categories
+                  .filter((cat) => expandedCategories.has(cat.id))
+                  .flatMap((category) =>
+                    ComponentFactory.getDefinitionsByCategory(
+                      category.id as ComponentDefinition['category']
+                    )
+                  )
+                  .map((definition) => {
+                    const isSelected = selectedComponentType === definition.type
+                    return (
+                      <TooltipProvider
+                        key={definition.type}
+                        delayDuration={300}
+                      >
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className={`h-20 w-full flex flex-col items-center justify-center gap-1.5 p-1 rounded-lg transition-colors ${
+                                isSelected ? 'bg-muted text-primary' : ''
+                              }`}
+                              onClick={() => onComponentSelect(definition.type)}
+                            >
+                              <div className="text-xl font-mono">
+                                {definition.icon}
+                              </div>
+                              <div className="text-[10px] font-medium leading-tight text-center line-clamp-2 w-full text-foreground">
+                                {definition.name}
+                              </div>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-xs">
+                            <p className="font-semibold">{definition.name}</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {definition.description}
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )
+                  })}
+              </div>
+            )}
+          </div>
+        </ScrollArea>
       </div>
-    );
+    )
   }
 
   // Desktop vertical layout
   return (
-    <div className="h-full w-full bg-background border-r border-border flex flex-col">
-      <div className="p-3 border-b border-border flex-shrink-0">
-        <h3 className="text-sm font-semibold">Components</h3>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          Click to select, then place on canvas
-        </p>
-      </div>
+    <aside className="h-full bg-background border-r flex flex-col min-h-0 w-full">
+      <header className="p-4 border-b shrink-0">
+        <p className="text-base font-semibold">Components</p>
+      </header>
 
-      <ScrollArea className="flex-1 min-h-0 w-full">
-        <div className="p-2 space-y-1.5 w-full">
-          {categories.map(category => {
-            const isExpanded = expandedCategories.has(category.id);
-            const components = ComponentFactory.getDefinitionsByCategory(category.id as any);
-            const IconComponent = category.icon;
-            const categoryButtonClasses = `w-full justify-between h-9 px-3 rounded-md transition-colors border ${
-              isExpanded ? 'bg-muted/80 text-foreground border-border/70 shadow-sm hover:bg-muted' : 'border-transparent hover:bg-muted/60'
-            }`;
+      <ScrollArea className="flex-1 min-h-0 h-full">
+        <div className="p-2 space-y-1 w-full">
+          {categories.map((category) => {
+            const isExpanded = expandedCategories.has(category.id)
+            const components = ComponentFactory.getDefinitionsByCategory(
+              category.id as ComponentDefinition['category']
+            )
+            const IconComponent = category.icon
 
             return (
-              <div key={category.id} className="flex-shrink-0">
+              <div key={category.id}>
                 <Button
                   variant="ghost"
                   size="sm"
-                  className={categoryButtonClasses}
+                  className="w-full justify-between h-10 px-2 rounded-md"
                   onClick={() => toggleCategory(category.id)}
                 >
-                  <div className="flex items-center gap-2">
-                    <div className={`flex items-center justify-center h-6 w-6 rounded-sm ${isExpanded ? 'bg-primary/20 text-primary' : 'bg-muted/70 text-muted-foreground'}`}>
-                      <IconComponent className="h-4 w-4" />
-                    </div>
-                    <span className="text-sm font-semibold tracking-wide">{category.name}</span>
-                    <span className={`text-xs ${isExpanded ? 'text-primary' : 'text-muted-foreground'}`}>({components.length})</span>
+                  <div className="flex items-center gap-2.5">
+                    <IconComponent
+                      className={`h-4 w-4 transition-colors ${isExpanded ? 'text-primary' : 'text-muted-foreground'}`}
+                    />
+                    <span className="text-xs font-medium">{category.name}</span>
                   </div>
-                  {isExpanded ? (
-                    <ChevronDown className="h-4 w-4" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4" />
-                  )}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">
+                      {components.length}
+                    </span>
+                    {isExpanded ? (
+                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </div>
                 </Button>
 
                 {isExpanded && (
-                  <div className="mt-2 rounded-md border border-border/60 bg-muted/20 p-2 transition-colors">
-                    {components.length > 6 ? (
-                      <ScrollArea className="h-64 pr-1">
-                        <div className="space-y-1">
-                          {components.map(renderComponentButton)}
-                        </div>
-                      </ScrollArea>
-                    ) : (
-                      <div className="space-y-1 overflow-hidden">
-                        {components.map(renderComponentButton)}
-                      </div>
-                    )}
+                  <div className="pl-4 pt-1 space-y-1">
+                    {components.map(renderComponentButton)}
                   </div>
                 )}
               </div>
-            );
+            )
           })}
         </div>
       </ScrollArea>
-    </div>
-  );
-};
+    </aside>
+  )
+}

@@ -1519,6 +1519,119 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = React.memo(
       }
     }
 
+    // Render premade circuit (black-box component with labeled I/O)
+    const renderPremadeCircuit = () => {
+      const { width, height } = component.size
+      
+      // Get input/output labels based on circuit type
+      const getCircuitLabels = () => {
+        switch (component.type) {
+          case 'HALF_ADDER':
+            return { inputs: ['A', 'B'], outputs: ['S', 'C'] }
+          case 'FULL_ADDER':
+            return { inputs: ['A', 'B', 'Cin'], outputs: ['S', 'Cout'] }
+          case 'FOUR_BIT_ADDER':
+            return { 
+              inputs: ['A0', 'A1', 'A2', 'A3', 'B0', 'B1', 'B2', 'B3', 'Cin'], 
+              outputs: ['S0', 'S1', 'S2', 'S3', 'Cout'] 
+            }
+          case 'MULTIPLEXER_2TO1':
+            return { inputs: ['I0', 'I1', 'S'], outputs: ['Y'] }
+          case 'DECODER_2TO4':
+            return { inputs: ['A', 'B'], outputs: ['Y0', 'Y1', 'Y2', 'Y3'] }
+          default:
+            return { inputs: [], outputs: [] }
+        }
+      }
+      
+      const labels = getCircuitLabels()
+      const inputCount = component.inputs.length
+      const outputCount = component.outputs.length
+      
+      return (
+        <div className="relative w-full h-full">
+          <svg
+            width="100%"
+            height="100%"
+            viewBox={`0 0 ${width} ${height}`}
+            className="absolute inset-0"
+          >
+            {/* Main body - rounded rectangle */}
+            <rect
+              x="12"
+              y="4"
+              width={width - 24}
+              height={height - 8}
+              rx="6"
+              ry="6"
+              fill={isSelected ? '#EFF6FF' : '#F8FAFC'}
+              stroke={isSelected ? '#3B82F6' : '#64748B'}
+              strokeWidth={isSelected ? '2.5' : '2'}
+            />
+            
+            {/* Circuit type label */}
+            <text
+              x={width / 2}
+              y={height / 2 - 6}
+              textAnchor="middle"
+              fontSize="11"
+              fontWeight="bold"
+              fill={isSelected ? '#3B82F6' : '#334155'}
+            >
+              {definition.name}
+            </text>
+            
+            {/* Icon/Symbol */}
+            <text
+              x={width / 2}
+              y={height / 2 + 10}
+              textAnchor="middle"
+              fontSize="14"
+              fontWeight="bold"
+              fill={isSelected ? '#3B82F6' : '#64748B'}
+            >
+              {definition.icon}
+            </text>
+            
+            {/* Input labels */}
+            {labels.inputs.slice(0, inputCount).map((label, idx) => {
+              const yPos = ((idx + 1) * height) / (inputCount + 1)
+              return (
+                <text
+                  key={`in-${idx}`}
+                  x="16"
+                  y={yPos + 4}
+                  fontSize="8"
+                  fontWeight="500"
+                  fill="#64748B"
+                >
+                  {label}
+                </text>
+              )
+            })}
+            
+            {/* Output labels */}
+            {labels.outputs.slice(0, outputCount).map((label, idx) => {
+              const yPos = ((idx + 1) * height) / (outputCount + 1)
+              return (
+                <text
+                  key={`out-${idx}`}
+                  x={width - 16}
+                  y={yPos + 4}
+                  textAnchor="end"
+                  fontSize="8"
+                  fontWeight="500"
+                  fill="#64748B"
+                >
+                  {label}
+                </text>
+              )
+            })}
+          </svg>
+        </div>
+      )
+    }
+
     const renderComponent = () => {
       switch (definition.category) {
         case 'gates':
@@ -1529,75 +1642,68 @@ export const ComponentRenderer: React.FC<ComponentRendererProps> = React.memo(
           return renderInputControl()
         case 'outputs':
           return renderOutputControl()
+        case 'circuits':
+          return renderPremadeCircuit()
         case 'other':
           if (component.type === 'LABEL') {
             // Calculate min width/height and grow with content
             const labelLines = (component.label ?? '').split('\n')
-            const minWidth = 60
-            const minHeight = 24 // smaller base height for single line
-            const charWidth = 8 // px per character (approx)
+            const minWidth = 80
+            const minHeight = 30
+            const charWidth = 7 // px per character (approx)
             const lineHeight = 18 // px per line (approx)
             const contentWidth = Math.max(
               minWidth,
-              Math.max(...labelLines.map((line) => line.length * charWidth)) +
-                24
+              Math.max(...labelLines.map((line) => line.length * charWidth)) + 24
             )
-            // Grow height for each line, with a small padding
             const contentHeight = Math.max(
               minHeight,
-              labelLines.length * lineHeight + 8
+              labelLines.length * lineHeight + 12
             )
-
-            // Update component size if it changed
-            React.useEffect(() => {
-              if (
-                circuitHook &&
-                typeof circuitHook.updateComponent === 'function' &&
-                (component.size.width !== contentWidth ||
-                  component.size.height !== contentHeight)
-              ) {
-                circuitHook.updateComponent(component.id, {
-                  size: { width: contentWidth, height: contentHeight },
-                })
-              }
-            }, [contentWidth, contentHeight])
 
             return (
               <div
-                className="bg-white/90 backdrop-blur-sm border-2 rounded-lg flex items-center justify-center shadow-sm transition-all duration-200"
+                className="bg-white border-2 rounded-lg flex items-center justify-center shadow-sm"
                 style={{
                   borderColor: isSelected ? '#3b82f6' : '#d1d5db',
-                  position: 'relative',
                   width: contentWidth,
                   height: contentHeight,
                   minWidth,
                   minHeight,
-                  boxShadow: isSelected ? '0 0 0 2px rgba(59, 130, 246, 0.2)' : 'none',
                 }}
               >
                 <textarea
                   value={component.label ?? ''}
                   onChange={(e) => {
-                    if (typeof onClick === 'function') e.stopPropagation()
+                    e.stopPropagation()
                     if (
                       circuitHook &&
                       typeof circuitHook.updateComponent === 'function'
                     ) {
+                      // Update label and size together
+                      const newLines = e.target.value.split('\n')
+                      const newWidth = Math.max(
+                        minWidth,
+                        Math.max(...newLines.map((line) => line.length * charWidth)) + 24
+                      )
+                      const newHeight = Math.max(
+                        minHeight,
+                        newLines.length * lineHeight + 12
+                      )
                       circuitHook.updateComponent(component.id, {
                         label: e.target.value,
+                        size: { width: newWidth, height: newHeight },
                       })
                     }
                   }}
                   onClick={(e) => e.stopPropagation()}
+                  onMouseDown={(e) => e.stopPropagation()}
                   onFocus={(e) => e.stopPropagation()}
-                  className="w-full h-full text-center bg-transparent border-none outline-none text-sm font-medium px-3 resize-none text-gray-800 placeholder:text-gray-400"
+                  className="w-full h-full text-center bg-transparent border-none outline-none text-sm font-medium px-2 py-1 resize-none text-gray-700 placeholder:text-gray-400"
                   style={{
-                    pointerEvents: 'auto',
-                    overflow: 'hidden',
-                    resize: 'none',
-                    lineHeight: '1.5',
+                    lineHeight: '1.4',
                   }}
-                  placeholder="Add text..."
+                  placeholder="Label..."
                   rows={labelLines.length || 1}
                 />
               </div>

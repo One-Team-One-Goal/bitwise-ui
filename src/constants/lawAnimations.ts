@@ -21,25 +21,64 @@ export interface LawAnimation {
   description: string;
 }
 
+// Mapping from short law names (backend) to long names (animation keys)
+const LAW_NAME_MAP: Record<string, string> = {
+  // Short names from backend
+  'com': 'commutative',
+  'ass': 'associative',
+  'dist': 'distributive',
+  'i': 'identity',
+  'neg': 'negation',
+  'dneg': 'doublenegation',
+  'id': 'idempotent',
+  'ub': 'universalbound',
+  'dm': 'demorgans',
+  'abs': 'absorption',
+  'ntf': 'negationsoftf',
+  'xor': 'xor',
+  'imp': 'implication',
+  'bimp': 'biconditional',
+  'iff': 'biconditional',
+  // Long names (already normalized)
+  'commutative': 'commutative',
+  'associative': 'associative',
+  'distributive': 'distributive',
+  'identity': 'identity',
+  'negation': 'negation',
+  'doublenegation': 'doublenegation',
+  'idempotent': 'idempotent',
+  'universalbound': 'universalbound',
+  'demorgans': 'demorgans',
+  'absorption': 'absorption',
+  'negationsoftf': 'negationsoftf',
+  // XOR/Implication/Biconditional long names
+  'xordefinition': 'xor',
+  'implicationdefinition': 'implication',
+  'biconditionaldefinition': 'biconditional',
+  'simplified': 'start',
+  'start': 'start',
+  'result': 'start',
+};
+
 export const LAW_ANIMATIONS: Record<string, LawAnimation> = {
   // Identity - Simple fade (element disappears)
   identity: {
     type: 'fade',
-    duration: 0.5,
+    duration: 0.7,
     highlightColor: '#3b82f6', // blue
-    description: 'Elements fade away as they become identity',
+    description: 'Identity elements fade away - T for AND, F for OR leave no trace',
   },
 
   // Negation - Rotate and flip
   negation: {
     type: 'flip',
-    duration: 0.6,
+    duration: 0.8,
     highlightColor: '#ef4444', // red
-    description: 'Negated pairs flip and cancel out',
+    description: 'Contradictions flip away! A∧¬A→F, tautologies emerge! A∨¬A→T',
   },
 
   // Double Negation - Quick shake then fade
-  doubleNegation: {
+  doublenegation: {
     type: 'shake',
     duration: 0.4,
     highlightColor: '#8b5cf6', // purple
@@ -47,7 +86,7 @@ export const LAW_ANIMATIONS: Record<string, LawAnimation> = {
   },
 
   // Negations of T/F - Rotate 180°
-  negationsOfTF: {
+  negationsoftf: {
     type: 'rotate',
     duration: 0.5,
     highlightColor: '#ec4899', // pink
@@ -55,7 +94,7 @@ export const LAW_ANIMATIONS: Record<string, LawAnimation> = {
   },
 
   // Universal Bound - Expand then consume
-  universalBound: {
+  universalbound: {
     type: 'scale',
     duration: 0.7,
     highlightColor: '#f59e0b', // amber
@@ -73,9 +112,9 @@ export const LAW_ANIMATIONS: Record<string, LawAnimation> = {
   // Commutative - Swap positions with bounce
   commutative: {
     type: 'bounce',
-    duration: 0.7,
+    duration: 0.8,
     highlightColor: '#06b6d4', // cyan
-    description: 'Elements bounce and swap positions',
+    description: 'Order doesn\'t matter! A∧B→B∧A, watch them swap places',
   },
 
   // Idempotent - Duplicates merge with glow
@@ -89,39 +128,114 @@ export const LAW_ANIMATIONS: Record<string, LawAnimation> = {
   // Absorption - One absorbs the other
   absorption: {
     type: 'scale',
-    duration: 0.8,
+    duration: 0.9,
     highlightColor: '#84cc16', // lime
-    description: 'Larger term absorbs smaller one',
+    description: 'Redundancy absorbed! A∨(A∧B)→A, the larger term wins',
   },
 
   // De Morgan's - Distribute negation with pulse
-  deMorgans: {
+  demorgans: {
     type: 'pulse',
-    duration: 0.7,
+    duration: 0.9,
     highlightColor: '#f97316', // orange
-    description: 'Negation pulses through expression',
+    description: 'Negation distributes through! ¬(A∧B)→¬A∨¬B, operators flip too',
   },
 
   // Distributive - Split and distribute
   distributive: {
     type: 'slide',
-    duration: 0.8,
+    duration: 1.0,
     highlightColor: '#6366f1', // indigo
-    description: 'Term slides and distributes across others',
+    description: 'Distributing like algebra! A∧(B∨C)→(A∧B)∨(A∧C) - watch it expand',
+  },
+
+  // XOR conversion - Pulse to show expansion
+  xor: {
+    type: 'pulse',
+    duration: 0.9,
+    highlightColor: '#a855f7', // purple-500
+    description: 'XOR expands into exclusive AND/OR form - watch it transform!',
+  },
+
+  // Implication conversion
+  implication: {
+    type: 'slide',
+    duration: 0.8,
+    highlightColor: '#0ea5e9', // sky-500
+    description: 'Implication slides into OR form with negated antecedent',
+  },
+
+  // Biconditional conversion
+  biconditional: {
+    type: 'pulse',
+    duration: 0.9,
+    highlightColor: '#14b8a6', // teal-500
+    description: 'Biconditional pulses and expands to show both directions',
+  },
+
+  // Start/Initial state - Already simplified
+  start: {
+    type: 'glow',
+    duration: 0.5,
+    highlightColor: '#22c55e', // green
+    description: 'Expression is already in simplest form',
   },
 };
 
 /**
  * Get animation config for a law, with fallback
+ * Maps both short names (from backend) and long names to the correct animation
  */
 export function getLawAnimation(lawId: string): LawAnimation {
+  // First normalize: lowercase, remove non-alpha chars
   const normalized = lawId.toLowerCase().replace(/[^a-z]/g, '');
-  return LAW_ANIMATIONS[normalized] || {
+  
+  // Check if it's a short name that needs mapping
+  const mappedName = LAW_NAME_MAP[normalized] || normalized;
+  
+  // Return the animation or fallback
+  return LAW_ANIMATIONS[mappedName] || {
     type: 'fade',
     duration: 0.5,
     highlightColor: '#64748b', // slate
     description: 'Default transition',
   };
+}
+
+/**
+ * Get the full law name for display
+ */
+export function getLawDisplayName(lawId: string): string {
+  const displayNames: Record<string, string> = {
+    'com': 'Commutative',
+    'ass': 'Associative',
+    'dist': 'Distributive',
+    'i': 'Identity',
+    'neg': 'Negation',
+    'dneg': 'Double Negation',
+    'id': 'Idempotent',
+    'ub': 'Universal Bound',
+    'dm': "De Morgan's",
+    'abs': 'Absorption',
+    'ntf': 'Negations of T/F',
+    'xor': 'XOR Expansion',
+    'imp': 'Implication',
+    'iff': 'Biconditional',
+    'commutative': 'Commutative',
+    'associative': 'Associative',
+    'distributive': 'Distributive',
+    'identity': 'Identity',
+    'negation': 'Negation',
+    'doublenegation': 'Double Negation',
+    'idempotent': 'Idempotent',
+    'universalbound': 'Universal Bound',
+    'demorgans': "De Morgan's",
+    'absorption': 'Absorption',
+    'negationsoftf': 'Negations of T/F',
+  };
+  
+  const normalized = lawId.toLowerCase().replace(/[^a-z]/g, '');
+  return displayNames[normalized] || lawId;
 }
 
 /**

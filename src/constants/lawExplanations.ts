@@ -345,31 +345,158 @@ export const LAW_EXPLANATIONS: Record<string, LawExplanation> = {
     relatedLaws: ['absorption', 'associative'],
   },
 
+  // XOR Definition (Expansion)
+  xor: {
+    id: 'xor',
+    title: 'XOR Definition',
+    shortName: 'XOR',
+    icon: '⊕',
+    category: 'transformation',
+    patterns: [
+      { before: 'A ⊕ B', after: '(A ∧ ¬B) ∨ (¬A ∧ B)' },
+    ],
+    description: 'XOR (exclusive or) means "one or the other but not both". It expands to AND/OR form.',
+    intuition: 'A XOR B is true when exactly one of A or B is true, but not both. This is why it expands to (A AND NOT B) OR (NOT A AND B).',
+    realWorldAnalogy: 'You can have coffee XOR tea with breakfast (one or the other, not both). Either (coffee AND no tea) OR (tea AND no coffee).',
+    examples: [
+      { input: 'X ⊕ Y', output: '(X ∧ ¬Y) ∨ (¬X ∧ Y)', description: 'Standard XOR expansion' },
+      { input: 'A ⊕ T', output: '(A ∧ ¬T) ∨ (¬A ∧ T)', description: 'XOR with True - expands then simplifies to ¬A' },
+      { input: 'P ⊕ P', output: '(P ∧ ¬P) ∨ (¬P ∧ P)', description: 'XOR with itself - simplifies to F' },
+    ],
+    commonMistakes: [
+      'Confusing XOR with regular OR (XOR is exclusive)',
+      'Forgetting the "not both" part',
+    ],
+    relatedLaws: ['negation', 'distributive'],
+  },
+
+  // Implication Definition
+  implication: {
+    id: 'implication',
+    title: 'Implication Definition',
+    shortName: 'IMP',
+    icon: '→',
+    category: 'transformation',
+    patterns: [
+      { before: 'A → B', after: '¬A ∨ B' },
+    ],
+    description: 'Implication (if-then) converts to "NOT A OR B". This is because A→B is only false when A is true and B is false.',
+    intuition: 'If A implies B, then either A is false (nothing to prove) or B must be true. Hence ¬A ∨ B.',
+    realWorldAnalogy: '"If it rains, I\'ll take an umbrella" is only broken when it rains AND you don\'t take an umbrella.',
+    examples: [
+      { input: 'P → Q', output: '¬P ∨ Q', description: 'Standard implication conversion' },
+      { input: 'A → T', output: '¬A ∨ T', description: 'Anything implies True (always true)' },
+      { input: 'F → B', output: '¬F ∨ B', description: 'False implies anything (vacuously true)' },
+    ],
+    commonMistakes: [
+      'Thinking A→B means B→A (they\'re different!)',
+      'Forgetting to negate the antecedent (first part)',
+    ],
+    relatedLaws: ['negation', 'biconditional'],
+  },
+
+  // Biconditional Definition
+  biconditional: {
+    id: 'biconditional',
+    title: 'Biconditional Definition',
+    shortName: 'BIMP',
+    icon: '↔',
+    category: 'transformation',
+    patterns: [
+      { before: 'A ↔ B', after: '(A ∧ B) ∨ (¬A ∧ ¬B)' },
+    ],
+    description: 'Biconditional (if and only if) means both sides have the same truth value. Expands to "(both true) OR (both false)".',
+    intuition: 'A↔B is true when A and B are equal: either both true or both false.',
+    realWorldAnalogy: '"I\'ll go IF AND ONLY IF you go" - we both go together, or we both stay home.',
+    examples: [
+      { input: 'X ↔ Y', output: '(X ∧ Y) ∨ (¬X ∧ ¬Y)', description: 'Standard biconditional expansion' },
+      { input: 'A ↔ T', output: '(A ∧ T) ∨ (¬A ∧ ¬T)', description: 'Biconditional with True - simplifies to A' },
+      { input: 'P ↔ P', output: '(P ∧ P) ∨ (¬P ∧ ¬P)', description: 'Biconditional with itself - always true' },
+    ],
+    commonMistakes: [
+      'Confusing with single implication (biconditional is two-way)',
+      'Forgetting both parts need to match',
+    ],
+    relatedLaws: ['implication', 'negation'],
+  },
+
   // Special entries for UI display
   result: {
     id: 'result',
     title: 'Simplified Result',
     shortName: 'RESULT',
-    icon: '✓',
+    icon: 'RES',
     category: 'simplification',
     patterns: [],
     description: 'Final simplified form - no more laws can be applied!',
     intuition: 'This is the simplest equivalent expression.',
     examples: [],
   },
+
+  start: {
+    id: 'start',
+    title: 'Original Expression',
+    shortName: 'START',
+    icon: 'IN',
+    category: 'identity',
+    patterns: [],
+    description: 'This is your original expression before any simplification.',
+    intuition: 'The starting point of the simplification process.',
+    examples: [],
+  },
+
+  simplified: {
+    id: 'simplified',
+    title: 'Already Simplified',
+    shortName: 'SIMPLE',
+    icon: 'OK',
+    category: 'simplification',
+    patterns: [],
+    description: 'This expression is already in its simplest form. No Boolean algebra laws can simplify it further.',
+    intuition: 'The expression cannot be reduced any further using standard Boolean algebra laws.',
+    examples: [],
+  },
+};
+
+// Mapping from short law names (backend) to explanation keys
+const LAW_ID_MAP: Record<string, string> = {
+  'com': 'commutative',
+  'ass': 'associative',
+  'dist': 'distributive',
+  'i': 'identity',
+  'neg': 'negation',
+  'dneg': 'doubleNegation',
+  'id': 'idempotent',
+  'ub': 'universalBound',
+  'dm': 'deMorgans',
+  'abs': 'absorption',
+  'ntf': 'negationsOfTF',
+  'xor': 'xor',
+  'imp': 'implication',
+  'bimp': 'biconditional',
+  'iff': 'biconditional',
+  'xordefinition': 'xor',
+  'implicationdefinition': 'implication',
+  'biconditionaldefinition': 'biconditional',
 };
 
 // Helper to get law by various identifiers
 export function getLawExplanation(lawId: string): LawExplanation | null {
-  // Normalize the lawId
+  // Normalize the lawId - remove "by " prefix, lowercase, trim
   const normalized = lawId.toLowerCase().replace(/^by\s+/i, '').trim();
+  
+  // Check the short name map first
+  const mappedKey = LAW_ID_MAP[normalized];
+  if (mappedKey && LAW_EXPLANATIONS[mappedKey]) {
+    return LAW_EXPLANATIONS[mappedKey];
+  }
   
   // Try direct match
   if (LAW_EXPLANATIONS[normalized]) {
     return LAW_EXPLANATIONS[normalized];
   }
   
-  // Try matching by short name
+  // Try matching by short name in the explanation objects
   const byShortName = Object.values(LAW_EXPLANATIONS).find(
     law => law.shortName.toLowerCase() === normalized
   );
@@ -381,6 +508,7 @@ export function getLawExplanation(lawId: string): LawExplanation | null {
   );
   if (byTitle) return byTitle;
   
+  // Return null if nothing found
   return null;
 }
 

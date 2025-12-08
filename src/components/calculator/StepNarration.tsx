@@ -41,7 +41,7 @@ export const StepNarration: React.FC<StepNarrationProps> = ({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
     >
-      <Card className="bg-primary/5 dark:bg-primary/10 border-2 border-primary/30 dark:border-primary/50">
+      <Card className="bg-primary/5 dark:bg-primary/10 rounded-none border-l-none border-none">
         {/* Header */}
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">

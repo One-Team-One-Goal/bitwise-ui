@@ -4,9 +4,18 @@ import type { Component, Connection, Position, ToolbarState } from '../types'
 import { ConnectionRenderer } from './ConnectionRenderer'
 import { ComponentRenderer } from './ComponentRenderer'
 import { Button } from '@/components/ui/button'
-import { Grid2X2, RotateCcw, Trash2, Calculator, ChevronDown, ChevronUp, Info } from 'lucide-react'
+import {
+  Grid2X2,
+  RotateCcw,
+  Trash2,
+  Calculator,
+  ChevronDown,
+  ChevronUp,
+  Info,
+  ChevronRight,
+} from 'lucide-react'
+import { deriveCircuitExpressions, formatExpression, type DerivedExpression } from '../utils/expressionDeriver'
 import { HelpGuide } from './HelpGuide'
-import { KeyboardShortcuts } from './KeyboardShortcuts'
 import {
   Tooltip,
   TooltipTrigger,
@@ -35,6 +44,187 @@ const INITIAL_CONNECTION_STATE: {
   startConnectionPoint: null,
   startPosition: null,
   currentMousePosition: null,
+}
+
+/**
+ * Panel component to display derived boolean expressions from circuit outputs
+ */
+interface DerivedExpressionsPanelProps {
+  currentBooleanExpression: string
+  derivedExpressions: DerivedExpression[]
+}
+
+/**
+ * Normalize an expression for comparison (remove spaces, standardize operators, simplify parentheses)
+ */
+const normalizeExpression = (expr: string): string => {
+  let normalized = expr
+    .replace(/\s+/g, '') // Remove all spaces
+    .replace(/·/g, '∧')  // Standardize AND
+    .replace(/\*/g, '∧')
+    .replace(/&/g, '∧')
+    .replace(/\+/g, '∨')  // Standardize OR
+    .replace(/\|/g, '∨')
+    .replace(/!/g, '¬')   // Standardize NOT
+    .replace(/~/g, '¬')
+    .replace(/'/g, '¬')   // Handle prime notation
+    .toLowerCase()
+  
+  // Remove redundant outer parentheses repeatedly
+  while (normalized.startsWith('(') && normalized.endsWith(')')) {
+    // Check if these are matching parentheses
+    let depth = 0
+    let isMatching = true
+    for (let i = 0; i < normalized.length - 1; i++) {
+      if (normalized[i] === '(') depth++
+      else if (normalized[i] === ')') depth--
+      if (depth === 0 && i < normalized.length - 1) {
+        isMatching = false
+        break
+      }
+    }
+    if (isMatching && depth === 1) {
+      normalized = normalized.slice(1, -1)
+    } else {
+      break
+    }
+  }
+  
+  return normalized
+}
+
+const DerivedExpressionsPanel: React.FC<DerivedExpressionsPanelProps> = ({
+  currentBooleanExpression,
+  derivedExpressions,
+}) => {
+  const [isCollapsed, setIsCollapsed] = useState(false)
+  
+  // Show panel if there's a generated expression OR derived expressions from outputs
+  const hasContent = currentBooleanExpression || derivedExpressions.length > 0
+  
+  if (!hasContent) {
+    return null
+  }
+
+  // Combine generated expression with derived expressions
+  const allExpressions: Array<{ label: string; expression: string; isGenerated?: boolean; value?: boolean }> = []
+  
+  // Normalize the generated expression for comparison
+  const normalizedGenerated = currentBooleanExpression ? normalizeExpression(currentBooleanExpression) : ''
+  
+  // First, add derived expressions from circuit outputs (prioritize these)
+  const derivedAdded = new Set<string>()
+  derivedExpressions.forEach((derived) => {
+    const formattedExpr = formatExpression(derived.expression)
+    const normalizedDerived = normalizeExpression(formattedExpr)
+    
+    allExpressions.push({
+      label: derived.outputLabel,
+      expression: formattedExpr,
+      value: derived.outputValue,
+    })
+    
+    derivedAdded.add(normalizedDerived)
+  })
+  
+  // Only add the generated expression if there's no equivalent derived expression
+  if (currentBooleanExpression && !derivedAdded.has(normalizedGenerated)) {
+    allExpressions.push({
+      label: 'F',
+      expression: currentBooleanExpression,
+      isGenerated: true,
+    })
+  }
+
+  // If only 1-3 expressions, show inline; if more, show scrollable
+  const maxVisibleExpressions = 3
+  const needsScroll = allExpressions.length > maxVisibleExpressions
+
+  return (
+    <div className="absolute bottom-4 left-4 z-20">
+      <div className="bg-blue-50/95 dark:bg-blue-950/95 backdrop-blur-sm rounded-lg shadow-lg border-2 border-blue-300 dark:border-blue-700 overflow-hidden transition-all">
+        {/* Header */}
+        <div 
+          className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-blue-100/50 dark:hover:bg-blue-900/50 transition-colors"
+          onClick={() => setIsCollapsed(!isCollapsed)}
+        >
+          <Calculator className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <span className="font-semibold text-sm text-blue-900 dark:text-blue-100">
+            Expressions ({allExpressions.length})
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 p-0 ml-auto"
+            onClick={(e) => {
+              e.stopPropagation()
+              setIsCollapsed(!isCollapsed)
+            }}
+          >
+            {isCollapsed ? (
+              <ChevronRight className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            ) : (
+              <ChevronDown className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            )}
+          </Button>
+        </div>
+        
+        {/* Expressions list */}
+        {!isCollapsed && (
+          <div 
+            className={`px-3 pb-3 ${needsScroll ? 'max-h-36 overflow-y-auto' : ''}`}
+            style={{ minWidth: '200px', maxWidth: '400px' }}
+          >
+            <div className="space-y-2">
+              {allExpressions.map((expr, index) => (
+                <Tooltip key={index}>
+                  <TooltipTrigger asChild>
+                    <a
+                      href="/calculator"
+                      onClick={() => {
+                        // Save expression to localStorage so calculator can load it
+                        localStorage.setItem('circuit_expression', expr.expression)
+                        localStorage.setItem('circuit_expression_label', expr.label)
+                      }}
+                      className="flex items-center gap-2 p-2 rounded-md bg-white/60 dark:bg-gray-800/60 hover:bg-white dark:hover:bg-gray-800 transition-colors cursor-pointer group"
+                    >
+                      {/* Output indicator */}
+                      {expr.value !== undefined && (
+                        <div 
+                          className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                            expr.value 
+                              ? 'bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.6)]' 
+                              : 'bg-gray-400'
+                          }`}
+                        />
+                      )}
+                      {expr.isGenerated && (
+                        <div className="w-2 h-2 rounded-full flex-shrink-0 bg-blue-500" />
+                      )}
+                      
+                      {/* Label */}
+                      <span className="font-semibold text-xs text-blue-800 dark:text-blue-200 flex-shrink-0">
+                        {expr.label} =
+                      </span>
+                      
+                      {/* Expression */}
+                      <span className="font-mono text-xs text-blue-700 dark:text-blue-300 truncate group-hover:text-blue-900 dark:group-hover:text-blue-100">
+                        {expr.expression}
+                      </span>
+                    </a>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-xs">
+                    <p className="font-mono text-sm mb-1">{expr.label} = {expr.expression}</p>
+                    <p className="text-xs text-gray-500">Click to simplify in Boolean Calculator</p>
+                  </TooltipContent>
+                </Tooltip>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
 }
 
 interface CircuitCanvasProps {
@@ -80,12 +270,14 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
     startPosition: Position
     offset: Position
     hasMoved: boolean // Track if the user actually moved the mouse (drag vs click)
+    multiDragOffsets: Map<string, Position> // Offsets for multi-select drag
   }>({
     isDragging: false,
     componentId: null,
     startPosition: { x: 0, y: 0 },
     offset: { x: 0, y: 0 },
     hasMoved: false,
+    multiDragOffsets: new Map(),
   })
   const lastDragInfoRef = useRef<{
     componentId: string | null
@@ -111,7 +303,7 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
 
   // State for bulk delete confirmation dialog
   const [showBulkDeleteDialog, setShowBulkDeleteDialog] = useState(false)
-  
+
   // State for clear all confirmation dialog
   const [showClearAllDialog, setShowClearAllDialog] = useState(false)
 
@@ -214,8 +406,8 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
         circuitHook.resetSimulation()
       }
 
-      // S key for select tool
-      if (event.key === 's' || event.key === 'S') {
+      // V key for select tool
+      if (event.key === 'v' || event.key === 'V') {
         if (
           event.target instanceof HTMLInputElement ||
           event.target instanceof HTMLTextAreaElement
@@ -236,8 +428,8 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
         onToolSelect?.('wire')
       }
 
-      // P key for pan tool
-      if (event.key === 'p' || event.key === 'P') {
+      // H key for pan/hand tool
+      if (event.key === 'h' || event.key === 'H') {
         if (
           event.target instanceof HTMLInputElement ||
           event.target instanceof HTMLTextAreaElement
@@ -255,7 +447,7 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
         )
           return
         event.preventDefault()
-        
+
         // If there's a selected switch/button, toggle it
         const component = circuitHook.circuitState.components.find(
           (c: Component) => c.id === circuitHook.circuitState.selectedComponent
@@ -339,23 +531,36 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
           event.target instanceof HTMLTextAreaElement
         )
           return
-        
+
+        // Determine which components to copy
+        let componentIdsToCopy: Set<string> = new Set()
+
         if (selectedComponents.size > 0) {
+          componentIdsToCopy = new Set(selectedComponents)
+        } else if (circuitHook.circuitState.selectedComponent) {
+          componentIdsToCopy = new Set([
+            circuitHook.circuitState.selectedComponent,
+          ])
+        }
+
+        if (componentIdsToCopy.size > 0) {
           event.preventDefault()
-          // Copy selected components and their internal connections
-          const componentsToCopy = circuitHook.circuitState.components.filter(
-            (c: Component) => selectedComponents.has(c.id)
-          )
-          
-          const connectionsToCopy = circuitHook.circuitState.connections.filter(
-            (conn: Connection) => 
-              selectedComponents.has(conn.from.componentId) &&
-              selectedComponents.has(conn.to.componentId)
-          )
-          
+          // Deep clone selected components and their internal connections
+          const componentsToCopy = circuitHook.circuitState.components
+            .filter((c: Component) => componentIdsToCopy.has(c.id))
+            .map((c: Component) => JSON.parse(JSON.stringify(c)))
+
+          const connectionsToCopy = circuitHook.circuitState.connections
+            .filter(
+              (conn: Connection) =>
+                componentIdsToCopy.has(conn.from.componentId) &&
+                componentIdsToCopy.has(conn.to.componentId)
+            )
+            .map((conn: Connection) => JSON.parse(JSON.stringify(conn)))
+
           setClipboard({
             components: componentsToCopy,
-            connections: connectionsToCopy
+            connections: connectionsToCopy,
           })
         }
       }
@@ -367,83 +572,93 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
           event.target instanceof HTMLTextAreaElement
         )
           return
-        
+
         if (clipboard && clipboard.components.length > 0) {
           event.preventDefault()
-          
+
           // Create ID mapping for pasted components
           const idMap = new Map<string, string>()
           const newSelectedIds = new Set<string>()
-          
+          const newComponents: Component[] = []
+
           // Calculate offset for pasted components (30px down and right)
           const PASTE_OFFSET = 30
-          
+
           // Add components with new IDs and offset positions
           clipboard.components.forEach((comp) => {
             const newComp = circuitHook.addComponent(comp.type, {
               x: comp.position.x + PASTE_OFFSET,
-              y: comp.position.y + PASTE_OFFSET
+              y: comp.position.y + PASTE_OFFSET,
             })
-            
+
             if (newComp) {
               idMap.set(comp.id, newComp.id)
               newSelectedIds.add(newComp.id)
-              
+              newComponents.push(newComp)
+
               // Copy label if it exists
               if (comp.label) {
                 circuitHook.updateComponent(newComp.id, { label: comp.label })
               }
             }
           })
-          
-          // Add connections between pasted components
+
+          // Add connections between pasted components (use a longer delay to ensure state is updated)
           setTimeout(() => {
             clipboard.connections.forEach((conn) => {
               const newFromId = idMap.get(conn.from.componentId)
               const newToId = idMap.get(conn.to.componentId)
-              
+
               if (newFromId && newToId) {
+                // Find components from the fresh state
                 const fromComp = circuitHook.circuitState.components.find(
                   (c: Component) => c.id === newFromId
                 )
                 const toComp = circuitHook.circuitState.components.find(
                   (c: Component) => c.id === newToId
                 )
-                
+
                 if (fromComp && toComp) {
-                  // Find matching connection points by their relative index
-                  const oldFromComp = clipboard.components.find(c => c.id === conn.from.componentId)
-                  const oldToComp = clipboard.components.find(c => c.id === conn.to.componentId)
-                  
+                  // Find matching connection points by their relative index using the cloned clipboard data
+                  const oldFromComp = clipboard.components.find(
+                    (c) => c.id === conn.from.componentId
+                  )
+                  const oldToComp = clipboard.components.find(
+                    (c) => c.id === conn.to.componentId
+                  )
+
                   if (oldFromComp && oldToComp) {
                     const fromOutputIndex = oldFromComp.outputs.findIndex(
-                      o => o.id === conn.from.connectionPointId
+                      (o: any) => o.id === conn.from.connectionPointId
                     )
                     const toInputIndex = oldToComp.inputs.findIndex(
-                      i => i.id === conn.to.connectionPointId
+                      (i: any) => i.id === conn.to.connectionPointId
                     )
-                    
-                    if (fromOutputIndex !== -1 && toInputIndex !== -1) {
+
+                    if (
+                      fromOutputIndex !== -1 &&
+                      toInputIndex !== -1 &&
+                      fromComp.outputs[fromOutputIndex] &&
+                      toComp.inputs[toInputIndex]
+                    ) {
                       const newFromOutput = fromComp.outputs[fromOutputIndex]
                       const newToInput = toComp.inputs[toInputIndex]
-                      
-                      if (newFromOutput && newToInput) {
-                        circuitHook.addConnection(
-                          newFromId,
-                          newFromOutput.id,
-                          newToId,
-                          newToInput.id
-                        )
-                      }
+
+                      circuitHook.addConnection(
+                        newFromId,
+                        newFromOutput.id,
+                        newToId,
+                        newToInput.id
+                      )
                     }
                   }
                 }
               }
             })
-            
+
             // Select the pasted components
             setSelectedComponents(newSelectedIds)
-          }, 100)
+          }, 150)
         }
       }
 
@@ -454,25 +669,25 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
           event.target instanceof HTMLTextAreaElement
         )
           return
-        
+
         if (selectedComponents.size > 0) {
           event.preventDefault()
           // Copy to clipboard
           const componentsToCopy = circuitHook.circuitState.components.filter(
             (c: Component) => selectedComponents.has(c.id)
           )
-          
+
           const connectionsToCopy = circuitHook.circuitState.connections.filter(
-            (conn: Connection) => 
+            (conn: Connection) =>
               selectedComponents.has(conn.from.componentId) &&
               selectedComponents.has(conn.to.componentId)
           )
-          
+
           setClipboard({
             components: componentsToCopy,
-            connections: connectionsToCopy
+            connections: connectionsToCopy,
           })
-          
+
           // Delete selected components
           selectedComponents.forEach((compId) => {
             circuitHook.removeComponent(compId)
@@ -704,7 +919,14 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
       event.stopPropagation()
 
       if (toolbarState.selectedTool === 'select') {
-        circuitHook.selectComponent(componentId)
+        // If clicking on a component that's part of multi-selection, don't deselect others
+        if (!selectedComponents.has(componentId)) {
+          // If not holding shift, clear selection and select just this one
+          if (!event.shiftKey) {
+            setSelectedComponents(new Set())
+          }
+          circuitHook.selectComponent(componentId)
+        }
 
         const component = circuitHook.circuitState.components.find(
           (c: Component) => c.id === componentId
@@ -721,6 +943,24 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
 
         const canvasPos = screenToCanvas(screenPos)
 
+        // Calculate offsets for all selected components (for multi-drag)
+        const multiDragOffsets = new Map<string, Position>()
+        const componentsToMove = selectedComponents.has(componentId) 
+          ? selectedComponents 
+          : new Set([componentId])
+        
+        componentsToMove.forEach((compId) => {
+          const comp = circuitHook.circuitState.components.find(
+            (c: Component) => c.id === compId
+          )
+          if (comp) {
+            multiDragOffsets.set(compId, {
+              x: canvasPos.x - comp.position.x,
+              y: canvasPos.y - comp.position.y,
+            })
+          }
+        })
+
         setDragState({
           isDragging: true,
           componentId,
@@ -730,10 +970,11 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
             y: canvasPos.y - component.position.y,
           },
           hasMoved: false,
+          multiDragOffsets,
         })
       }
     },
-    [toolbarState.selectedTool, circuitHook, screenToCanvas]
+    [toolbarState.selectedTool, circuitHook, screenToCanvas, selectedComponents]
   )
 
   // Handle connection point click
@@ -1165,14 +1406,26 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
 
         // Only move component if past threshold
         if (distance > DRAG_THRESHOLD || dragState.hasMoved) {
-          const newPosition = {
-            x: canvasPos.x - dragState.offset.x,
-            y: canvasPos.y - dragState.offset.y,
+          // Check if we're doing multi-drag (multiple components selected)
+          if (dragState.multiDragOffsets.size > 1) {
+            // Move all selected components together
+            dragState.multiDragOffsets.forEach((offset, compId) => {
+              const newPosition = {
+                x: canvasPos.x - offset.x,
+                y: canvasPos.y - offset.y,
+              }
+              circuitHook.moveComponent(compId, newPosition)
+              updateWirePathsForComponent(compId)
+            })
+          } else {
+            // Single component drag
+            const newPosition = {
+              x: canvasPos.x - dragState.offset.x,
+              y: canvasPos.y - dragState.offset.y,
+            }
+            circuitHook.moveComponent(dragState.componentId, newPosition)
+            updateWirePathsForComponent(dragState.componentId)
           }
-
-          circuitHook.moveComponent(dragState.componentId, newPosition)
-          // Update wire paths for the moved component
-          updateWirePathsForComponent(dragState.componentId)
 
           // Mark that we've actually moved (so subsequent small movements still count)
           if (!dragState.hasMoved) {
@@ -1222,6 +1475,7 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
       startPosition: { x: 0, y: 0 },
       offset: { x: 0, y: 0 },
       hasMoved: false,
+      multiDragOffsets: new Map(),
     })
 
     setPanState({
@@ -1356,7 +1610,7 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
           />
           {/* Multi-selection highlight */}
           {selectedComponents.has(component.id) && (
-            <div className="absolute inset-0 border-3 border-blue-500 bg-blue-400/30 rounded-lg pointer-events-none shadow-lg shadow-blue-500/50">
+            <div className="absolute inset-0 border-2 border-blue-500 bg-blue-500/10 rounded-lg pointer-events-none">
               <div className="absolute -top-2 -right-2 w-5 h-5 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold shadow-md">
                 ✓
               </div>
@@ -1430,6 +1684,14 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
     },
     [circuitHook, zoom, pan, deleteAnimation]
   )
+
+  // Derive expressions from circuit outputs
+  const derivedExpressions = useMemo(() => {
+    return deriveCircuitExpressions(
+      circuitHook.circuitState.components,
+      circuitHook.circuitState.connections
+    )
+  }, [circuitHook.circuitState.components, circuitHook.circuitState.connections])
 
   return (
     <div className="relative w-full h-full overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
@@ -1548,7 +1810,7 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
               className="h-9 p-0"
             >
               <Calculator className="h-6 w-6 mr-2" />
-              Boolean to Circuit
+              Expression to Circuit
             </Button>
           </TooltipTrigger>
           <TooltipContent>Toggle Boolean Expression Input</TooltipContent>
@@ -1589,9 +1851,6 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
 
         {/* Help Guide */}
         <HelpGuide />
-
-        {/* Keyboard Shortcuts */}
-        <KeyboardShortcuts />
 
         {/* Grid Toggle */}
         <Tooltip>
@@ -1729,7 +1988,7 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
         {/* Box Selection Rectangle */}
         {selectionBox?.isSelecting && (
           <div
-            className="absolute border-2 border-blue-500 bg-blue-100 bg-opacity-20 pointer-events-none"
+            className="absolute border-2 border-blue-500 bg-blue-500/10 pointer-events-none"
             style={{
               left:
                 Math.min(
@@ -1838,40 +2097,28 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
       </div>
 
       {/* Boolean Expression Display - Bottom Left */}
-      {currentBooleanExpression && (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <a
-              href="/calculator"
-              className="absolute bottom-4 left-4 bg-blue-50 hover:bg-blue-100 bg-opacity-95 hover:bg-opacity-100 rounded-lg px-4 py-3 text-sm text-blue-900 shadow-lg border-2 border-blue-300 hover:border-blue-400 transition-all cursor-pointer group"
-            >
-              <div className="flex items-center gap-2">
-                <Calculator className="h-4 w-4 text-blue-600 group-hover:scale-110 transition-transform" />
-                <span className="font-semibold">Expression:</span>
-                <span className="font-mono text-blue-700">
-                  {currentBooleanExpression}
-                </span>
-              </div>
-            </a>
-          </TooltipTrigger>
-          <TooltipContent side="top" className="max-w-xs">
-            <p className="font-semibold text-sm mb-1">
-              Want to see how to simplify?
-            </p>
-            <p className="text-xs text-gray-600">
-              Click to open Boolean Calculator for step-by-step simplification
-            </p>
-          </TooltipContent>
-        </Tooltip>
-      )}
+      <DerivedExpressionsPanel
+        currentBooleanExpression={currentBooleanExpression}
+        derivedExpressions={derivedExpressions}
+      />
 
       {/* Bulk Delete Confirmation Dialog */}
-      <AlertDialog open={showBulkDeleteDialog} onOpenChange={setShowBulkDeleteDialog}>
+      <AlertDialog
+        open={showBulkDeleteDialog}
+        onOpenChange={setShowBulkDeleteDialog}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete {selectedComponents.size} Component{selectedComponents.size !== 1 ? 's' : ''}?</AlertDialogTitle>
+            <AlertDialogTitle>
+              Delete {selectedComponents.size} Component
+              {selectedComponents.size !== 1 ? 's' : ''}?
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete {selectedComponents.size === 1 ? 'this component' : `these ${selectedComponents.size} components`}? This action cannot be undone.
+              Are you sure you want to delete{' '}
+              {selectedComponents.size === 1
+                ? 'this component'
+                : `these ${selectedComponents.size} components`}
+              ? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1891,7 +2138,7 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
                   setSelectedComponents(new Set())
                   setDeleteAnimation(null)
                 }, 150)
-                
+
                 setShowBulkDeleteDialog(false)
               }}
             >
@@ -1902,12 +2149,20 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
       </AlertDialog>
 
       {/* Clear All Confirmation Dialog */}
-      <AlertDialog open={showClearAllDialog} onOpenChange={setShowClearAllDialog}>
+      <AlertDialog
+        open={showClearAllDialog}
+        onOpenChange={setShowClearAllDialog}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Clear All Components?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to clear the entire circuit? This will remove all {circuitHook.circuitState.components.length} component{circuitHook.circuitState.components.length !== 1 ? 's' : ''} and {circuitHook.circuitState.connections.length} connection{circuitHook.circuitState.connections.length !== 1 ? 's' : ''}. This action cannot be undone.
+              Are you sure you want to clear the entire circuit? This will
+              remove all {circuitHook.circuitState.components.length} component
+              {circuitHook.circuitState.components.length !== 1 ? 's' : ''} and{' '}
+              {circuitHook.circuitState.connections.length} connection
+              {circuitHook.circuitState.connections.length !== 1 ? 's' : ''}.
+              This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -6,13 +6,23 @@ import { Progress } from '@/components/ui/progress'
 import { useAuthContext } from '@/contexts/AuthContext'
 import { useRoadmapData } from '@/hooks/useRoadmapData'
 import { apiService } from '@/services/api.service'
-import { Brain, CheckCircle2, Target, LayoutGrid, List } from 'lucide-react'
+import { Brain, CheckCircle2, Target, LayoutGrid, List, BookOpen, TrendingUp, Zap } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogTitle,
+  DialogHeader,
 } from '@/components/ui/dialog'
+import {
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
+  ResponsiveContainer,
+  Tooltip,
+} from 'recharts'
 import bitboCongrats from '@/assets/bitbot/congrats.svg'
 import introPhoto from '@/assets/photos/intro.png'
 import logicGatesPhoto from '@/assets/photos/logic gates.png'
@@ -204,11 +214,109 @@ const csQuotes = [
   },
 ]
 
+// Lesson Mastery Radar Chart Component
+const lessonShortNames: Record<number, string> = {
+  1: 'Intro',
+  2: 'Gates',
+  3: 'Tables',
+  4: 'Simplify',
+}
+
+interface LessonMasteryRadarProps {
+  analytics: {
+    skillsByLesson?: Array<{
+      lessonId: number
+      lessonTitle: string
+      skills: Array<{ mastery: number }>
+    }>
+  } | null
+  compact?: boolean
+}
+
+function LessonMasteryRadar({ analytics, compact = false }: LessonMasteryRadarProps) {
+  // Prepare data for radar chart - all 4 lessons
+  const radarData = useMemo(() => {
+    const lessons = [1, 2, 3, 4]
+    return lessons.map((lessonId) => {
+      const lessonData = analytics?.skillsByLesson?.find(
+        (l) => l.lessonId === lessonId
+      )
+      const mastery = lessonData?.skills?.length
+        ? lessonData.skills.reduce((sum, s) => sum + s.mastery, 0) /
+          lessonData.skills.length
+        : 0
+      return {
+        lesson: lessonShortNames[lessonId],
+        mastery: Math.round(mastery * 100),
+        fullMark: 100,
+      }
+    })
+  }, [analytics])
+
+  if (compact) {
+    return (
+      <div className="w-full h-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
+            <PolarGrid stroke="#e5e7eb" />
+            <PolarAngleAxis dataKey="lesson" tick={false} />
+            <Radar
+              name="Mastery"
+              dataKey="mastery"
+              stroke="#8b5cf6"
+              fill="#8b5cf6"
+              fillOpacity={0.5}
+            />
+          </RadarChart>
+        </ResponsiveContainer>
+      </div>
+    )
+  }
+
+  return (
+    <div className="w-full h-[180px]">
+      <ResponsiveContainer width="100%" height="100%">
+        <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
+          <PolarGrid stroke="#e5e7eb" />
+          <PolarAngleAxis
+            dataKey="lesson"
+            tick={{ fill: '#6b7280', fontSize: 11 }}
+          />
+          <PolarRadiusAxis
+            angle={90}
+            domain={[0, 100]}
+            tick={{ fill: '#9ca3af', fontSize: 9 }}
+            tickCount={5}
+          />
+          <Radar
+            name="Mastery"
+            dataKey="mastery"
+            stroke="#8b5cf6"
+            fill="#8b5cf6"
+            fillOpacity={0.5}
+          />
+          <Tooltip
+            formatter={(value: number) => [`${value}%`, 'Mastery']}
+            contentStyle={{
+              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+              border: '1px solid #e5e7eb',
+              borderRadius: '8px',
+              fontSize: '12px',
+            }}
+          />
+        </RadarChart>
+      </ResponsiveContainer>
+    </div>
+  )
+}
+
 function RouteComponent() {
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null)
   const [loadingAssessment, setLoadingAssessment] = useState(false)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [statusFilter, setStatusFilter] = useState<string>('All Status')
+  const [showLessonSelectModal, setShowLessonSelectModal] = useState(false)
+  const [selectedPracticeLesson, setSelectedPracticeLesson] = useState<number | null>(null)
   const navigate = useNavigate()
   const { user } = useAuthContext() || {}
   const ALLOW_ANON = import.meta.env.VITE_ALLOW_ANON_ASSESSMENT === 'true'
@@ -235,7 +343,11 @@ function RouteComponent() {
       toast.custom(
         (t) => (
           <div className="bg-white dark:bg-gray-800 rounded-md shadow-md p-4 flex items-start gap-4 max-w-md pointer-events-auto">
-            <img src={bitboCongrats} alt="BitBot" className="w-12 h-12 shrink-0" />
+            <img
+              src={bitboCongrats}
+              alt="BitBot"
+              className="w-12 h-12 shrink-0"
+            />
             <div className="flex-1">
               <p className="font-bold text-amber-600 dark:text-amber-400 text-sm mb-1">
                 BitBot's Travel Tip
@@ -270,11 +382,22 @@ function RouteComponent() {
     }
   }, [roadmapError])
 
-  const handleStartAdaptiveAssessment = async () => {
+  // Open lesson selection modal
+  const handleOpenLessonSelect = () => {
     if (!effectiveUser) {
       toast.error('Please log in to start an assessment')
       return
     }
+    setShowLessonSelectModal(true)
+  }
+
+  // Start lesson-specific practice
+  const handleStartLessonPractice = async (lessonId: number) => {
+    if (!effectiveUser) {
+      toast.error('Please log in to start an assessment')
+      return
+    }
+    setSelectedPracticeLesson(lessonId)
     setLoadingAssessment(true)
     try {
       const result = await apiService.post<{
@@ -282,12 +405,13 @@ function RouteComponent() {
         data: { attemptId: number }
         error?: string
       }>(
-        '/assessment/start-adaptive-practice',
-        { uid: effectiveUser.id },
+        '/assessment/start-lesson-practice',
+        { uid: effectiveUser.id, lessonId },
         true,
-        { timeout: 60000 } // 60 second timeout for AI-powered endpoint
+        { timeout: 60000 }
       )
       if (result.success) {
+        setShowLessonSelectModal(false)
         navigate({
           to: '/assessment/$assessmentId',
           params: { assessmentId: result.data.attemptId.toString() },
@@ -297,11 +421,39 @@ function RouteComponent() {
         throw new Error(result.error || 'Failed to start assessment')
       }
     } catch (error) {
-      console.error('Failed to start assessment:', error)
-      toast.error('Failed to start assessment. Please try again.')
+      console.error('Failed to start lesson practice:', error)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      if (errorMessage.toLowerCase().includes('rate limit')) {
+        toast.error('AI service is temporarily busy. Please try again in a few minutes.')
+      } else {
+        toast.error('Failed to start practice. Please try again.')
+      }
     } finally {
       setLoadingAssessment(false)
+      setSelectedPracticeLesson(null)
     }
+  }
+
+  // Get topic mastery info for a specific lesson
+  const getLessonTopicMastery = useCallback((lessonId: number) => {
+    const lessonMasteryData = topicMastery[lessonId] as TopicMastery[] | undefined
+    if (!lessonMasteryData || lessonMasteryData.length === 0) {
+      return { topics: [], averageMastery: 0, hasData: false }
+    }
+    
+    const averageMastery = lessonMasteryData.reduce((sum, t) => sum + t.mastery, 0) / lessonMasteryData.length
+    return {
+      topics: lessonMasteryData,
+      averageMastery: Math.round(averageMastery * 100),
+      hasData: true
+    }
+  }, [topicMastery])
+
+  // Get difficulty label based on mastery
+  const getDifficultyFromMastery = (mastery: number): { label: string; color: string } => {
+    if (mastery < 0.4) return { label: 'Easy', color: 'text-green-600 bg-green-100' }
+    if (mastery < 0.7) return { label: 'Medium', color: 'text-yellow-600 bg-yellow-100' }
+    return { label: 'Hard', color: 'text-red-600 bg-red-100' }
   }
 
   const getLessonStatus = useCallback(
@@ -390,10 +542,15 @@ function RouteComponent() {
   const selectedLessonTopics = selectedLesson
     ? getTopicsForLesson(selectedLesson)
     : []
-  const recommendedDifficulty = analytics?.recommendedDifficulty ?? null
-  const focusTopics = analytics?.focusAreas?.slice(0, 2) ?? []
-  const totalAdaptiveAttempts =
+  // These analytics values are available for future use but currently not rendered
+  const _recommendedDifficulty = analytics?.recommendedDifficulty ?? null
+  const _focusTopics = analytics?.focusAreas?.slice(0, 2) ?? []
+  const _totalAdaptiveAttempts =
     statistics?.totalAttempts ?? analytics?.totalAttempts ?? 0
+  // Silence unused variable warnings - these will be used in upcoming features
+  void _recommendedDifficulty
+  void _focusTopics
+  void _totalAdaptiveAttempts
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pt-20 pb-12 px-4 sm:px-6 lg:px-8">
@@ -424,18 +581,18 @@ function RouteComponent() {
               <div className="mt-8 flex items-end justify-between">
                 <div className="space-y-1">
                   <p className="text-sm text-blue-100">
-                    Recommended Difficulty
+                    10 Questions Per Lesson
                   </p>
                   <p className="font-semibold text-lg capitalize">
-                    {recommendedDifficulty ?? 'Calibrating...'}
+                    Topic-Specific Difficulty
                   </p>
                 </div>
                 <Button
-                  onClick={handleStartAdaptiveAssessment}
+                  onClick={handleOpenLessonSelect}
                   disabled={loadingAssessment}
                   className="bg-white text-blue-600 hover:bg-blue-50 font-semibold"
                 >
-                  {loadingAssessment ? 'Loading...' : 'Continue'}
+                  {loadingAssessment ? 'Loading...' : 'Start Practice'}
                 </Button>
               </div>
             </div>
@@ -446,62 +603,75 @@ function RouteComponent() {
 
           {/* Analytics Card */}
           <div className="bg-white dark:bg-gray-900 rounded-lg p-6 border border-gray-200 dark:border-gray-800 shadow-sm relative overflow-hidden">
-            <div className="flex justify-between items-start mb-6">
-              <div>
-                <Badge
-                  variant="outline"
-                  className="mb-2 border-purple-200 text-purple-700 dark:border-purple-800 dark:text-purple-400"
-                >
-                  <Target className="w-3 h-3 mr-1" /> Insights
-                </Badge>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                  Progress & Analytics
-                </h2>
-              </div>
-              <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                <Target className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-              </div>
-            </div>
+            <div className="flex gap-4">
+              {/* Left Side - 1/2: Title and Focus Areas */}
+              <div className="w-1/2 flex flex-col">
+                <div className="mb-4">
+                  <Badge
+                    variant="outline"
+                    className="mb-2 border-purple-200 text-purple-700 dark:border-purple-800 dark:text-purple-400"
+                  >
+                    <Target className="w-3 h-3 mr-1" /> Insights
+                  </Badge>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                    Progress & Analytics
+                  </h2>
+                </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="rounded-md">
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
-                  Total Attempts
-                </p>
-                <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                  {totalAdaptiveAttempts}
-                </p>
+                {/* Focus Areas */}
+                <div>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Focus Areas
+                  </p>
+                  <div className="space-y-1.5">
+                    {(() => {
+                      // Get top 5 lowest mastery topics
+                      const allTopics = analytics?.skillsByLesson?.flatMap(lesson =>
+                        lesson.skills.map(skill => ({
+                          ...skill,
+                          lessonTitle: lesson.lessonTitle
+                        }))
+                      ) || []
+                      const sortedTopics = [...allTopics]
+                        .sort((a, b) => a.mastery - b.mastery)
+                        .slice(0, 5)
+                      
+                      if (sortedTopics.length === 0) {
+                        return (
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            Complete assessments to see focus areas
+                          </p>
+                        )
+                      }
+                      
+                      return sortedTopics.map((topic, idx) => (
+                        <div
+                          key={topic.topicId || idx}
+                          className="flex items-center justify-between text-xs"
+                        >
+                          <span className="text-gray-600 dark:text-gray-400 truncate mr-2">
+                            {topic.topicTitle}
+                          </span>
+                          <span className={`font-medium shrink-0 ${
+                            topic.mastery >= 0.7 ? 'text-green-600' :
+                            topic.mastery >= 0.4 ? 'text-yellow-600' : 'text-red-600'
+                          }`}>
+                            {Math.round(topic.mastery * 100)}%
+                          </span>
+                        </div>
+                      ))
+                    })()}
+                  </div>
+                </div>
               </div>
-              <div className="rounded-md">
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
-                  Focus Areas
-                </p>
-                <p className="text-base font-medium text-gray-900 dark:text-gray-100 truncate">
-                  {focusTopics.length > 0
-                    ? focusTopics[0].topicTitle
-                    : 'General'}
-                </p>
-              </div>
-            </div>
 
-            <div className="mt-6">
-              <div className="flex justify-between text-sm mb-2">
-                <span className="text-gray-600 dark:text-gray-400">
-                  Overall Mastery
-                </span>
-                <span className="font-medium text-gray-900 dark:text-gray-100">
-                  {analytics?.overallMastery
-                    ? Math.round(analytics.overallMastery * 100)
-                    : 0}
-                  %
-                </span>
+              {/* Right Side - 1/2: Radar Chart */}
+              <div className="w-1/2">
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 text-center">
+                  Mastery by Lesson
+                </p>
+                <LessonMasteryRadar analytics={analytics} />
               </div>
-              <Progress
-                value={
-                  analytics?.overallMastery ? analytics.overallMastery * 100 : 0
-                }
-                className="h-2"
-              />
             </div>
           </div>
         </div>
@@ -747,6 +917,170 @@ function RouteComponent() {
           )}
         </div>
       </div>
+
+      {/* Lesson Selection Modal for Practice */}
+      <Dialog
+        open={showLessonSelectModal}
+        onOpenChange={(open: boolean) => {
+          if (!open && !loadingAssessment) {
+            setShowLessonSelectModal(false)
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] flex flex-col p-0 gap-0 bg-white dark:bg-gray-950 border-gray-200 dark:border-gray-800 shadow-xl overflow-hidden">
+          <DialogHeader className="px-6 py-5 border-b border-gray-100 dark:border-gray-800 shrink-0">
+            <div className="flex items-center gap-2 mb-2">
+              <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-none">
+                <Brain className="w-3 h-3 mr-1" /> AI Powered
+              </Badge>
+              <Badge variant="outline" className="text-xs">
+                10 Questions
+              </Badge>
+            </div>
+            <DialogTitle className="text-xl font-bold text-gray-900 dark:text-gray-50">
+              Choose a Lesson to Master
+            </DialogTitle>
+            <DialogDescription className="text-sm text-gray-500 dark:text-gray-400">
+              Select a lesson to start a focused practice session. Questions will adapt to your mastery level for each topic.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="px-6 py-4 overflow-y-auto flex-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {lessons.map((lesson) => {
+                const masteryInfo = getLessonTopicMastery(lesson.id)
+                const lessonTopics = lesson.topics
+                const isLoading = loadingAssessment && selectedPracticeLesson === lesson.id
+
+                return (
+                  <div
+                    key={lesson.id}
+                    className={`relative border rounded-xl p-4 transition-all duration-200 ${
+                      isLoading
+                        ? 'border-blue-300 bg-blue-50/50 dark:border-blue-700 dark:bg-blue-900/20'
+                        : 'border-gray-200 dark:border-gray-800 hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-md cursor-pointer'
+                    }`}
+                    onClick={() => !loadingAssessment && handleStartLessonPractice(lesson.id)}
+                  >
+                    {/* Lesson Header */}
+                    <div className="flex items-start gap-3 mb-3">
+                      <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 bg-gray-100 dark:bg-gray-800">
+                        <img
+                          src={lessonImages[lesson.id]}
+                          alt={lesson.title}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400">
+                            LESSON {lesson.id}
+                          </span>
+                          {masteryInfo.hasData && (
+                            <span className="text-[10px] font-medium text-gray-500 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">
+                              {masteryInfo.averageMastery}% mastery
+                            </span>
+                          )}
+                        </div>
+                        <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
+                          {lesson.title}
+                        </h3>
+                      </div>
+                    </div>
+
+                    {/* Topics with Difficulty */}
+                    <div className="space-y-2 mb-4">
+                      {lessonTopics.map((topic, idx) => {
+                        // Match by index position within the lesson's topics array
+                        // Database topicIds are sequential: Lesson 1 = 1,2,3, Lesson 2 = 4,5,6, etc.
+                        const dbTopicId = (lesson.id - 1) * 3 + idx + 1
+                        const topicMasteryData = masteryInfo.topics.find(
+                          (t) => t.topicId === dbTopicId || 
+                                 String(t.topicId) === String(dbTopicId) ||
+                                 t.topicId === parseInt(topic.id.split('-')[1])
+                        )
+                        // Default to 0 mastery (Easy) when no data, not 0.5 (Medium)
+                        const mastery = topicMasteryData?.mastery ?? 0
+                        const difficulty = getDifficultyFromMastery(mastery)
+
+                        return (
+                          <div
+                            key={topic.id}
+                            className="flex items-center justify-between text-sm"
+                          >
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              <span className="text-gray-400 text-xs w-4">{idx + 1}.</span>
+                              <span className="text-gray-700 dark:text-gray-300 truncate">
+                                {topic.title}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className="text-[10px] text-gray-500">
+                                {Math.round(mastery * 100)}%
+                              </span>
+                              <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${difficulty.color}`}>
+                                {difficulty.label}
+                              </span>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+
+                    {/* Start Button */}
+                    <Button
+                      className="w-full"
+                      size="sm"
+                      disabled={loadingAssessment}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleStartLessonPractice(lesson.id)
+                      }}
+                    >
+                      {isLoading ? (
+                        <>
+                          <Zap className="w-4 h-4 mr-2 animate-pulse" />
+                          Generating Questions...
+                        </>
+                      ) : (
+                        <>
+                          <BookOpen className="w-4 h-4 mr-2" />
+                          Practice This Lesson
+                        </>
+                      )}
+                    </Button>
+
+                    {/* Question Distribution Info */}
+                    <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+                      <div className="flex items-center justify-center gap-1 text-[10px] text-gray-500">
+                        <TrendingUp className="w-3 h-3" />
+                        <span>3 questions per topic • Weakest topic gets +1 bonus</span>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="p-4 bg-gray-50/50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-800 shrink-0">
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Questions difficulty adapts to your topic mastery
+              </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowLessonSelectModal(false)}
+                disabled={loadingAssessment}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Lesson Details Dialog */}
       <Dialog

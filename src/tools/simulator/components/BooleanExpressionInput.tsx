@@ -30,25 +30,34 @@ import {
 import { useSimplify } from '@/hooks/useSimplify'
 
 // Predefined expression examples categorized by difficulty
+// Limited to max 5 variables (A, B, C, D, E) for all difficulties
 const EXPRESSION_EXAMPLES = {
-  easy: ['A∧B', 'A∨B', '¬A', 'A∧¬B', 'A∨¬B', '¬(A∧B)', 'A⊕B'],
+  easy: [
+    'A∧B',           // Simple AND
+    'A∨B',           // Simple OR
+    '¬A',            // Simple NOT
+    'A∧¬B',          // AND with negation
+    'A∨¬B',          // OR with negation
+    '¬(A∧B)',        // NAND
+    '¬(A∨B)',        // NOR
+  ],
   medium: [
-    '(A∧B)∨C',
-    'A∧(B∨C)',
-    '(A∨B)∧(C∨D)',
-    '¬(A∨B)∧C',
-    '(A⊕B)∧C',
-    'A∧B∧C',
-    '(¬A∨B)∧(A∨¬B)',
+    '(A∧B)∨C',              // 3 variables, AND-OR
+    'A∧(B∨C)',              // 3 variables, distributive
+    '(A∨B)∧(C∨D)',          // 4 variables, two OR groups
+    '¬A∧B∧C',               // 3 variables with negation
+    '(A∧B)∨(C∧D)',          // 4 variables, two AND groups
+    '¬(A∨B)∧C',             // 3 variables, NOR then AND
+    '(A∧¬B)∨(¬A∧B)',        // XOR implementation (3 vars effective)
   ],
   hard: [
-    '¬((A∨B)∧(¬C∨D))',
-    '(A∧B)∨(C∧D)∨(E∧F)',
-    '¬((A∨B)∧(¬C∨D))∨(E∧(A∨¬D))',
-    '((A∧B)∨(C∧¬D))∧(¬E∨(F∧G))',
-    '(A⊕B)∧(C⊕D)∨(E∧F)',
-    '¬(((A∨B)∧C)∨((¬D∧E)∨F))',
-    '(A∧(B∨C))∨(¬D∧(E∨(F∧G)))',
+    '(A∧B)∨(C∧D)∨E',                    // 5 variables, three terms
+    '(A∨B)∧(C∨D)∧E',                    // 5 variables, three factors
+    '¬((A∧B)∨(C∧D))∧E',                 // 5 variables with outer negation
+    '(A∧B∧C)∨(D∧E)',                    // 5 variables, two AND groups
+    '((A∨B)∧C)∨((D∨E)∧¬A)',             // 5 variables complex
+    '(¬A∧B∧C)∨(A∧¬B∧D)∨(C∧E)',          // 5 variables, three product terms
+    '((A∧B)∨C)∧((D∧E)∨¬C)',             // 5 variables with shared variable
   ],
 }
 

@@ -542,10 +542,15 @@ function RouteComponent() {
   const selectedLessonTopics = selectedLesson
     ? getTopicsForLesson(selectedLesson)
     : []
-  const recommendedDifficulty = analytics?.recommendedDifficulty ?? null
-  const focusTopics = analytics?.focusAreas?.slice(0, 2) ?? []
-  const totalAdaptiveAttempts =
+  // These analytics values are available for future use but currently not rendered
+  const _recommendedDifficulty = analytics?.recommendedDifficulty ?? null
+  const _focusTopics = analytics?.focusAreas?.slice(0, 2) ?? []
+  const _totalAdaptiveAttempts =
     statistics?.totalAttempts ?? analytics?.totalAttempts ?? 0
+  // Silence unused variable warnings - these will be used in upcoming features
+  void _recommendedDifficulty
+  void _focusTopics
+  void _totalAdaptiveAttempts
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pt-20 pb-12 px-4 sm:px-6 lg:px-8">

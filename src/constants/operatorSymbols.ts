@@ -37,6 +37,14 @@ export const OPERATOR_SYMBOLS: OperatorInfo[] = [
     example: '¬A',
     htmlEntity: '&not;',
   },
+  {
+    symbol: '⊕',
+    name: 'XOR',
+    description: 'Exclusive OR - true when exactly one operand is true (but not both)',
+    alternatives: ['xor', 'XOR', '⊻'],
+    example: 'A ⊕ B',
+    htmlEntity: '&oplus;',
+  },
 ];
 
 export const PARENTHESES = [
@@ -44,8 +52,8 @@ export const PARENTHESES = [
   { symbol: ')', name: 'Close Parenthesis' },
 ];
 
-// Quick insert button order - standard Boolean operators only
-export const QUICK_INSERT_SYMBOLS = ['∧', '∨', '¬', '(', ')'];
+// Quick insert button order - includes XOR for circuit design
+export const QUICK_INSERT_SYMBOLS = ['∧', '∨', '¬', '⊕', '(', ')'];
 
 /**
  * Get operator info by symbol

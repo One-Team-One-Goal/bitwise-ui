@@ -195,8 +195,13 @@ export const useKMaps = () => {
   const handleSetAllCells = useCallback((value: CellValue) => {
     if (isLoading) return;
     
+    // Preserve coordinate metadata (including E coordinate for 5-variable maps)
     const newMatrix = squares.map(row => 
-      row.map(cell => [value, cell[1], cell[2]] as [CellValue, CellValue, CellValue])
+      row.map(cell => {
+        const updated = [...cell] as CellValue[];
+        updated[0] = value;
+        return updated;
+      })
     );
     
     setSquares(newMatrix);

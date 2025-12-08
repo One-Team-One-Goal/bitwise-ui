@@ -93,27 +93,44 @@ const CharMotion = React.forwardRef(function CharMotion(
     }
   }
 
+  // Get highlight styling based on law animation
+  const getHighlightStyle = () => {
+    if (!token.highlight || !lawId) return {}
+    
+    const animation = getLawAnimation(lawId)
+    return {
+      color: animation.highlightColor,
+      textShadow: `0 0 8px ${animation.highlightColor}40`,
+    }
+  }
+
   return (
     <motion.span
       ref={ref}
       layout
       layoutId={layoutIdOverride ?? token.id}
-      initial={false}
-      animate={false}
+      initial={{ opacity: token.isNew ? 0 : 1, scale: token.isNew ? 0.8 : 1 }}
+      animate={{ 
+        opacity: 1, 
+        scale: token.highlight ? 1.1 : 1,
+      }}
       transition={{
         layout: {
           duration: lawId ? getLawAnimation(lawId).duration : 0.4,
           ease: 'easeInOut',
         },
+        opacity: { duration: 0.3 },
+        scale: { duration: 0.3, ease: 'easeOut' },
       }}
       className={getTokenClass()}
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
       style={{
+        ...getHighlightStyle(),
         color:
           token.isNew && lawId
             ? getLawAnimation(lawId).highlightColor
-            : undefined,
+            : getHighlightStyle().color,
         fontFamily:
           "'JetBrains Mono', 'Segoe UI Symbol', 'Apple Symbols', ui-monospace, monospace",
       }}

@@ -293,15 +293,48 @@ export const CircuitSimulator: React.FC = () => {
                     })
                   }
 
+                  // Calculate offset to prevent overlap when keeping existing circuit
+                  let offsetX = 0
+                  let offsetY = 0
+                  if (options?.clearExisting === false && circuitHook.circuitState.components.length > 0) {
+                    // Find the bounding box of existing components
+                    let maxX = 0
+                    let maxY = 0
+                    circuitHook.circuitState.components.forEach((comp: any) => {
+                      const rightEdge = comp.position.x + (comp.size?.width || 100)
+                      const bottomEdge = comp.position.y + (comp.size?.height || 60)
+                      maxX = Math.max(maxX, rightEdge)
+                      maxY = Math.max(maxY, bottomEdge)
+                    })
+                    
+                    // Find the bounding box of new components
+                    let minNewX = Infinity
+                    let minNewY = Infinity
+                    circuitResult.components.forEach((comp) => {
+                      minNewX = Math.min(minNewX, comp.position.x)
+                      minNewY = Math.min(minNewY, comp.position.y)
+                    })
+                    
+                    // Offset new components to be below existing ones with padding
+                    offsetX = 0 // Keep same horizontal position
+                    offsetY = maxY - minNewY + 100 // 100px gap below existing circuit
+                  }
+
                   // Load generated components and connections
                   // Store all components first, keeping track of both new and generated IDs
                   const componentIdMap = new Map<string, string>()
                   const addedComponents: any[] = []
 
                   circuitResult.components.forEach((generatedComp) => {
+                    // Apply offset to prevent overlap
+                    const offsetPosition = {
+                      x: generatedComp.position.x + offsetX,
+                      y: generatedComp.position.y + offsetY,
+                    }
+                    
                     const newComp = circuitHook.addComponent(
                       generatedComp.type,
-                      generatedComp.position
+                      offsetPosition
                     )
 
                     if (!newComp) {
@@ -368,7 +401,7 @@ export const CircuitSimulator: React.FC = () => {
                               toInput.id
                             ) as Connection | null
 
-                            // Apply pre-calculated wire path
+                            // Apply pre-calculated wire path with offset
                             if (
                               newConnection &&
                               conn.path &&
@@ -376,10 +409,15 @@ export const CircuitSimulator: React.FC = () => {
                             ) {
                               requestAnimationFrame(() => {
                                 if (circuitHook.updateConnection) {
+                                  // Apply the same offset to the path points
+                                  const offsetPath = conn.path.map((point: { x: number; y: number }) => ({
+                                    x: point.x + offsetX,
+                                    y: point.y + offsetY,
+                                  }))
                                   circuitHook.updateConnection(
                                     newConnection.id,
                                     {
-                                      path: conn.path,
+                                      path: offsetPath,
                                     }
                                   )
                                 }

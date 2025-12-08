@@ -160,9 +160,21 @@ type DOMRectLike = { left: number; top: number; width: number; height: number }
 // Main FactoringDemo Component
 // ============================================================================
 export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
-  // Expression state
+  // Expression state - Check localStorage for expression from circuit simulator
+  const getInitialExpression = () => {
+    if (typeof window !== 'undefined') {
+      const savedExpression = localStorage.getItem('circuit_expression')
+      if (savedExpression) {
+        // Clear it after reading so it doesn't persist forever
+        // but keep it for the session in case user navigates back
+        return savedExpression
+      }
+    }
+    return '(A ∨ B) ∧ (A ∨ ¬B)'
+  }
+  
   const [expressionInput, setExpressionInput] =
-    React.useState<string>('(A ∨ B) ∧ (A ∨ ¬B)')
+    React.useState<string>(getInitialExpression)
   const [loadingRemote, setLoadingRemote] = React.useState<boolean>(false)
   const [errorRemote, setErrorRemote] = React.useState<string | null>(null)
   const [remoteScript, setRemoteScript] =

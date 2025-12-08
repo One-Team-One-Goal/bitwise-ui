@@ -12,7 +12,9 @@ import {
   ChevronDown,
   ChevronUp,
   Info,
+  ChevronRight,
 } from 'lucide-react'
+import { deriveCircuitExpressions, formatExpression, type DerivedExpression } from '../utils/expressionDeriver'
 import { HelpGuide } from './HelpGuide'
 import {
   Tooltip,
@@ -42,6 +44,187 @@ const INITIAL_CONNECTION_STATE: {
   startConnectionPoint: null,
   startPosition: null,
   currentMousePosition: null,
+}
+
+/**
+ * Panel component to display derived boolean expressions from circuit outputs
+ */
+interface DerivedExpressionsPanelProps {
+  currentBooleanExpression: string
+  derivedExpressions: DerivedExpression[]
+}
+
+/**
+ * Normalize an expression for comparison (remove spaces, standardize operators, simplify parentheses)
+ */
+const normalizeExpression = (expr: string): string => {
+  let normalized = expr
+    .replace(/\s+/g, '') // Remove all spaces
+    .replace(/·/g, '∧')  // Standardize AND
+    .replace(/\*/g, '∧')
+    .replace(/&/g, '∧')
+    .replace(/\+/g, '∨')  // Standardize OR
+    .replace(/\|/g, '∨')
+    .replace(/!/g, '¬')   // Standardize NOT
+    .replace(/~/g, '¬')
+    .replace(/'/g, '¬')   // Handle prime notation
+    .toLowerCase()
+  
+  // Remove redundant outer parentheses repeatedly
+  while (normalized.startsWith('(') && normalized.endsWith(')')) {
+    // Check if these are matching parentheses
+    let depth = 0
+    let isMatching = true
+    for (let i = 0; i < normalized.length - 1; i++) {
+      if (normalized[i] === '(') depth++
+      else if (normalized[i] === ')') depth--
+      if (depth === 0 && i < normalized.length - 1) {
+        isMatching = false
+        break
+      }
+    }
+    if (isMatching && depth === 1) {
+      normalized = normalized.slice(1, -1)
+    } else {
+      break
+    }
+  }
+  
+  return normalized
+}
+
+const DerivedExpressionsPanel: React.FC<DerivedExpressionsPanelProps> = ({
+  currentBooleanExpression,
+  derivedExpressions,
+}) => {
+  const [isCollapsed, setIsCollapsed] = useState(false)
+  
+  // Show panel if there's a generated expression OR derived expressions from outputs
+  const hasContent = currentBooleanExpression || derivedExpressions.length > 0
+  
+  if (!hasContent) {
+    return null
+  }
+
+  // Combine generated expression with derived expressions
+  const allExpressions: Array<{ label: string; expression: string; isGenerated?: boolean; value?: boolean }> = []
+  
+  // Normalize the generated expression for comparison
+  const normalizedGenerated = currentBooleanExpression ? normalizeExpression(currentBooleanExpression) : ''
+  
+  // First, add derived expressions from circuit outputs (prioritize these)
+  const derivedAdded = new Set<string>()
+  derivedExpressions.forEach((derived) => {
+    const formattedExpr = formatExpression(derived.expression)
+    const normalizedDerived = normalizeExpression(formattedExpr)
+    
+    allExpressions.push({
+      label: derived.outputLabel,
+      expression: formattedExpr,
+      value: derived.outputValue,
+    })
+    
+    derivedAdded.add(normalizedDerived)
+  })
+  
+  // Only add the generated expression if there's no equivalent derived expression
+  if (currentBooleanExpression && !derivedAdded.has(normalizedGenerated)) {
+    allExpressions.push({
+      label: 'F',
+      expression: currentBooleanExpression,
+      isGenerated: true,
+    })
+  }
+
+  // If only 1-3 expressions, show inline; if more, show scrollable
+  const maxVisibleExpressions = 3
+  const needsScroll = allExpressions.length > maxVisibleExpressions
+
+  return (
+    <div className="absolute bottom-4 left-4 z-20">
+      <div className="bg-blue-50/95 dark:bg-blue-950/95 backdrop-blur-sm rounded-lg shadow-lg border-2 border-blue-300 dark:border-blue-700 overflow-hidden transition-all">
+        {/* Header */}
+        <div 
+          className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-blue-100/50 dark:hover:bg-blue-900/50 transition-colors"
+          onClick={() => setIsCollapsed(!isCollapsed)}
+        >
+          <Calculator className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <span className="font-semibold text-sm text-blue-900 dark:text-blue-100">
+            Expressions ({allExpressions.length})
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 p-0 ml-auto"
+            onClick={(e) => {
+              e.stopPropagation()
+              setIsCollapsed(!isCollapsed)
+            }}
+          >
+            {isCollapsed ? (
+              <ChevronRight className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            ) : (
+              <ChevronDown className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            )}
+          </Button>
+        </div>
+        
+        {/* Expressions list */}
+        {!isCollapsed && (
+          <div 
+            className={`px-3 pb-3 ${needsScroll ? 'max-h-36 overflow-y-auto' : ''}`}
+            style={{ minWidth: '200px', maxWidth: '400px' }}
+          >
+            <div className="space-y-2">
+              {allExpressions.map((expr, index) => (
+                <Tooltip key={index}>
+                  <TooltipTrigger asChild>
+                    <a
+                      href="/calculator"
+                      onClick={() => {
+                        // Save expression to localStorage so calculator can load it
+                        localStorage.setItem('circuit_expression', expr.expression)
+                        localStorage.setItem('circuit_expression_label', expr.label)
+                      }}
+                      className="flex items-center gap-2 p-2 rounded-md bg-white/60 dark:bg-gray-800/60 hover:bg-white dark:hover:bg-gray-800 transition-colors cursor-pointer group"
+                    >
+                      {/* Output indicator */}
+                      {expr.value !== undefined && (
+                        <div 
+                          className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                            expr.value 
+                              ? 'bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.6)]' 
+                              : 'bg-gray-400'
+                          }`}
+                        />
+                      )}
+                      {expr.isGenerated && (
+                        <div className="w-2 h-2 rounded-full flex-shrink-0 bg-blue-500" />
+                      )}
+                      
+                      {/* Label */}
+                      <span className="font-semibold text-xs text-blue-800 dark:text-blue-200 flex-shrink-0">
+                        {expr.label} =
+                      </span>
+                      
+                      {/* Expression */}
+                      <span className="font-mono text-xs text-blue-700 dark:text-blue-300 truncate group-hover:text-blue-900 dark:group-hover:text-blue-100">
+                        {expr.expression}
+                      </span>
+                    </a>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-xs">
+                    <p className="font-mono text-sm mb-1">{expr.label} = {expr.expression}</p>
+                    <p className="text-xs text-gray-500">Click to simplify in Boolean Calculator</p>
+                  </TooltipContent>
+                </Tooltip>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
 }
 
 interface CircuitCanvasProps {
@@ -87,12 +270,14 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
     startPosition: Position
     offset: Position
     hasMoved: boolean // Track if the user actually moved the mouse (drag vs click)
+    multiDragOffsets: Map<string, Position> // Offsets for multi-select drag
   }>({
     isDragging: false,
     componentId: null,
     startPosition: { x: 0, y: 0 },
     offset: { x: 0, y: 0 },
     hasMoved: false,
+    multiDragOffsets: new Map(),
   })
   const lastDragInfoRef = useRef<{
     componentId: string | null
@@ -734,7 +919,14 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
       event.stopPropagation()
 
       if (toolbarState.selectedTool === 'select') {
-        circuitHook.selectComponent(componentId)
+        // If clicking on a component that's part of multi-selection, don't deselect others
+        if (!selectedComponents.has(componentId)) {
+          // If not holding shift, clear selection and select just this one
+          if (!event.shiftKey) {
+            setSelectedComponents(new Set())
+          }
+          circuitHook.selectComponent(componentId)
+        }
 
         const component = circuitHook.circuitState.components.find(
           (c: Component) => c.id === componentId
@@ -751,6 +943,24 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
 
         const canvasPos = screenToCanvas(screenPos)
 
+        // Calculate offsets for all selected components (for multi-drag)
+        const multiDragOffsets = new Map<string, Position>()
+        const componentsToMove = selectedComponents.has(componentId) 
+          ? selectedComponents 
+          : new Set([componentId])
+        
+        componentsToMove.forEach((compId) => {
+          const comp = circuitHook.circuitState.components.find(
+            (c: Component) => c.id === compId
+          )
+          if (comp) {
+            multiDragOffsets.set(compId, {
+              x: canvasPos.x - comp.position.x,
+              y: canvasPos.y - comp.position.y,
+            })
+          }
+        })
+
         setDragState({
           isDragging: true,
           componentId,
@@ -760,10 +970,11 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
             y: canvasPos.y - component.position.y,
           },
           hasMoved: false,
+          multiDragOffsets,
         })
       }
     },
-    [toolbarState.selectedTool, circuitHook, screenToCanvas]
+    [toolbarState.selectedTool, circuitHook, screenToCanvas, selectedComponents]
   )
 
   // Handle connection point click
@@ -1195,14 +1406,26 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
 
         // Only move component if past threshold
         if (distance > DRAG_THRESHOLD || dragState.hasMoved) {
-          const newPosition = {
-            x: canvasPos.x - dragState.offset.x,
-            y: canvasPos.y - dragState.offset.y,
+          // Check if we're doing multi-drag (multiple components selected)
+          if (dragState.multiDragOffsets.size > 1) {
+            // Move all selected components together
+            dragState.multiDragOffsets.forEach((offset, compId) => {
+              const newPosition = {
+                x: canvasPos.x - offset.x,
+                y: canvasPos.y - offset.y,
+              }
+              circuitHook.moveComponent(compId, newPosition)
+              updateWirePathsForComponent(compId)
+            })
+          } else {
+            // Single component drag
+            const newPosition = {
+              x: canvasPos.x - dragState.offset.x,
+              y: canvasPos.y - dragState.offset.y,
+            }
+            circuitHook.moveComponent(dragState.componentId, newPosition)
+            updateWirePathsForComponent(dragState.componentId)
           }
-
-          circuitHook.moveComponent(dragState.componentId, newPosition)
-          // Update wire paths for the moved component
-          updateWirePathsForComponent(dragState.componentId)
 
           // Mark that we've actually moved (so subsequent small movements still count)
           if (!dragState.hasMoved) {
@@ -1252,6 +1475,7 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
       startPosition: { x: 0, y: 0 },
       offset: { x: 0, y: 0 },
       hasMoved: false,
+      multiDragOffsets: new Map(),
     })
 
     setPanState({
@@ -1460,6 +1684,14 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
     },
     [circuitHook, zoom, pan, deleteAnimation]
   )
+
+  // Derive expressions from circuit outputs
+  const derivedExpressions = useMemo(() => {
+    return deriveCircuitExpressions(
+      circuitHook.circuitState.components,
+      circuitHook.circuitState.connections
+    )
+  }, [circuitHook.circuitState.components, circuitHook.circuitState.connections])
 
   return (
     <div className="relative w-full h-full overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
@@ -1865,32 +2097,10 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
       </div>
 
       {/* Boolean Expression Display - Bottom Left */}
-      {currentBooleanExpression && (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <a
-              href="/calculator"
-              className="absolute bottom-4 left-4 bg-blue-50 hover:bg-blue-100 bg-opacity-95 hover:bg-opacity-100 rounded-lg px-4 py-3 text-sm text-blue-900 shadow-lg border-2 border-blue-300 hover:border-blue-400 transition-all cursor-pointer group"
-            >
-              <div className="flex items-center gap-2">
-                <Calculator className="h-4 w-4 text-blue-600 group-hover:scale-110 transition-transform" />
-                <span className="font-semibold">Expression:</span>
-                <span className="font-mono text-blue-700">
-                  {currentBooleanExpression}
-                </span>
-              </div>
-            </a>
-          </TooltipTrigger>
-          <TooltipContent side="top" className="max-w-xs">
-            <p className="font-semibold text-sm mb-1">
-              Want to see how to simplify?
-            </p>
-            <p className="text-xs text-gray-600">
-              Click to open Boolean Calculator for step-by-step simplification
-            </p>
-          </TooltipContent>
-        </Tooltip>
-      )}
+      <DerivedExpressionsPanel
+        currentBooleanExpression={currentBooleanExpression}
+        derivedExpressions={derivedExpressions}
+      />
 
       {/* Bulk Delete Confirmation Dialog */}
       <AlertDialog

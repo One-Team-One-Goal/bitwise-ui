@@ -28,7 +28,7 @@ import introPhoto from '@/assets/photos/intro.png'
 import logicGatesPhoto from '@/assets/photos/logic gates.png'
 import truthTablesPhoto from '@/assets/photos/truth tables.png'
 import simplificationPhoto from '@/assets/photos/simplification.png'
-
+import { LessonMasteryRadar } from '@/components/LessonMasteryRadar'
 import { toast } from 'sonner'
 
 // Define types for better TypeScript support
@@ -222,93 +222,93 @@ const lessonShortNames: Record<number, string> = {
   4: 'Simplify',
 }
 
-interface LessonMasteryRadarProps {
-  analytics: {
-    skillsByLesson?: Array<{
-      lessonId: number
-      lessonTitle: string
-      skills: Array<{ mastery: number }>
-    }>
-  } | null
-  compact?: boolean
-}
+// interface LessonMasteryRadarProps {
+//   analytics: {
+//     skillsByLesson?: Array<{
+//       lessonId: number
+//       lessonTitle: string
+//       skills: Array<{ mastery: number }>
+//     }>
+//   } | null
+//   compact?: boolean
+// }
 
-function LessonMasteryRadar({ analytics, compact = false }: LessonMasteryRadarProps) {
-  // Prepare data for radar chart - all 4 lessons
-  const radarData = useMemo(() => {
-    const lessons = [1, 2, 3, 4]
-    return lessons.map((lessonId) => {
-      const lessonData = analytics?.skillsByLesson?.find(
-        (l) => l.lessonId === lessonId
-      )
-      const mastery = lessonData?.skills?.length
-        ? lessonData.skills.reduce((sum, s) => sum + s.mastery, 0) /
-          lessonData.skills.length
-        : 0
-      return {
-        lesson: lessonShortNames[lessonId],
-        mastery: Math.round(mastery * 100),
-        fullMark: 100,
-      }
-    })
-  }, [analytics])
+// function LessonMasteryRadar({ analytics, compact = false }: LessonMasteryRadarProps) {
+//   // Prepare data for radar chart - all 4 lessons
+//   const radarData = useMemo(() => {
+//     const lessons = [1, 2, 3, 4]
+//     return lessons.map((lessonId) => {
+//       const lessonData = analytics?.skillsByLesson?.find(
+//         (l) => l.lessonId === lessonId
+//       )
+//       const mastery = lessonData?.skills?.length
+//         ? lessonData.skills.reduce((sum, s) => sum + s.mastery, 0) /
+//           lessonData.skills.length
+//         : 0
+//       return {
+//         lesson: lessonShortNames[lessonId],
+//         mastery: Math.round(mastery * 100),
+//         fullMark: 100,
+//       }
+//     })
+//   }, [analytics])
 
-  if (compact) {
-    return (
-      <div className="w-full h-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
-            <PolarGrid stroke="#e5e7eb" />
-            <PolarAngleAxis dataKey="lesson" tick={false} />
-            <Radar
-              name="Mastery"
-              dataKey="mastery"
-              stroke="#8b5cf6"
-              fill="#8b5cf6"
-              fillOpacity={0.5}
-            />
-          </RadarChart>
-        </ResponsiveContainer>
-      </div>
-    )
-  }
+//   if (compact) {
+//     return (
+//       <div className="w-full h-full">
+//         <ResponsiveContainer width="100%" height="100%">
+//           <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
+//             <PolarGrid stroke="#e5e7eb" />
+//             <PolarAngleAxis dataKey="lesson" tick={false} />
+//             <Radar
+//               name="Mastery"
+//               dataKey="mastery"
+//               stroke="#8b5cf6"
+//               fill="#8b5cf6"
+//               fillOpacity={0.5}
+//             />
+//           </RadarChart>
+//         </ResponsiveContainer>
+//       </div>
+//     )
+//   }
 
-  return (
-    <div className="w-full h-[180px]">
-      <ResponsiveContainer width="100%" height="100%">
-        <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
-          <PolarGrid stroke="#e5e7eb" />
-          <PolarAngleAxis
-            dataKey="lesson"
-            tick={{ fill: '#6b7280', fontSize: 11 }}
-          />
-          <PolarRadiusAxis
-            angle={90}
-            domain={[0, 100]}
-            tick={{ fill: '#9ca3af', fontSize: 9 }}
-            tickCount={5}
-          />
-          <Radar
-            name="Mastery"
-            dataKey="mastery"
-            stroke="#8b5cf6"
-            fill="#8b5cf6"
-            fillOpacity={0.5}
-          />
-          <Tooltip
-            formatter={(value: number) => [`${value}%`, 'Mastery']}
-            contentStyle={{
-              backgroundColor: 'rgba(255, 255, 255, 0.95)',
-              border: '1px solid #e5e7eb',
-              borderRadius: '8px',
-              fontSize: '12px',
-            }}
-          />
-        </RadarChart>
-      </ResponsiveContainer>
-    </div>
-  )
-}
+//   return (
+//     <div className="w-full h-[180px]">
+//       <ResponsiveContainer width="100%" height="100%">
+//         <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
+//           <PolarGrid stroke="#e5e7eb" />
+//           <PolarAngleAxis
+//             dataKey="lesson"
+//             tick={{ fill: '#6b7280', fontSize: 11 }}
+//           />
+//           <PolarRadiusAxis
+//             angle={90}
+//             domain={[0, 100]}
+//             tick={{ fill: '#9ca3af', fontSize: 9 }}
+//             tickCount={5}
+//           />
+//           <Radar
+//             name="Mastery"
+//             dataKey="mastery"
+//             stroke="#8b5cf6"
+//             fill="#8b5cf6"
+//             fillOpacity={0.5}
+//           />
+//           <Tooltip
+//             formatter={(value: number) => [`${value}%`, 'Mastery']}
+//             contentStyle={{
+//               backgroundColor: 'rgba(255, 255, 255, 0.95)',
+//               border: '1px solid #e5e7eb',
+//               borderRadius: '8px',
+//               fontSize: '12px',
+//             }}
+//           />
+//         </RadarChart>
+//       </ResponsiveContainer>
+//     </div>
+//   )
+// }
 
 function RouteComponent() {
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null)
@@ -666,10 +666,8 @@ function RouteComponent() {
               </div>
 
               {/* Right Side - 1/2: Radar Chart */}
-              <div className="w-1/2">
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 text-center">
-                  Mastery by Lesson
-                </p>
+              <div className="w-3/5">
+             
                 <LessonMasteryRadar analytics={analytics} />
               </div>
             </div>

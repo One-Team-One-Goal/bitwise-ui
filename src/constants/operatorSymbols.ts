@@ -45,6 +45,22 @@ export const OPERATOR_SYMBOLS: OperatorInfo[] = [
     example: 'A ⊕ B',
     htmlEntity: '&oplus;',
   },
+  {
+    symbol: '→',
+    name: 'IMPLIES',
+    description: 'Implication - false only when first is true and second is false',
+    alternatives: ['->', '=>', 'IMPLIES', 'implies', 'then'],
+    example: 'A → B',
+    htmlEntity: '&rarr;',
+  },
+  {
+    symbol: '↔',
+    name: 'IFF',
+    description: 'Biconditional (if and only if) - true when both operands have the same value',
+    alternatives: ['<->', '<=>', 'IFF', 'iff', 'XNOR'],
+    example: 'A ↔ B',
+    htmlEntity: '&harr;',
+  },
 ];
 
 export const PARENTHESES = [

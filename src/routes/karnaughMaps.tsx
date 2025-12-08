@@ -145,11 +145,11 @@ function RouteComponent() {
 
             {/* Solution Display */}
             {solution && (
-              <div className="mt-6 p-4 min-w-[320px] max-w-[500px] w-full solution-display">
+              <div className="mt-6 p-4 min-w-[320px] w-full solution-display">
                 <p className="font-semibold mb-2 text-sm text-muted-foreground">
                   {formType} Solution:
                 </p>
-                <div className="font-mono text-lg mb-2 border rounded-sm p-2 overflow-x-auto overflow-y-auto max-h-[150px] wrap-break-word whitespace-pre-wrap">
+                <div className="font-mono text-lg mb-2 border rounded-sm pl-2 p-1">
                   {solution.expression}
                 </div>
                 <div className="flex mt-2 gap-12">

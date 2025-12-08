@@ -98,31 +98,15 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick, 
   };
 
   // Get the group for a specific cell (with table support for 5 variables)
-  // Returns the group only if this specific cell is actually part of the group
   const getCellGroup = (row: number, col: number, table?: number): KMapGroup | undefined => {
-    const cell = squares[row]?.[col];
-    if (!cell) return undefined;
-    
-    // First check if this cell's value is appropriate for grouping
-    const cellValue = cell[0];
-    const isValidForGrouping = cellValue === 'X' || 
-      (formType === 'SOP' && cellValue === 1) || 
-      (formType === 'POS' && cellValue === 0);
-    
-    if (!isValidForGrouping) return undefined;
-    
     return groups.find(group => 
-      group.cells.some(groupCell => {
-        const matchesPosition = groupCell.riga === row && groupCell.col === col;
-        if (!matchesPosition) return false;
-
-        // For 5-variable maps, ensure we are looking at the correct table (E=0 vs E=1)
-        if (variableCount === 5 && table !== undefined) {
-          const cellTable = groupCell.table !== undefined ? groupCell.table : (groupCell.col >= 4 ? 1 : 0);
-          return cellTable === table;
+      group.cells.some(cell => {
+        const matchesPosition = cell.riga === row && cell.col === col;
+        // For 5-variable, also check table if specified
+        if (variableCount === 5 && table !== undefined && cell.table !== undefined) {
+          return matchesPosition && cell.table === table;
         }
-
-        return true;
+        return matchesPosition;
       })
     );
   };
@@ -221,8 +205,10 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick, 
                     
                     if (!cell) return null;
 
-                    // getCellGroup already validates if the cell is appropriate for the form type
-                    const shouldShowGroup = !!group;
+                    // Only show group color if cell value is appropriate for the form type
+                    const shouldShowGroup = group && (cell[0] === 'X' || 
+                      (formType === 'SOP' && cell[0] === 1) || 
+                      (formType === 'POS' && cell[0] === 0));
 
                     return (
                       <Square
@@ -248,13 +234,12 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick, 
               key={group.id}
               group={{
                 ...group,
-                cells: group.cells.filter(c => (c.table === 0) || (c.table === undefined && c.col < 4))
+                cells: group.cells.filter(c => c.table === 0 || c.table === undefined)
               }}
               cellSize={64}
               headerOffset={{ x: 64, y: 48 + 40 }} // Extra 40px for E=0 label
-              squares={squares}
-              formType={formType}
-              variableCount={variableCount}
+              rows={rows}
+              cols={4}
             />
           ))}
         </div>
@@ -299,15 +284,16 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick, 
                   {Array.from({ length: 4 }).map((_, colIndex) => {
                     const actualCol = colIndex + 4; // Offset by 4 to access columns 4-7
                     const cell = squares[storageRowIndex]?.[actualCol];
-                    const group = getCellGroup(storageRowIndex, actualCol, 1);
-                    // Use the actual column (4-7) for connection detection
-                    const connections = getGroupConnections(storageRowIndex, actualCol, group);
+                    const group = getCellGroup(storageRowIndex, colIndex, 1);
+                    const connections = getGroupConnections(storageRowIndex, colIndex, group);
                     const coordinates = getCellCoordinates(storageRowIndex, actualCol);
                     
                     if (!cell) return null;
 
-                    // getCellGroup already validates if the cell is appropriate for the form type
-                    const shouldShowGroup = !!group;
+                    // Only show group color if cell value is appropriate for the form type
+                    const shouldShowGroup = group && (cell[0] === 'X' || 
+                      (formType === 'SOP' && cell[0] === 1) || 
+                      (formType === 'POS' && cell[0] === 0));
 
                     return (
                       <Square
@@ -333,13 +319,12 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick, 
               key={`e1-${group.id}`}
               group={{
                 ...group,
-                cells: group.cells.filter(c => (c.table === 1) || (c.table === undefined && c.col >= 4))
+                cells: group.cells.filter(c => c.table === 1).map(c => ({ ...c, col: c.col % 4 }))
               }}
               cellSize={64}
               headerOffset={{ x: 64, y: 48 + 40 }}
-              squares={squares}
-              formType={formType}
-              variableCount={variableCount}
+              rows={rows}
+              cols={4}
             />
           ))}
         </div>
@@ -391,8 +376,12 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick, 
                 
                 if (!cell) return null;
 
-                // getCellGroup already validates if the cell is appropriate for the form type
-                const shouldShowGroup = !!group;
+                // Only show group color if cell value is appropriate for the form type
+                // For SOP: only highlight cells with value 1 or X
+                // For POS: only highlight cells with value 0 or X
+                const shouldShowGroup = group && (cell[0] === 'X' || 
+                  (formType === 'SOP' && cell[0] === 1) || 
+                  (formType === 'POS' && cell[0] === 0));
 
                 return (
                   <Square
@@ -419,9 +408,8 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick, 
           group={group}
           cellSize={64} // 16 * 4 (w-16 = 4rem = 64px)
           headerOffset={{ x: 64, y: 48 }} // Header sizes
-          squares={squares}
-          formType={formType}
-          variableCount={variableCount}
+          rows={rows}
+          cols={cols}
         />
       ))}
     </div>
@@ -429,73 +417,165 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick, 
 };
 
 // Component for drawing group overlays
-// Note: The colored overlays are supplementary visual aids.
-// The actual group membership is shown by the individual cell coloring via shouldShowGroup.
-// This overlay creates rectangular regions but cells are individually validated.
 interface GroupOverlayProps {
   group: KMapGroup;
   cellSize: number;
   headerOffset: { x: number; y: number };
-  squares: KMapMatrix;
-  formType: 'SOP' | 'POS';
-  variableCount: number;
+  rows: number;
+  cols: number;
 }
 
-const GroupOverlay: React.FC<GroupOverlayProps> = ({ group, cellSize, headerOffset, squares, formType, variableCount }) => {
+const GroupOverlay: React.FC<GroupOverlayProps> = ({ group, cellSize, headerOffset, rows, cols }) => {
   if (group.cells.length === 0) return null;
 
-  // Gray code mappings for converting storage indices to visual indices
-  const grayCode4 = [0, 1, 3, 2];
-  const grayCode2 = [0, 1];
-  
-  // Helper to convert storage row index to visual row index
-  const getVisualRowIndex = (storageRow: number): number => {
-    if (variableCount === 2) {
-      return grayCode2.indexOf(storageRow);
-    } else if (variableCount === 3 || variableCount === 4 || variableCount === 5) {
-      return grayCode4.indexOf(storageRow);
-    }
-    return storageRow;
+  // Detect wraparound patterns
+  const detectWraparound = () => {
+    const rowSet = new Set(group.cells.map(cell => cell.riga));
+    const colSet = new Set(group.cells.map(cell => cell.col));
+    
+    const rowArray = Array.from(rowSet).sort((a, b) => a - b);
+    const colArray = Array.from(colSet).sort((a, b) => a - b);
+    
+    // Check for horizontal wraparound (columns)
+    const horizontalWrap = colArray.length > 1 && 
+      (colArray.includes(0) && colArray.includes(cols - 1));
+    
+    // Check for vertical wraparound (rows)  
+    const verticalWrap = rowArray.length > 1 && 
+      (rowArray.includes(0) && rowArray.includes(rows - 1));
+    
+    return { horizontalWrap, verticalWrap, rowArray, colArray };
   };
 
-  // Filter cells to only include those with valid values for the current form type
-  const validCells = group.cells.filter(cell => {
-    const cellData = squares[cell.riga]?.[cell.col];
-    if (!cellData) return false;
-    const cellValue = cellData[0];
-    // For SOP, only highlight 1s and Xs; for POS, only highlight 0s and Xs
-    return cellValue === 'X' || 
-      (formType === 'SOP' && cellValue === 1) || 
-      (formType === 'POS' && cellValue === 0);
-  });
+  const { horizontalWrap, verticalWrap, rowArray, colArray } = detectWraparound();
 
-  if (validCells.length === 0) return null;
+  // Create multiple rectangles for wraparound cases
+  const createRectangles = () => {
+    const rectangles: React.ReactElement[] = [];
 
-  // Instead of drawing rectangles based on min/max (which can incorrectly cover non-group cells),
-  // draw individual cell overlays for each cell in the group
-  return (
-    <>
-      {validCells.map((cell, index) => {
-        const visualRowIndex = getVisualRowIndex(cell.riga);
-        return (
-          <div
-            key={`${group.id}-cell-${index}`}
-            className="absolute pointer-events-none rounded-sm"
-            style={{
-              // For 5-variable maps, table 1 uses columns 4-7 in storage but 0-3 visually
-              left: headerOffset.x + ((variableCount === 5 && (cell.table === 1 || cell.col >= 4)) ? (cell.col % 4) : cell.col) * cellSize + 2,
-              top: headerOffset.y + visualRowIndex * cellSize + 2,
-              width: cellSize - 4,
-              height: cellSize - 4,
-              backgroundColor: `${group.color}25`,
-              border: `2px solid ${group.color}60`,
-              zIndex: 10,
-            }}
-          />
-        );
-      })}
-    </>
-  );
+    if (horizontalWrap && verticalWrap) {
+      // Four corner rectangles for both horizontal and vertical wrap
+      const leftCols = colArray.filter(col => col < cols / 2);
+      const rightCols = colArray.filter(col => col >= cols / 2);
+      const topRows = rowArray.filter(row => row < rows / 2);
+      const bottomRows = rowArray.filter(row => row >= rows / 2);
+
+      const configs = [
+        { rows: topRows, cols: leftCols, key: 'tl' },
+        { rows: topRows, cols: rightCols, key: 'tr' },
+        { rows: bottomRows, cols: leftCols, key: 'bl' },
+        { rows: bottomRows, cols: rightCols, key: 'br' }
+      ];
+
+      configs.forEach(({ rows: rectRows, cols: rectCols, key }) => {
+        if (rectRows.length > 0 && rectCols.length > 0) {
+          const minRow = Math.min(...rectRows);
+          const maxRow = Math.max(...rectRows);
+          const minCol = Math.min(...rectCols);
+          const maxCol = Math.max(...rectCols);
+
+          rectangles.push(
+            <div
+              key={`${group.id}-${key}`}
+              className="absolute pointer-events-none"
+              style={{
+                left: headerOffset.x + minCol * cellSize,
+                top: headerOffset.y + minRow * cellSize,
+                width: (maxCol - minCol + 1) * cellSize,
+                height: (maxRow - minRow + 1) * cellSize,
+                backgroundColor: `${group.color}30`,
+                zIndex: 10,
+              }}
+            />
+          );
+        }
+      });
+
+    } else if (horizontalWrap) {
+      // Split into left and right rectangles
+      const leftCols = colArray.filter(col => col < cols / 2);
+      const rightCols = colArray.filter(col => col >= cols / 2);
+
+      [leftCols, rightCols].forEach((rectCols, index) => {
+        if (rectCols.length > 0) {
+          const minRow = Math.min(...rowArray);
+          const maxRow = Math.max(...rowArray);
+          const minCol = Math.min(...rectCols);
+          const maxCol = Math.max(...rectCols);
+
+          rectangles.push(
+            <div
+              key={`${group.id}-h${index}`}
+              className="absolute pointer-events-none"
+              style={{
+                left: headerOffset.x + minCol * cellSize,
+                top: headerOffset.y + minRow * cellSize,
+                width: (maxCol - minCol + 1) * cellSize,
+                height: (maxRow - minRow + 1) * cellSize,
+                backgroundColor: `${group.color}30`,
+                zIndex: 10,
+              }}
+            />
+          );
+        }
+      });
+
+    } else if (verticalWrap) {
+      // Split into top and bottom rectangles
+      const topRows = rowArray.filter(row => row < rows / 2);
+      const bottomRows = rowArray.filter(row => row >= rows / 2);
+
+      [topRows, bottomRows].forEach((rectRows, index) => {
+        if (rectRows.length > 0) {
+          const minRow = Math.min(...rectRows);
+          const maxRow = Math.max(...rectRows);
+          const minCol = Math.min(...colArray);
+          const maxCol = Math.max(...colArray);
+
+          rectangles.push(
+            <div
+              key={`${group.id}-v${index}`}
+              className="absolute pointer-events-none"
+              style={{
+                left: headerOffset.x + minCol * cellSize,
+                top: headerOffset.y + minRow * cellSize,
+                width: (maxCol - minCol + 1) * cellSize,
+                height: (maxRow - minRow + 1) * cellSize,
+                backgroundColor: `${group.color}30`,
+                zIndex: 10,
+              }}
+            />
+          );
+        }
+      });
+
+    } else {
+      // Normal single rectangle
+      const minRow = Math.min(...rowArray);
+      const maxRow = Math.max(...rowArray);
+      const minCol = Math.min(...colArray);
+      const maxCol = Math.max(...colArray);
+
+      rectangles.push(
+        <div
+          key={group.id}
+          className="absolute pointer-events-none"
+          style={{
+            left: headerOffset.x + minCol * cellSize,
+            top: headerOffset.y + minRow * cellSize,
+            width: (maxCol - minCol + 1) * cellSize,
+            height: (maxRow - minRow + 1) * cellSize,
+            backgroundColor: `${group.color}30`,
+            zIndex: 10,
+          }}
+        />
+      );
+    }
+
+    return rectangles;
+  };
+
+  return <>{createRectangles()}</>;
 };
 
 // Component for drawing corner labels with diagonal line

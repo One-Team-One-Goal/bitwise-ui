@@ -501,12 +501,8 @@ const tryHorizontalWrapGroup = (
   
   // Check if cells at column 0 and column 3 form a valid wrap group
   for (let r = startRow; r < startRow + height && r < rows; r++) {
-    const val0 = squares[r][0][0];
-    const val3 = squares[r][3][0];
-    // Allow target value or don't care ('X')
     if (covered[r][0] || covered[r][3] ||
-        (val0 !== targetValue && val0 !== 'X') || 
-        (val3 !== targetValue && val3 !== 'X')) {
+        squares[r][0][0] !== targetValue || squares[r][3][0] !== targetValue) {
       return [];
     }
     group.push({ riga: r, col: 0 });
@@ -528,12 +524,8 @@ const tryVerticalWrapGroup = (
   
   // Check if cells at row 0 and row 3 form a valid wrap group
   for (let c = startCol; c < startCol + width && c < cols; c++) {
-    const val0 = squares[0][c][0];
-    const val3 = squares[3][c][0];
-    // Allow target value or don't care ('X')
     if (covered[0][c] || covered[3][c] ||
-        (val0 !== targetValue && val0 !== 'X') || 
-        (val3 !== targetValue && val3 !== 'X')) {
+        squares[0][c][0] !== targetValue || squares[3][c][0] !== targetValue) {
       return [];
     }
     group.push({ riga: 0, col: c });

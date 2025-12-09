@@ -14,21 +14,13 @@ import {
   DialogTitle,
   DialogHeader,
 } from '@/components/ui/dialog'
-import {
-  RadarChart,
-  PolarGrid,
-  PolarAngleAxis,
-  PolarRadiusAxis,
-  Radar,
-  ResponsiveContainer,
-  Tooltip,
-} from 'recharts'
+
 import bitboCongrats from '@/assets/bitbot/congrats.svg'
 import introPhoto from '@/assets/photos/intro.png'
 import logicGatesPhoto from '@/assets/photos/logic gates.png'
 import truthTablesPhoto from '@/assets/photos/truth tables.png'
 import simplificationPhoto from '@/assets/photos/simplification.png'
-
+import { LessonMasteryRadar } from '@/components/LessonMasteryRadar'
 import { toast } from 'sonner'
 
 // Define types for better TypeScript support
@@ -214,101 +206,95 @@ const csQuotes = [
   },
 ]
 
-// Lesson Mastery Radar Chart Component
-const lessonShortNames: Record<number, string> = {
-  1: 'Intro',
-  2: 'Gates',
-  3: 'Tables',
-  4: 'Simplify',
-}
 
-interface LessonMasteryRadarProps {
-  analytics: {
-    skillsByLesson?: Array<{
-      lessonId: number
-      lessonTitle: string
-      skills: Array<{ mastery: number }>
-    }>
-  } | null
-  compact?: boolean
-}
 
-function LessonMasteryRadar({ analytics, compact = false }: LessonMasteryRadarProps) {
-  // Prepare data for radar chart - all 4 lessons
-  const radarData = useMemo(() => {
-    const lessons = [1, 2, 3, 4]
-    return lessons.map((lessonId) => {
-      const lessonData = analytics?.skillsByLesson?.find(
-        (l) => l.lessonId === lessonId
-      )
-      const mastery = lessonData?.skills?.length
-        ? lessonData.skills.reduce((sum, s) => sum + s.mastery, 0) /
-          lessonData.skills.length
-        : 0
-      return {
-        lesson: lessonShortNames[lessonId],
-        mastery: Math.round(mastery * 100),
-        fullMark: 100,
-      }
-    })
-  }, [analytics])
+// interface LessonMasteryRadarProps {
+//   analytics: {
+//     skillsByLesson?: Array<{
+//       lessonId: number
+//       lessonTitle: string
+//       skills: Array<{ mastery: number }>
+//     }>
+//   } | null
+//   compact?: boolean
+// }
 
-  if (compact) {
-    return (
-      <div className="w-full h-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
-            <PolarGrid stroke="#e5e7eb" />
-            <PolarAngleAxis dataKey="lesson" tick={false} />
-            <Radar
-              name="Mastery"
-              dataKey="mastery"
-              stroke="#8b5cf6"
-              fill="#8b5cf6"
-              fillOpacity={0.5}
-            />
-          </RadarChart>
-        </ResponsiveContainer>
-      </div>
-    )
-  }
+// function LessonMasteryRadar({ analytics, compact = false }: LessonMasteryRadarProps) {
+//   // Prepare data for radar chart - all 4 lessons
+//   const radarData = useMemo(() => {
+//     const lessons = [1, 2, 3, 4]
+//     return lessons.map((lessonId) => {
+//       const lessonData = analytics?.skillsByLesson?.find(
+//         (l) => l.lessonId === lessonId
+//       )
+//       const mastery = lessonData?.skills?.length
+//         ? lessonData.skills.reduce((sum, s) => sum + s.mastery, 0) /
+//           lessonData.skills.length
+//         : 0
+//       return {
+//         lesson: lessonShortNames[lessonId],
+//         mastery: Math.round(mastery * 100),
+//         fullMark: 100,
+//       }
+//     })
+//   }, [analytics])
 
-  return (
-    <div className="w-full h-[180px]">
-      <ResponsiveContainer width="100%" height="100%">
-        <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
-          <PolarGrid stroke="#e5e7eb" />
-          <PolarAngleAxis
-            dataKey="lesson"
-            tick={{ fill: '#6b7280', fontSize: 11 }}
-          />
-          <PolarRadiusAxis
-            angle={90}
-            domain={[0, 100]}
-            tick={{ fill: '#9ca3af', fontSize: 9 }}
-            tickCount={5}
-          />
-          <Radar
-            name="Mastery"
-            dataKey="mastery"
-            stroke="#8b5cf6"
-            fill="#8b5cf6"
-            fillOpacity={0.5}
-          />
-          <Tooltip
-            formatter={(value: number) => [`${value}%`, 'Mastery']}
-            contentStyle={{
-              backgroundColor: 'rgba(255, 255, 255, 0.95)',
-              border: '1px solid #e5e7eb',
-              borderRadius: '8px',
-              fontSize: '12px',
-            }}
-          />
-        </RadarChart>
-      </ResponsiveContainer>
-    </div>
-  )
-}
+//   if (compact) {
+//     return (
+//       <div className="w-full h-full">
+//         <ResponsiveContainer width="100%" height="100%">
+//           <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
+//             <PolarGrid stroke="#e5e7eb" />
+//             <PolarAngleAxis dataKey="lesson" tick={false} />
+//             <Radar
+//               name="Mastery"
+//               dataKey="mastery"
+//               stroke="#8b5cf6"
+//               fill="#8b5cf6"
+//               fillOpacity={0.5}
+//             />
+//           </RadarChart>
+//         </ResponsiveContainer>
+//       </div>
+//     )
+//   }
+
+//   return (
+//     <div className="w-full h-[180px]">
+//       <ResponsiveContainer width="100%" height="100%">
+//         <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
+//           <PolarGrid stroke="#e5e7eb" />
+//           <PolarAngleAxis
+//             dataKey="lesson"
+//             tick={{ fill: '#6b7280', fontSize: 11 }}
+//           />
+//           <PolarRadiusAxis
+//             angle={90}
+//             domain={[0, 100]}
+//             tick={{ fill: '#9ca3af', fontSize: 9 }}
+//             tickCount={5}
+//           />
+//           <Radar
+//             name="Mastery"
+//             dataKey="mastery"
+//             stroke="#8b5cf6"
+//             fill="#8b5cf6"
+//             fillOpacity={0.5}
+//           />
+//           <Tooltip
+//             formatter={(value: number) => [`${value}%`, 'Mastery']}
+//             contentStyle={{
+//               backgroundColor: 'rgba(255, 255, 255, 0.95)',
+//               border: '1px solid #e5e7eb',
+//               borderRadius: '8px',
+//               fontSize: '12px',
+//             }}
+//           />
+//         </RadarChart>
+//       </ResponsiveContainer>
+//     </div>
+//   )
+// }
 
 function RouteComponent() {
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null)
@@ -317,6 +303,7 @@ function RouteComponent() {
   const [statusFilter, setStatusFilter] = useState<string>('All Status')
   const [showLessonSelectModal, setShowLessonSelectModal] = useState(false)
   const [selectedPracticeLesson, setSelectedPracticeLesson] = useState<number | null>(null)
+  const [showAnalyticsModal, setShowAnalyticsModal] = useState(false)
   const navigate = useNavigate()
   const { user } = useAuthContext() || {}
   const ALLOW_ANON = import.meta.env.VITE_ALLOW_ANON_ASSESSMENT === 'true'
@@ -666,11 +653,15 @@ function RouteComponent() {
               </div>
 
               {/* Right Side - 1/2: Radar Chart */}
-              <div className="w-1/2">
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2 text-center">
-                  Mastery by Lesson
-                </p>
+              <div 
+                className="w-3/5 cursor-pointer transition-transform hover:scale-105 relative group"
+                onClick={() => setShowAnalyticsModal(true)}
+                title="Click to view detailed analytics"
+              >
                 <LessonMasteryRadar analytics={analytics} />
+                <p className="text-xs text-center text-gray-400 dark:text-gray-500 mt-2 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                  Click to view details
+                </p>
               </div>
             </div>
           </div>
@@ -1236,6 +1227,124 @@ function RouteComponent() {
             >
               Start Lesson
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Analytics Detail Modal */}
+      <Dialog
+        open={showAnalyticsModal}
+        onOpenChange={(open: boolean) => !open && setShowAnalyticsModal(false)}
+      >
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0 bg-white dark:bg-gray-950 border-gray-200 dark:border-gray-800 shadow-xl overflow-hidden">
+          <DialogHeader className="px-6 py-5 border-b border-gray-100 dark:border-gray-800 shrink-0">
+            <div className="flex items-center gap-2 mb-2">
+              <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 border-none">
+                <Target className="w-3 h-3 mr-1" /> Mastery Analysis
+              </Badge>
+            </div>
+            <DialogTitle className="text-xl font-bold text-gray-900 dark:text-gray-50">
+              Lesson Mastery Overview
+            </DialogTitle>
+            <DialogDescription className="text-sm text-gray-500 dark:text-gray-400">
+              Your progress and difficulty levels across all lessons
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="px-6 py-6 overflow-y-auto flex-1">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Left: Enlarged Radar Chart */}
+              <div className="flex flex-col">
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
+                  Overall Mastery Distribution
+                </h3>
+                <div className="bg-linear-to-br from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 rounded-lg p-6 border border-purple-100 dark:border-purple-900/30">
+                  <div className="w-full h-[400px]">
+                    <LessonMasteryRadar analytics={analytics} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Right: Lesson Details */}
+              <div className="flex flex-col">
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
+                  Lesson Breakdown
+                </h3>
+                <div className="space-y-3">
+                  {lessons.map((lesson) => {
+                    const masteryInfo = getLessonTopicMastery(lesson.id)
+                    const lessonTopics = lesson.topics
+                    const averageMastery = masteryInfo.averageMastery
+
+                    return (
+                      <div
+                        key={lesson.id}
+                        className="border border-gray-200 dark:border-gray-800 rounded-xl p-4 bg-gray-50/50 dark:bg-gray-900/50"
+                      >
+                        {/* Lesson Header */}
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-2 py-0.5 rounded-full">
+                              LESSON {lesson.id}
+                            </span>
+                            <h4 className="font-semibold text-gray-900 dark:text-gray-100 text-sm">
+                              {lesson.title}
+                            </h4>
+                          </div>
+                          <span className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">
+                            {averageMastery}% avg
+                          </span>
+                        </div>
+
+                        {/* Topics */}
+                        <div className="space-y-2">
+                          {lessonTopics.map((topic, idx) => {
+                            const dbTopicId = (lesson.id - 1) * 3 + idx + 1
+                            const topicMasteryData = masteryInfo.topics.find(
+                              (t) => t.topicId === dbTopicId || 
+                                     String(t.topicId) === String(dbTopicId) ||
+                                     t.topicId === parseInt(topic.id.split('-')[1])
+                            )
+                            const mastery = topicMasteryData?.mastery ?? 0
+                            const difficulty = getDifficultyFromMastery(mastery)
+
+                            return (
+                              <div
+                                key={topic.id}
+                                className="flex items-center justify-between text-sm bg-white dark:bg-gray-900 rounded-lg px-3 py-2 border border-gray-100 dark:border-gray-800"
+                              >
+                                <div className="flex items-center gap-2 min-w-0 flex-1">
+                                  <span className="text-gray-400 text-xs w-4">{idx + 1}.</span>
+                                  <span className="text-gray-700 dark:text-gray-300 text-xs truncate">
+                                    {topic.title}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <span className="text-[10px] text-gray-500 dark:text-gray-400">
+                                    {Math.round(mastery * 100)}%
+                                  </span>
+                                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${difficulty.color}`}>
+                                    {difficulty.label}
+                                  </span>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="p-4 bg-gray-50/50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-800 shrink-0">
+            <div className="flex items-center justify-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+              <TrendingUp className="w-3 h-3" />
+              <span>Difficulty adapts based on your mastery level</span>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

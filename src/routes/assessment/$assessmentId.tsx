@@ -72,15 +72,23 @@ const topicIdToName: Record<number, string> = {
   1: 'Introduction',
   2: 'Boolean Values',
   3: 'Applications',
-  4: 'AND Gate',
-  5: 'OR Gate',
-  6: 'NOT Gate',
-  7: 'Truth Table Construction',
-  8: 'Truth Table Reading',
+  4: 'AND, OR, NOT',
+  5: 'NAND, NOR',
+  6: 'XOR, XNOR',
+  7: 'Constructing Truth Tables',
+  8: 'Reading Truth Tables',
   9: 'Truth Tables for Gates',
   10: 'Boolean Laws',
-  11: 'Simplification',
-  12: 'Karnaugh Maps',
+  11: 'Karnaugh Maps',
+  12: 'Practical Examples',
+}
+
+// Mapping from topic ID to lesson ID
+const topicIdToLessonId: Record<number, number> = {
+  1: 1, 2: 1, 3: 1,  // Lesson 1
+  4: 2, 5: 2, 6: 2,  // Lesson 2
+  7: 3, 8: 3, 9: 3,  // Lesson 3
+  10: 4, 11: 4, 12: 4,  // Lesson 4
 }
 
 // Component to render truth tables
@@ -264,9 +272,10 @@ function RouteComponent() {
   const [feedback, setFeedback] = useState<string | null>(null)
   const [adaptiveInfo, setAdaptiveInfo] = useState<any>(null)
   const [topicPerformance, setTopicPerformance] = useState<any[]>([])
+  const [topicDetails, setTopicDetails] = useState<any[]>([])
   const [attemptFeedback, setAttemptFeedback] = useState<string | null>(null)
-  const [weakestAreas, setWeakestAreas] = useState<string[]>([])
-  const [strongestAreas, setStrongestAreas] = useState<string[]>([])
+  const [weakestAreas, setWeakestAreas] = useState<number[]>([])
+  const [strongestAreas, setStrongestAreas] = useState<number[]>([])
   const [recommendations, setRecommendations] = useState<string[]>([])
   const [processingResults, setProcessingResults] = useState(false)
   // Move these hooks to the top to comply with Rules of Hooks
@@ -463,6 +472,9 @@ function RouteComponent() {
         if (result.data.topicPerformance) {
           setTopicPerformance(result.data.topicPerformance)
         }
+        if (result.data.topicDetails) {
+          setTopicDetails(result.data.topicDetails)
+        }
 
         // Trigger confetti and sound
       } else {
@@ -511,9 +523,7 @@ function RouteComponent() {
     return 'text-red-600 dark:text-red-400'
   }
 
-  const formatTagName = (tag: string) => {
-    return tag.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())
-  }
+
 
   const hasVisualElements = () => {
     if (typeof question.stem === 'object' && question.stem !== null) {
@@ -582,7 +592,7 @@ function RouteComponent() {
 
         {!showResult ? (
           <Card className="w-full border-0 shadow-none p-0 m-0 pb-10">
-            <CardContent className="p-0 bg-transparent">
+            <CardContent className="p-4 bg-transparent">
               <div>
                 <div className="flex justify-between pb-4">
                   <div className="flex items-center flex-wrap gap-2">
@@ -714,6 +724,8 @@ function RouteComponent() {
                     <p className="text-sm text-blue-800 dark:text-blue-200 leading-relaxed">
                       {
                         question.options.find(
+                          (o: any) => o.id === answers[question.id ?? current]
+                        )?.rationale || question.options.find(
                           (o: any) => o.id === answers[question.id ?? current]
                         )?.explanation
                       }
@@ -870,17 +882,17 @@ function RouteComponent() {
                       Focus Areas
                     </h4>
                     <div className="flex flex-wrap gap-2">
-                      {weakestAreas.map((area, idx) => (
+                      {weakestAreas.map((topicId, idx) => (
                         <Link
                           key={idx}
                           to="/lesson/$lessonId"
                           params={{
-                            lessonId: String(topicToLessonId[area] || 1),
+                            lessonId: String(topicIdToLessonId[topicId] || 1),
                           }}
                           search={{ topicId: undefined }}
                           className="inline-flex items-center px-3 py-1.5 rounded-md bg-background border border-red-200 dark:border-red-800 text-sm font-medium text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors shadow-sm"
                         >
-                          {formatTagName(area)}
+                          {topicIdToName[topicId] || `Topic ${topicId}`}
                           <ArrowRight className="w-3 h-3 ml-2 opacity-50" />
                         </Link>
                       ))}
@@ -896,12 +908,12 @@ function RouteComponent() {
                       Strong Points
                     </h4>
                     <div className="flex flex-wrap gap-2">
-                      {strongestAreas.map((area, idx) => (
+                      {strongestAreas.map((topicId, idx) => (
                         <span
                           key={idx}
                           className="inline-flex items-center px-3 py-1.5 rounded-md bg-background border border-green-200 dark:border-green-800 text-sm font-medium text-green-700 dark:text-green-300 shadow-sm"
                         >
-                          {formatTagName(area)}
+                          {topicIdToName[topicId] || `Topic ${topicId}`}
                         </span>
                       ))}
                     </div>
@@ -946,26 +958,33 @@ function RouteComponent() {
                 )}
 
                 {/* Topic Performance Breakdown */}
-                {topicPerformance.length > 0 && (
+                {(topicDetails.length > 0 || topicPerformance.length > 0) && (
                   <div className="rounded-xl py-6">
                     <p className="font-semibold text-foreground mb-4 flex items-center gap-4">
                       <BookOpen className="w-5 h-5 text-muted-foreground" />
                       Detailed Breakdown
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {topicPerformance.map((perf, idx) => (
+                      {(topicDetails.length > 0 ? topicDetails : topicPerformance).map((perf, idx) => (
                         <div
                           key={idx}
                           className="flex justify-between items-center p-3 rounded-lg border bg-muted/30"
                         >
                           <span className="text-sm font-medium text-foreground">
-                            {topicIdToName[perf.topicId] || `Topic ${perf.topicId}`}
+                            {perf.title || topicIdToName[perf.topicId] || `Topic ${perf.topicId}`}
                           </span>
-                          <span
-                            className={`text-sm font-bold ${getScoreColor(perf.correct, perf.total)}`}
-                          >
-                            {perf.correct}/{perf.total}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`text-sm font-bold ${getScoreColor(perf.correct, perf.total)}`}
+                            >
+                              {perf.correct}/{perf.total}
+                            </span>
+                            {perf.status && (
+                              <span className="text-xs text-muted-foreground">
+                                ({perf.percentage}%)
+                              </span>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>

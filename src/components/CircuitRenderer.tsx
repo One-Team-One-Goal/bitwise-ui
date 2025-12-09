@@ -17,11 +17,29 @@ function getGateColor(type: string) {
   return GATE_COLORS[type.toUpperCase()] || 'var(--color-grayz)'
 }
 
+// Color palette for input wires - distinct colors for each input variable
+const WIRE_COLORS = [
+  '#3b82f6', // blue
+  '#ef4444', // red
+  '#10b981', // green
+  '#f59e0b', // amber
+  '#8b5cf6', // purple
+  '#ec4899', // pink
+  '#06b6d4', // cyan
+  '#f97316', // orange
+]
+
+function getWireColor(inputName: string, allInputs: string[]): string {
+  const index = allInputs.indexOf(inputName)
+  return index >= 0 ? WIRE_COLORS[index % WIRE_COLORS.length] : '#6b7280' // gray fallback
+}
+
 interface Gate {
   id: string
   type: string
   inputs: string[]
   output: string
+  position?: { x: number; y: number } // New: grid position for layout
 }
 
 interface Circuit {
@@ -62,34 +80,39 @@ const CircuitRenderer = ({ circuit }: { circuit: Circuit }) => {
     if (g.output) signalSource[g.output] = g.id
   })
 
-  // Calculate depth/level for each gate for auto-layout
+  // Check if gates have position information (new format)
+  const hasPositionData = circuit.gates.some(g => g.position !== undefined)
+
+  // Calculate depth/level for each gate for auto-layout (only if no position data)
   const gateLevels: Record<string, number> = {}
   
-  const getGateLevel = (gateId: string, visited = new Set<string>()): number => {
-    if (visited.has(gateId)) return 0 // Cycle detected
-    if (gateLevels[gateId] !== undefined) return gateLevels[gateId]
-    
-    visited.add(gateId)
-    const gate = gateMap[gateId]
-    let maxInputLevel = -1 // -1 means input is from global inputs
-    
-    gate.inputs.forEach(input => {
-      const sourceGateId = signalSource[input]
-      if (sourceGateId) {
-        const level = getGateLevel(sourceGateId, new Set(visited))
-        maxInputLevel = Math.max(maxInputLevel, level)
-      }
-    })
-    
-    const level = maxInputLevel + 1
-    gateLevels[gateId] = level
-    return level
-  }
+  if (!hasPositionData) {
+    const getGateLevel = (gateId: string, visited = new Set<string>()): number => {
+      if (visited.has(gateId)) return 0 // Cycle detected
+      if (gateLevels[gateId] !== undefined) return gateLevels[gateId]
+      
+      visited.add(gateId)
+      const gate = gateMap[gateId]
+      let maxInputLevel = -1 // -1 means input is from global inputs
+      
+      gate.inputs.forEach(input => {
+        const sourceGateId = signalSource[input]
+        if (sourceGateId) {
+          const level = getGateLevel(sourceGateId, new Set(visited))
+          maxInputLevel = Math.max(maxInputLevel, level)
+        }
+      })
+      
+      const level = maxInputLevel + 1
+      gateLevels[gateId] = level
+      return level
+    }
 
-  // Calculate levels for all gates
-  circuit.gates.forEach(g => getGateLevel(g.id))
+    // Calculate levels for all gates
+    circuit.gates.forEach(g => getGateLevel(g.id))
+  }
   
-  const maxLevel = Math.max(0, ...Object.values(gateLevels))
+  const maxLevel = hasPositionData ? 0 : Math.max(0, ...Object.values(gateLevels))
 
   // Positions: keys can be input names, gate ids (for gate body), and output signal names
   const positions: Record<string, { x: number; y: number; type: 'input' | 'gate' | 'output' }> = {}
@@ -102,46 +125,78 @@ const CircuitRenderer = ({ circuit }: { circuit: Circuit }) => {
   const topOffset = 80
   const levelWidth = (rightX - leftX) / (maxLevel + 2) // Distribute columns
 
+  // Grid-based layout parameters (for new position format)
+  const gridCellWidth = 140
+  const gridCellHeight = 100
+  const gridOffsetX = 80
+  const gridOffsetY = 80
+
   // Position inputs (left column)
-  circuit.inputs.forEach((input, idx) => {
-    positions[input] = {
-      x: leftX,
-      y: topOffset + idx * rowSpacing,
-      type: 'input',
-    }
-  })
+  if (hasPositionData) {
+    // Use explicit input positioning if gates have positions
+    circuit.inputs.forEach((input, idx) => {
+      positions[input] = {
+        x: gridOffsetX,
+        y: gridOffsetY + idx * gridCellHeight,
+        type: 'input',
+      }
+    })
+  } else {
+    // Original auto-layout for inputs
+    circuit.inputs.forEach((input, idx) => {
+      positions[input] = {
+        x: leftX,
+        y: topOffset + idx * rowSpacing,
+        type: 'input',
+      }
+    })
+  }
 
   // Group gates by level
   const gatesByLevel: Record<number, Gate[]> = {}
-  circuit.gates.forEach(g => {
-    const level = gateLevels[g.id] || 0
-    if (!gatesByLevel[level]) gatesByLevel[level] = []
-    gatesByLevel[level].push(g)
-  })
-
-  // Position gates based on level
-  Object.entries(gatesByLevel).forEach(([levelStr, gates]) => {
-    const level = parseInt(levelStr)
-    const x = leftX + (level + 1) * levelWidth
-    
-    gates.forEach((gate, idx) => {
-      // Center vertically relative to total items in this column
-      // Or try to align with inputs? Simple vertical stacking for now.
-      // Better: Try to center based on inputs, but simple stacking is safer to avoid overlap.
-      const y = topOffset + idx * rowSpacing + (level * 20) // slight offset per level
-      
-      positions[gate.id] = {
-        x,
-        y,
-        type: 'gate',
-      }
-      
-      // Also map the output signal to this gate's position (for connections)
-      if (gate.output) {
-        positions[gate.output] = { x, y, type: 'gate' }
+  
+  if (hasPositionData) {
+    // Use explicit position data from gates
+    circuit.gates.forEach(gate => {
+      if (gate.position) {
+        const x = gridOffsetX + gate.position.x * gridCellWidth
+        const y = gridOffsetY + gate.position.y * gridCellHeight
+        
+        positions[gate.id] = { x, y, type: 'gate' }
+        
+        // Also map the output signal to this gate's position (for connections)
+        if (gate.output) {
+          positions[gate.output] = { x, y, type: 'gate' }
+        }
       }
     })
-  })
+  } else {
+    // Original auto-layout based on levels
+    circuit.gates.forEach(g => {
+      const level = gateLevels[g.id] || 0
+      if (!gatesByLevel[level]) gatesByLevel[level] = []
+      gatesByLevel[level].push(g)
+    })
+
+    // Position gates based on level with vertical staggering to avoid wire overlap
+    Object.entries(gatesByLevel).forEach(([levelStr, gates]) => {
+      const level = parseInt(levelStr)
+      const x = leftX + (level + 1) * levelWidth
+      
+      gates.forEach((gate, idx) => {
+        // Add more vertical spacing and stagger based on both index and level
+        const baseY = topOffset + idx * rowSpacing
+        const levelStagger = (level % 2) * 40 // Alternate levels offset by 40px
+        const y = baseY + levelStagger
+        
+        positions[gate.id] = { x, y, type: 'gate' }
+        
+        if (gate.output) {
+          positions[gate.output] = { x, y, type: 'gate' }
+        }
+      })
+    })
+  }
 
   // Position outputs (right column)
   for (let idx = 0; idx < outputSignals.length; idx++) {
@@ -149,9 +204,12 @@ const CircuitRenderer = ({ circuit }: { circuit: Circuit }) => {
     const sourceGateId = signalSource[output]
     const sourceGatePos = sourceGateId ? positions[sourceGateId] : null
     
+    // Calculate rightmost position based on layout mode
+    const outputX = hasPositionData ? gridOffsetX + (4 * gridCellWidth) : rightX + 50
+    
     positions[output] = {
-      x: rightX + 50,
-      y: sourceGatePos ? sourceGatePos.y : topOffset + idx * rowSpacing,
+      x: outputX,
+      y: sourceGatePos ? sourceGatePos.y : (hasPositionData ? gridOffsetY + idx * gridCellHeight : topOffset + idx * rowSpacing),
       type: 'output',
     }
   }
@@ -168,17 +226,31 @@ const CircuitRenderer = ({ circuit }: { circuit: Circuit }) => {
     }
   })
 
-  // SVG sizes
-  const svgWidth = Math.max(600, rightX + 80)
+  // SVG sizes - adjust based on layout mode
+  const svgWidth = hasPositionData 
+    ? Math.max(700, gridOffsetX + (5 * gridCellWidth)) 
+    : Math.max(600, rightX + 80)
   const maxRows = Math.max(inputCount, gateCount, outputCount)
-  const svgHeight = Math.max(250, topOffset + maxRows * rowSpacing)
+  const svgHeight = hasPositionData
+    ? Math.max(400, gridOffsetY + maxRows * gridCellHeight + 50)
+    : Math.max(250, topOffset + maxRows * rowSpacing)
 
-  // Helper: bezier path for nice curved wires
-  const bezier = (x1: number, y1: number, x2: number, y2: number, curvature = 0.5) => {
-    const dx = Math.max(40, Math.abs(x2 - x1) * curvature)
+  // Helper: bezier path for nice curved wires with increased tension
+  const bezier = (
+    x1: number, 
+    y1: number, 
+    x2: number, 
+    y2: number, 
+    curvature = 0.65, // Increased from 0.5 for more horizontal travel
+    verticalOffset = 0 // For vertical fanning
+  ) => {
+    const dx = Math.max(60, Math.abs(x2 - x1) * curvature) // Increased minimum from 40
     const c1x = x1 + dx
     const c2x = x2 - dx
-    return `M ${x1} ${y1} C ${c1x} ${y1}, ${c2x} ${y2}, ${x2} ${y2}`
+    // Apply vertical offset to control points for fanning effect
+    const c1y = y1 + verticalOffset * 0.3
+    const c2y = y2 + verticalOffset * 0.3
+    return `M ${x1} ${y1} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${x2} ${y2}`
   }
 
   // Draw connection between arbitrary named nodes (input/gate/output)
@@ -192,6 +264,30 @@ const CircuitRenderer = ({ circuit }: { circuit: Circuit }) => {
     let endX = to.x
     let endY = to.y
 
+    // Determine wire color based on the source
+    let wireColor: string
+    let markerId: string
+    
+    if (from.type === 'gate') {
+      // Wire coming from a gate output - use the gate's color
+      const sourceGate = circuit.gates.find(g => g.id === fromId || g.output === fromId)
+      if (sourceGate) {
+        wireColor = getGateColor(sourceGate.type)
+        markerId = `arrowhead-gate-${sourceGate.type}`
+      } else {
+        wireColor = '#6b7280'
+        markerId = 'arrowhead-intermediate'
+      }
+    } else if (from.type === 'input' && circuit.inputs.includes(fromId)) {
+      // Wire from input variable - use input color
+      wireColor = getWireColor(fromId, circuit.inputs)
+      markerId = `arrowhead-${fromId}`
+    } else {
+      // Default for other cases
+      wireColor = '#6b7280'
+      markerId = 'arrowhead-intermediate'
+    }
+    
     // Offset start to the right of inputs / right edge of gates
     if (from.type === 'input') {
       startX += 20
@@ -213,18 +309,33 @@ const CircuitRenderer = ({ circuit }: { circuit: Circuit }) => {
       endX -= 20
     }
 
-    const pathD = bezier(startX, startY, endX, endY)
+    // Calculate vertical offset for fanning (spreads parallel wires)
+    const fanningFactor = totalInputs > 1 ? (inputIndex - (totalInputs - 1) / 2) * 8 : 0
+    
+    const pathD = bezier(startX, startY, endX, endY, 0.65, fanningFactor)
+    
     return (
-      <path
-        key={`${fromId}-${toId}-${inputIndex}`}
-        d={pathD}
-        fill="none"
-        stroke="var(--foreground)"
-        strokeWidth={2.5}
-        strokeLinecap="round"
-        strokeOpacity={0.7}
-        markerEnd="url(#arrowhead)"
-      />
+      <g key={`${fromId}-${toId}-${inputIndex}`}>
+        {/* Wire Halo: thick background-colored stroke for visual separation */}
+        <path
+          d={pathD}
+          fill="none"
+          stroke="var(--background)"
+          strokeWidth={8}
+          strokeLinecap="round"
+          strokeOpacity={1}
+        />
+        {/* Actual wire */}
+        <path
+          d={pathD}
+          fill="none"
+          stroke={wireColor}
+          strokeWidth={3}
+          strokeLinecap="round"
+          strokeOpacity={0.85}
+          markerEnd={`url(#${markerId})`}
+        />
+      </g>
     )
   }
 
@@ -237,8 +348,47 @@ const CircuitRenderer = ({ circuit }: { circuit: Circuit }) => {
 
       <svg width={svgWidth} height={svgHeight} style={{ minWidth: svgWidth }}>
         <defs>
+          {/* Create colored arrowhead markers for each input */}
+          {circuit.inputs.map((input) => {
+            const color = getWireColor(input, circuit.inputs)
+            return (
+              <marker
+                key={`marker-${input}`}
+                id={`arrowhead-${input}`}
+                markerWidth="10"
+                markerHeight="10"
+                refX="10"
+                refY="5"
+                orient="auto"
+                markerUnits="strokeWidth"
+              >
+                <polygon points="0 0, 10 5, 0 10" fill={color} fillOpacity="0.85" />
+              </marker>
+            )
+          })}
+          
+          {/* Create colored arrowhead markers for each gate type */}
+          {['AND', 'OR', 'NOT', 'NAND', 'NOR', 'XOR', 'XNOR', 'BUFFER'].map((gateType) => {
+            const color = getGateColor(gateType)
+            return (
+              <marker
+                key={`marker-gate-${gateType}`}
+                id={`arrowhead-gate-${gateType}`}
+                markerWidth="10"
+                markerHeight="10"
+                refX="10"
+                refY="5"
+                orient="auto"
+                markerUnits="strokeWidth"
+              >
+                <polygon points="0 0, 10 5, 0 10" fill={color} fillOpacity="0.9" />
+              </marker>
+            )
+          })}
+          
+          {/* Gray arrowhead for intermediate signals */}
           <marker
-            id="arrowhead"
+            id="arrowhead-intermediate"
             markerWidth="10"
             markerHeight="10"
             refX="10"
@@ -246,7 +396,7 @@ const CircuitRenderer = ({ circuit }: { circuit: Circuit }) => {
             orient="auto"
             markerUnits="strokeWidth"
           >
-            <polygon points="0 0, 10 5, 0 10" fill="var(--foreground)" fillOpacity="0.7" />
+            <polygon points="0 0, 10 5, 0 10" fill="#6b7280" fillOpacity="0.85" />
           </marker>
 
           {/* small soft shadow for wires */}

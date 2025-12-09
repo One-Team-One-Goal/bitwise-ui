@@ -523,9 +523,7 @@ function RouteComponent() {
     return 'text-red-600 dark:text-red-400'
   }
 
-  const formatTagName = (tag: string) => {
-    return tag.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())
-  }
+
 
   const hasVisualElements = () => {
     if (typeof question.stem === 'object' && question.stem !== null) {
@@ -594,7 +592,7 @@ function RouteComponent() {
 
         {!showResult ? (
           <Card className="w-full border-0 shadow-none p-0 m-0 pb-10">
-            <CardContent className="p-0 bg-transparent">
+            <CardContent className="p-4 bg-transparent">
               <div>
                 <div className="flex justify-between pb-4">
                   <div className="flex items-center flex-wrap gap-2">
@@ -726,6 +724,8 @@ function RouteComponent() {
                     <p className="text-sm text-blue-800 dark:text-blue-200 leading-relaxed">
                       {
                         question.options.find(
+                          (o: any) => o.id === answers[question.id ?? current]
+                        )?.rationale || question.options.find(
                           (o: any) => o.id === answers[question.id ?? current]
                         )?.explanation
                       }

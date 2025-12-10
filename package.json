@@ -75,7 +75,7 @@
     "react-hook-form": "^7.62.0",
     "react-icons": "^5.5.0",
     "react-syntax-highlighter": "^15.6.6",
-    "recharts": "^2.15.3",
+    "recharts": "^2.15.4",
     "serve": "^14.2.4",
     "sonner": "^2.0.5",
     "tailwind-merge": "^3.3.0",

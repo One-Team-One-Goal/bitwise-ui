@@ -112,36 +112,151 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick, 
   };
 
   // Calculate group connections for visual borders with proper wraparound
-  const getGroupConnections = (row: number, col: number, group?: KMapGroup) => {
+  // This function takes STORAGE indices and checks if visually adjacent cells are in the group
+  // Key insight: 
+  //   - Rows: storage uses Gray code order [0,1,3,2] for visual [0,1,2,3]
+  //   - Columns: storage is sequential (same as visual)
+  const getGroupConnections = (storageRow: number, col: number, group?: KMapGroup) => {
     if (!group) return {};
 
     const connections = { top: false, right: false, bottom: false, left: false };
     
-    // Check if adjacent cells are in the same group
+    // Check if a cell (by storage indices) is in the group
     const isInGroup = (r: number, c: number) => 
       group.cells.some(cell => cell.riga === r && cell.col === c);
 
-    // Check top connection (including wraparound for rows)
-    const topRow = row === 0 ? rows - 1 : row - 1;
-    if (isInGroup(topRow, col)) {
+    // For 4-row maps with Gray code, we need to map visual adjacency to storage indices
+    // Visual order: [0, 1, 2, 3] = row labels [A'B', A'B, AB, AB']
+    // Storage order: [0, 1, 3, 2] = Gray code [00, 01, 11, 10]
+    // So: visual 0 → storage 0, visual 1 → storage 1, visual 2 → storage 3, visual 3 → storage 2
+    // 
+    // To find what's visually above/below a storage row, we need to:
+    // 1. Convert storage → visual
+    // 2. Add/subtract 1 (with wrap)
+    // 3. Convert visual → storage
+    
+    const storageToVisualRow = (storageIdx: number): number => {
+      if (rows === 4) {
+        // storage [0,1,2,3] → visual [0,1,3,2]
+        const mapping = [0, 1, 3, 2];
+        return mapping[storageIdx] ?? storageIdx;
+      }
+      return storageIdx;
+    };
+    
+    const visualToStorageRow = (visualIdx: number): number => {
+      if (rows === 4) {
+        // visual [0,1,2,3] → storage [0,1,3,2]
+        const mapping = [0, 1, 3, 2];
+        return mapping[visualIdx] ?? visualIdx;
+      }
+      return visualIdx;
+    };
+    
+    const getVisuallyAdjacentStorageRow = (storageIdx: number, direction: 'top' | 'bottom'): number => {
+      const visualIdx = storageToVisualRow(storageIdx);
+      let adjacentVisualIdx: number;
+      
+      if (direction === 'top') {
+        adjacentVisualIdx = visualIdx === 0 ? rows - 1 : visualIdx - 1;
+      } else {
+        adjacentVisualIdx = visualIdx === rows - 1 ? 0 : visualIdx + 1;
+      }
+      
+      return visualToStorageRow(adjacentVisualIdx);
+    };
+
+    // Check top connection (visually adjacent row above)
+    const topStorageRow = getVisuallyAdjacentStorageRow(storageRow, 'top');
+    if (isInGroup(topStorageRow, col)) {
       connections.top = true;
     }
 
-    // Check right connection (including wraparound for columns)
-    const rightCol = col === cols - 1 ? 0 : col + 1;
-    if (isInGroup(row, rightCol)) {
-      connections.right = true;
-    }
-
-    // Check bottom connection (including wraparound for rows)
-    const bottomRow = row === rows - 1 ? 0 : row + 1;
-    if (isInGroup(bottomRow, col)) {
+    // Check bottom connection (visually adjacent row below)
+    const bottomStorageRow = getVisuallyAdjacentStorageRow(storageRow, 'bottom');
+    if (isInGroup(bottomStorageRow, col)) {
       connections.bottom = true;
     }
 
-    // Check left connection (including wraparound for columns)
+    // Columns are stored sequentially (no Gray code), so simple +1/-1 with wrap
+    const rightCol = col === cols - 1 ? 0 : col + 1;
+    if (isInGroup(storageRow, rightCol)) {
+      connections.right = true;
+    }
+
     const leftCol = col === 0 ? cols - 1 : col - 1;
-    if (isInGroup(row, leftCol)) {
+    if (isInGroup(storageRow, leftCol)) {
+      connections.left = true;
+    }
+
+    return connections;
+  };
+
+  // Special version for 5-variable K-maps where we render two separate 4x4 tables
+  // visualCol is 0-3 within each table, tableIndex is 0 (E=0) or 1 (E=1)
+  const getGroupConnections5Var = (storageRow: number, visualCol: number, group?: KMapGroup, tableIndex?: number) => {
+    if (!group) return {};
+
+    const connections = { top: false, right: false, bottom: false, left: false };
+    
+    // Calculate the actual storage column
+    const actualCol = tableIndex === 1 ? visualCol + 4 : visualCol;
+    
+    // Check if a cell (by storage indices) is in the group
+    const isInGroup = (r: number, c: number) => 
+      group.cells.some(cell => cell.riga === r && cell.col === c);
+
+    // Row adjacency (same as regular version)
+    const storageToVisualRow = (storageIdx: number): number => {
+      const mapping = [0, 1, 3, 2]; // 4 rows always for 5-var
+      return mapping[storageIdx] ?? storageIdx;
+    };
+    
+    const visualToStorageRow = (visualIdx: number): number => {
+      const mapping = [0, 1, 3, 2];
+      return mapping[visualIdx] ?? visualIdx;
+    };
+    
+    const getVisuallyAdjacentStorageRow = (storageIdx: number, direction: 'top' | 'bottom'): number => {
+      const visualIdx = storageToVisualRow(storageIdx);
+      let adjacentVisualIdx: number;
+      
+      if (direction === 'top') {
+        adjacentVisualIdx = visualIdx === 0 ? 3 : visualIdx - 1;
+      } else {
+        adjacentVisualIdx = visualIdx === 3 ? 0 : visualIdx + 1;
+      }
+      
+      return visualToStorageRow(adjacentVisualIdx);
+    };
+
+    // Check top connection
+    const topStorageRow = getVisuallyAdjacentStorageRow(storageRow, 'top');
+    if (isInGroup(topStorageRow, actualCol)) {
+      connections.top = true;
+    }
+
+    // Check bottom connection
+    const bottomStorageRow = getVisuallyAdjacentStorageRow(storageRow, 'bottom');
+    if (isInGroup(bottomStorageRow, actualCol)) {
+      connections.bottom = true;
+    }
+
+    // Column adjacency within each 4-column table with wraparound
+    // For 5-var, columns 0-3 wrap within E=0, columns 4-7 wrap within E=1
+    const colOffset = tableIndex === 1 ? 4 : 0;
+    
+    // Right neighbor (wrap within the table)
+    const rightVisualCol = (visualCol + 1) % 4;
+    const rightActualCol = colOffset + rightVisualCol;
+    if (isInGroup(storageRow, rightActualCol)) {
+      connections.right = true;
+    }
+
+    // Left neighbor (wrap within the table)
+    const leftVisualCol = (visualCol + 3) % 4; // +3 is same as -1 mod 4
+    const leftActualCol = colOffset + leftVisualCol;
+    if (isInGroup(storageRow, leftActualCol)) {
       connections.left = true;
     }
 
@@ -197,11 +312,11 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick, 
                   </div>
                   
                   {/* Data Cells - columns 0-3 for E=0 */}
-                  {Array.from({ length: 4 }).map((_, colIndex) => {
-                    const cell = squares[storageRowIndex]?.[colIndex]; // Access columns 0-3
-                    const group = getCellGroup(storageRowIndex, colIndex, 0);
-                    const connections = getGroupConnections(storageRowIndex, colIndex, group);
-                    const coordinates = getCellCoordinates(storageRowIndex, colIndex);
+                  {Array.from({ length: 4 }).map((_, visualColIndex) => {
+                    const cell = squares[storageRowIndex]?.[visualColIndex]; // Access columns 0-3
+                    const group = getCellGroup(storageRowIndex, visualColIndex, 0);
+                    const connections = getGroupConnections5Var(storageRowIndex, visualColIndex, group, 0);
+                    const coordinates = getCellCoordinates(storageRowIndex, visualColIndex);
                     
                     if (!cell) return null;
 
@@ -212,9 +327,9 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick, 
 
                     return (
                       <Square
-                        key={`e0-${visualRowIndex}-${colIndex}`}
+                        key={`e0-${visualRowIndex}-${visualColIndex}`}
                         value={cell[0]}
-                        onClick={() => onCellClick(storageRowIndex, colIndex)}
+                        onClick={() => onCellClick(storageRowIndex, visualColIndex)}
                         groupColor={shouldShowGroup ? group?.color : undefined}
                         isGrouped={shouldShowGroup}
                         groupConnections={shouldShowGroup ? connections : {}}
@@ -281,11 +396,13 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick, 
                   </div>
                   
                   {/* Data Cells - columns 4-7 for E=1 */}
-                  {Array.from({ length: 4 }).map((_, colIndex) => {
-                    const actualCol = colIndex + 4; // Offset by 4 to access columns 4-7
+                  {Array.from({ length: 4 }).map((_, visualColIndex) => {
+                    const actualCol = visualColIndex + 4; // Offset by 4 to access columns 4-7
                     const cell = squares[storageRowIndex]?.[actualCol];
-                    const group = getCellGroup(storageRowIndex, colIndex, 1);
-                    const connections = getGroupConnections(storageRowIndex, colIndex, group);
+                    // Use actualCol for group lookup since groups store actual column indices
+                    const group = getCellGroup(storageRowIndex, actualCol, 1);
+                    // Use visualColIndex for connections since we render in a 4-column grid
+                    const connections = getGroupConnections5Var(storageRowIndex, visualColIndex, group, 1);
                     const coordinates = getCellCoordinates(storageRowIndex, actualCol);
                     
                     if (!cell) return null;
@@ -297,7 +414,7 @@ const Map: React.FC<MapProps> = ({ squares, groups, variableCount, onCellClick, 
 
                     return (
                       <Square
-                        key={`e1-${visualRowIndex}-${colIndex}`}
+                        key={`e1-${visualRowIndex}-${visualColIndex}`}
                         value={cell[0]}
                         onClick={() => onCellClick(storageRowIndex, actualCol)}
                         groupColor={shouldShowGroup ? group?.color : undefined}
@@ -428,10 +545,33 @@ interface GroupOverlayProps {
 const GroupOverlay: React.FC<GroupOverlayProps> = ({ group, cellSize, headerOffset, rows, cols }) => {
   if (group.cells.length === 0) return null;
 
-  // Detect wraparound patterns
+  // Gray code mapping: convert storage row index to visual row index
+  // ONLY rows use Gray code storage; columns are stored sequentially
+  // For 4 rows: storage [0,1,2,3] -> visual [0,1,3,2] (Gray code order in display)
+  const storageToVisualRow = (storageIdx: number): number => {
+    if (rows === 4) {
+      // storage 0 -> visual 0
+      // storage 1 -> visual 1  
+      // storage 2 -> visual 3
+      // storage 3 -> visual 2
+      const mapping = [0, 1, 3, 2];
+      return mapping[storageIdx] ?? storageIdx;
+    }
+    return storageIdx;
+  };
+
+  // Convert all cell positions to visual positions
+  // Note: Only rows need Gray code conversion; columns are sequential
+  const visualCells = group.cells.map(cell => ({
+    ...cell,
+    visualRow: storageToVisualRow(cell.riga),
+    visualCol: cell.col  // Columns don't need conversion
+  }));
+
+  // Detect wraparound patterns using visual positions
   const detectWraparound = () => {
-    const rowSet = new Set(group.cells.map(cell => cell.riga));
-    const colSet = new Set(group.cells.map(cell => cell.col));
+    const rowSet = new Set(visualCells.map(cell => cell.visualRow));
+    const colSet = new Set(visualCells.map(cell => cell.visualCol));
     
     const rowArray = Array.from(rowSet).sort((a, b) => a - b);
     const colArray = Array.from(colSet).sort((a, b) => a - b);

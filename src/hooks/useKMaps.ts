@@ -10,6 +10,7 @@ import {
   solveKarnaugh,
   getDimensions,
 } from "@/utils/karnaugh.utils";
+import { evaluateExpression, type EvaluationResult } from "@/utils/expressionEvaluator";
 
 interface TruthTableRow {
   input: string;
@@ -26,6 +27,8 @@ export const useKMaps = () => {
   const [solution, setSolution] = useState<KMapSolution | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentExpression, setCurrentExpression] = useState<string>('');
+  const [inputMode, setInputMode] = useState<'manual' | 'expression'>('manual');
 
   // Update variables when count changes
   useEffect(() => {
@@ -229,6 +232,65 @@ export const useKMaps = () => {
     setError(null);
   }, []);
 
+  // Handle expression input
+  const handleExpressionApply = useCallback((expression: string) => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      // Get the variables for the current variable count
+      const allVariables = ['A', 'B', 'C', 'D', 'E'];
+      const targetVariables = allVariables.slice(0, variableCount);
+      
+      const result: EvaluationResult = evaluateExpression(expression, targetVariables);
+      
+      if (!result.success || !result.truthTable) {
+        setError(result.error || 'Failed to evaluate expression');
+        setIsLoading(false);
+        return;
+      }
+      
+      // Update truth table with the evaluated values
+      const newTruthTable = truthTable.map((row, index) => ({
+        ...row,
+        output: result.truthTable![index]
+      }));
+      setTruthTable(newTruthTable);
+      
+      // Update K-Map from the new truth table
+      updateKMapFromTruthTable(newTruthTable);
+      
+      // Store the current expression
+      setCurrentExpression(expression);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to parse expression');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [variableCount, truthTable]);
+
+  // Handle setting values from expression input component
+  const handleSetFromExpressionValues = useCallback((values: CellValue[]) => {
+    if (values.length !== Math.pow(2, variableCount)) {
+      setError(`Expected ${Math.pow(2, variableCount)} values, got ${values.length}`);
+      return;
+    }
+    
+    // Update truth table with the values
+    const newTruthTable = truthTable.map((row, index) => ({
+      ...row,
+      output: values[index]
+    }));
+    setTruthTable(newTruthTable);
+    
+    // Update K-Map from the new truth table
+    updateKMapFromTruthTable(newTruthTable);
+  }, [variableCount, truthTable]);
+
+  const handleInputModeChange = useCallback((mode: 'manual' | 'expression') => {
+    setInputMode(mode);
+  }, []);
+
   return {
     // State
     variables,
@@ -239,6 +301,8 @@ export const useKMaps = () => {
     solution,
     isLoading,
     error,
+    currentExpression,
+    inputMode,
 
     // Handlers
     handleVariableCountChange,
@@ -247,6 +311,9 @@ export const useKMaps = () => {
     handleTruthTableChange,
     handleSetAllCells,
     resetKMap,
-    clearError
+    clearError,
+    handleExpressionApply,
+    handleSetFromExpressionValues,
+    handleInputModeChange
   };
 };

@@ -267,7 +267,9 @@ export const solveKarnaugh = (
   }
 };
 
-// Enhanced grouping algorithm with better don't care optimization
+// Enhanced grouping algorithm with proper K-map adjacency handling
+// In K-maps, adjacency follows Gray code, meaning cells that differ by only 1 bit are adjacent
+// This includes wraparound: last row/col is adjacent to first row/col
 const findAllGroups = (
   squares: KMapMatrix,
   rows: number,
@@ -275,40 +277,164 @@ const findAllGroups = (
   targetValue: CellValue,
   typeMap: number
 ): GroupCell[][] => {
-  // For better optimization, try to find all possible groups and pick the minimal set
   const allPossibleGroups: GroupCell[][] = [];
-  
-  // Find all possible groups starting from largest size
-  const maxGroupSize = rows * cols;
   
   // For 5 variables, we can have cross-table groups
   const canHaveCrossTableGroups = typeMap === 5;
   
+  // Effective dimensions for grouping (for 5-var, treat each table separately first)
+  const effectiveCols = typeMap === 5 ? 4 : cols;
+  
+  // Find all possible valid groups of each size (from largest to smallest)
+  // Valid sizes are powers of 2: 16, 8, 4, 2, 1 for 4-var; 8, 4, 2, 1 for 3-var; etc.
+  const maxGroupSize = rows * effectiveCols;
+  
   for (let groupSize = maxGroupSize; groupSize >= 1; groupSize = Math.floor(groupSize / 2)) {
     if (!isPowerOfTwo(2, groupSize)) continue;
     
-    // Find all groups of this size without marking as covered yet
-    const tempCovered: boolean[][] = Array(rows).fill(null).map(() => Array(cols).fill(false));
     const groupsOfSize: GroupCell[][] = [];
     
+    // For 5 variables, try cross-table groups first (where E varies)
     if (canHaveCrossTableGroups && groupSize >= 2) {
-      // For 5 variables, try to find cross-table groups (E varies)
-      // These groups have identical patterns in both E=0 (cols 0-3) and E=1 (cols 4-7) tables
       findCrossTableGroups(squares, rows, targetValue, groupSize / 2, groupsOfSize, typeMap);
     }
     
-    // Find groups within each table
-    findGroupsOfExactSize(squares, rows, cols, targetValue, groupSize, tempCovered, groupsOfSize, typeMap);
+    // Find all rectangular groups with wraparound support
+    findAllRectangularGroups(squares, rows, cols, targetValue, groupSize, groupsOfSize, typeMap);
     
-    // Add all found groups to possible groups
     allPossibleGroups.push(...groupsOfSize);
   }
   
-  // Now select the minimal set that covers all essential minterms
+  // Select the minimal set that covers all essential minterms
   const essentialMinterms = getEssentialMinterms(squares, rows, cols, targetValue);
   const selectedGroups = selectMinimalGroupSet(allPossibleGroups, essentialMinterms);
   
   return selectedGroups;
+};
+
+// Find all valid rectangular groups of a specific size, including wraparound
+const findAllRectangularGroups = (
+  squares: KMapMatrix,
+  rows: number,
+  cols: number,
+  targetValue: CellValue,
+  size: number,
+  groups: GroupCell[][],
+  typeMap: number
+) => {
+  // For 5 variables, process each table (E=0 and E=1) separately
+  if (typeMap === 5) {
+    // E=0 table (columns 0-3)
+    findGroupsInRegion(squares, rows, 0, 4, targetValue, size, groups, 0);
+    // E=1 table (columns 4-7)
+    findGroupsInRegion(squares, rows, 4, 4, targetValue, size, groups, 1);
+  } else {
+    findGroupsInRegion(squares, rows, 0, cols, targetValue, size, groups, undefined);
+  }
+};
+
+// Find groups within a specific region of the K-map
+const findGroupsInRegion = (
+  squares: KMapMatrix,
+  rows: number,
+  colStart: number,
+  numCols: number,
+  targetValue: CellValue,
+  size: number,
+  groups: GroupCell[][],
+  tableIndex: number | undefined
+) => {
+  const factors = getFactors(size);
+  const seenGroups = new Set<string>();
+  
+  for (const [height, width] of factors) {
+    // Skip invalid dimensions for this region
+    if (height > rows || width > numCols) continue;
+    
+    // Try all possible starting positions with wraparound
+    for (let startRow = 0; startRow < rows; startRow++) {
+      for (let startCol = 0; startCol < numCols; startCol++) {
+        const group = tryGroupWithWraparound(
+          squares, rows, colStart, numCols, 
+          startRow, startCol, height, width, 
+          targetValue, tableIndex
+        );
+        
+        if (group.length === size) {
+          // Create a canonical key for this group to avoid duplicates
+          const sortedCells = [...group].sort((a, b) => 
+            a.riga !== b.riga ? a.riga - b.riga : a.col - b.col
+          );
+          const key = sortedCells.map(c => `${c.riga},${c.col}`).join('|');
+          
+          if (!seenGroups.has(key)) {
+            seenGroups.add(key);
+            groups.push(group);
+          }
+        }
+      }
+    }
+  }
+};
+
+// Try to form a group starting at a position with wraparound support
+// IMPORTANT: Uses VISUAL coordinates for adjacency, converts to STORAGE for data access
+const tryGroupWithWraparound = (
+  squares: KMapMatrix,
+  totalRows: number,
+  colStart: number,
+  numCols: number,
+  startRow: number,  // This is VISUAL row index
+  startCol: number,  // This is relative column within the region (0 to numCols-1)
+  height: number,
+  width: number,
+  targetValue: CellValue,
+  tableIndex: number | undefined
+): GroupCell[] => {
+  const group: GroupCell[] = [];
+  let hasTargetValue = false;
+  
+  // Gray code mapping for 4 rows: visual [0,1,2,3] -> storage [0,1,3,2]
+  const visualToStorageRow = (visualRow: number): number => {
+    if (totalRows === 4) {
+      const mapping = [0, 1, 3, 2];
+      return mapping[visualRow % 4];
+    }
+    return visualRow;
+  };
+  
+  for (let dr = 0; dr < height; dr++) {
+    for (let dc = 0; dc < width; dc++) {
+      // Use modulo for wraparound on VISUAL coordinates
+      const visualRow = (startRow + dr) % totalRows;
+      const relativeCol = (startCol + dc) % numCols;
+      
+      // Convert to STORAGE coordinates
+      const storageRow = visualToStorageRow(visualRow);
+      const storageCol = colStart + relativeCol;
+      
+      const cellValue = squares[storageRow]?.[storageCol]?.[0];
+      
+      // Cell must have target value or be don't care ('X')
+      if (cellValue !== targetValue && cellValue !== 'X') {
+        return [];
+      }
+      
+      if (cellValue === targetValue) {
+        hasTargetValue = true;
+      }
+      
+      // Store using STORAGE coordinates (since that's how groups are looked up)
+      group.push({ 
+        riga: storageRow, 
+        col: storageCol,
+        table: tableIndex
+      });
+    }
+  }
+  
+  // Group must contain at least one cell with the target value
+  return hasTargetValue ? group : [];
 };
 
 // Get all minterms that must be covered (cells with target value)
@@ -343,29 +469,37 @@ const findCrossTableGroups = (
 ) => {
   if (typeMap !== 5) return; // Only for 5-variable maps
   
+  // Gray code mapping for 4 rows: visual [0,1,2,3] -> storage [0,1,3,2]
+  const visualToStorageRow = (visualRow: number): number => {
+    const mapping = [0, 1, 3, 2];
+    return mapping[visualRow % 4];
+  };
+  
   // Try to find matching patterns in columns 0-3 (E=0) and 4-7 (E=1)
   const factors = getFactors(sizePerTable);
   
   for (const [height, width] of factors) {
-    // Try all possible positions in the 4x4 sub-map
-    for (let startRow = 0; startRow < rows; startRow++) {
+    // Try all possible VISUAL positions in the 4x4 sub-map
+    for (let startVisualRow = 0; startVisualRow < rows; startVisualRow++) {
       for (let startCol = 0; startCol < 4; startCol++) {
         // Check if the same pattern exists in both E=0 and E=1 tables
         const e0Group: GroupCell[] = [];
         const e1Group: GroupCell[] = [];
         let valid = true;
         
-        // Use wraparound for both horizontal and vertical
+        // Use wraparound for both horizontal and vertical (in VISUAL space)
         for (let r = 0; r < height && valid; r++) {
-          const row = (startRow + r) % rows;
+          const visualRow = (startVisualRow + r) % rows;
+          const storageRow = visualToStorageRow(visualRow);
+          
           for (let c = 0; c < width && valid; c++) {
             const col = (startCol + c) % 4;
             
             const e0Col = col; // E=0 table: columns 0-3
             const e1Col = col + 4; // E=1 table: columns 4-7
             
-            const e0Cell = squares[row]?.[e0Col]?.[0];
-            const e1Cell = squares[row]?.[e1Col]?.[0];
+            const e0Cell = squares[storageRow]?.[e0Col]?.[0];
+            const e1Cell = squares[storageRow]?.[e1Col]?.[0];
             
             // Both cells must have target value or be don't care
             if ((e0Cell !== targetValue && e0Cell !== 'X') ||
@@ -374,8 +508,8 @@ const findCrossTableGroups = (
               break;
             }
             
-            e0Group.push({ riga: row, col: e0Col, table: 0 });
-            e1Group.push({ riga: row, col: e1Col, table: 1 });
+            e0Group.push({ riga: storageRow, col: e0Col, table: 0 });
+            e1Group.push({ riga: storageRow, col: e1Col, table: 1 });
           }
         }
         
@@ -395,8 +529,18 @@ const selectMinimalGroupSet = (
 ): GroupCell[][] => {
   if (essentialMinterms.length === 0) return [];
   
-  // Sort groups by size (largest first) for greedy selection
-  allGroups.sort((a, b) => b.length - a.length);
+  // Sort groups by size (largest first), then by number of essential minterms covered
+  allGroups.sort((a, b) => {
+    if (b.length !== a.length) return b.length - a.length;
+    // Tie-breaker: prefer groups that cover more essential minterms
+    const aEssential = a.filter(cell => 
+      essentialMinterms.some(m => m.row === cell.riga && m.col === cell.col)
+    ).length;
+    const bEssential = b.filter(cell => 
+      essentialMinterms.some(m => m.row === cell.riga && m.col === cell.col)
+    ).length;
+    return bEssential - aEssential;
+  });
   
   const selectedGroups: GroupCell[][] = [];
   const coveredMinterms = new Set<string>();
@@ -407,7 +551,8 @@ const selectMinimalGroupSet = (
     
     // Check if this group covers any uncovered essential minterms
     for (const cell of group) {
-      const key = `${cell.riga},${cell.col},${cell.table ?? ''}`;
+      // Use only row,col for the key (table is for visualization only)
+      const key = `${cell.riga},${cell.col}`;
       const isEssential = essentialMinterms.some(m => m.row === cell.riga && m.col === cell.col);
       
       if (isEssential && !coveredMinterms.has(key)) {
@@ -421,7 +566,7 @@ const selectMinimalGroupSet = (
       
       // Mark all minterms covered by this group
       for (const cell of group) {
-        const key = `${cell.riga},${cell.col},${cell.table ?? ''}`;
+        const key = `${cell.riga},${cell.col}`;
         const isEssential = essentialMinterms.some(m => m.row === cell.riga && m.col === cell.col);
         if (isEssential) {
           coveredMinterms.add(key);
@@ -438,132 +583,6 @@ const selectMinimalGroupSet = (
   return selectedGroups;
 };
 
-const findGroupsOfExactSize = (
-  squares: KMapMatrix,
-  rows: number,
-  cols: number,
-  targetValue: CellValue,
-  size: number,
-  covered: boolean[][],
-  groups: GroupCell[][],
-  typeMap: number
-) => {
-  const factors = getFactors(size);
-  
-  for (const [height, width] of factors) {
-    // Try normal rectangular groups
-    for (let r = 0; r <= rows - height; r++) {
-      for (let c = 0; c <= cols - width; c++) {
-        const group = tryRectangularGroup(r, c, height, width, squares, rows, cols, targetValue, covered);
-        if (group.length === size) {
-          groups.push(group);
-          markGroupAsCovered(group, covered);
-        }
-      }
-    }
-    
-    // Try wraparound groups for 3+ variable maps
-    if (typeMap >= 3 && cols === 4) {
-      // Horizontal wraparound (columns 0 and 3 are adjacent in Gray code)
-      if (width === 2) {
-        for (let r = 0; r <= rows - height; r++) {
-          const wrapGroup = tryHorizontalWrapGroup(r, height, squares, rows, targetValue, covered);
-          if (wrapGroup.length === size) {
-            groups.push(wrapGroup);
-            markGroupAsCovered(wrapGroup, covered);
-          }
-        }
-      }
-    }
-    
-    // Try vertical wraparound for 4-variable maps
-    if (typeMap === 4 && rows === 4 && height === 2) {
-      for (let c = 0; c <= cols - width; c++) {
-        const wrapGroup = tryVerticalWrapGroup(c, width, squares, cols, targetValue, covered);
-        if (wrapGroup.length === size) {
-          groups.push(wrapGroup);
-          markGroupAsCovered(wrapGroup, covered);
-        }
-      }
-    }
-  }
-};
-
-const tryHorizontalWrapGroup = (
-  startRow: number,
-  height: number,
-  squares: KMapMatrix,
-  rows: number,
-  targetValue: CellValue,
-  covered: boolean[][]
-): GroupCell[] => {
-  const group: GroupCell[] = [];
-  
-  // Check if cells at column 0 and column 3 form a valid wrap group
-  for (let r = startRow; r < startRow + height && r < rows; r++) {
-    if (covered[r][0] || covered[r][3] ||
-        squares[r][0][0] !== targetValue || squares[r][3][0] !== targetValue) {
-      return [];
-    }
-    group.push({ riga: r, col: 0 });
-    group.push({ riga: r, col: 3 });
-  }
-  
-  return group;
-};
-
-const tryVerticalWrapGroup = (
-  startCol: number,
-  width: number,
-  squares: KMapMatrix,
-  cols: number,
-  targetValue: CellValue,
-  covered: boolean[][]
-): GroupCell[] => {
-  const group: GroupCell[] = [];
-  
-  // Check if cells at row 0 and row 3 form a valid wrap group
-  for (let c = startCol; c < startCol + width && c < cols; c++) {
-    if (covered[0][c] || covered[3][c] ||
-        squares[0][c][0] !== targetValue || squares[3][c][0] !== targetValue) {
-      return [];
-    }
-    group.push({ riga: 0, col: c });
-    group.push({ riga: 3, col: c });
-  }
-  
-  return group;
-};
-
-const tryRectangularGroup = (
-  startR: number,
-  startC: number,
-  height: number,
-  width: number,
-  squares: KMapMatrix,
-  rows: number,
-  cols: number,
-  targetValue: CellValue,
-  covered: boolean[][]
-): GroupCell[] => {
-  const group: GroupCell[] = [];
-  
-  for (let r = startR; r < startR + height && r < rows; r++) {
-    for (let c = startC; c < startC + width && c < cols; c++) {
-      const cellValue = squares[r][c][0];
-      
-      // Standard K-Map logic: accept target value OR don't care ('X') values
-      // Don't care values can be included in groups when beneficial for optimization
-      if (covered[r][c] || (cellValue !== targetValue && cellValue !== 'X')) {
-        return [];
-      }
-      group.push({ riga: r, col: c });
-    }
-  }
-  
-  return group;
-};
-
 const getFactors = (n: number): [number, number][] => {
   const factors: [number, number][] = [];
   for (let i = 1; i <= Math.sqrt(n); i++) {
@@ -575,12 +594,6 @@ const getFactors = (n: number): [number, number][] => {
     }
   }
   return factors.sort((a, b) => b[0] * b[1] - a[0] * a[1]); // Prefer larger groups
-};
-
-const markGroupAsCovered = (group: GroupCell[], covered: boolean[][]) => {
-  for (const cell of group) {
-    covered[cell.riga][cell.col] = true;
-  }
 };
 
 const generateSolution = (

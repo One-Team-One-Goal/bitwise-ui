@@ -174,9 +174,62 @@ export const useCircuitSimulator = () => {
     }
 
     const component = ComponentFactory.createComponent(type, position);
+    
+    // Auto-assign labels A, B, C, D... to input components (switches, buttons, etc.)
+    const inputTypes: ComponentType[] = ['SWITCH', 'PUSH_BUTTON', 'CLOCK'];
+    if (inputTypes.includes(type)) {
+      // Get existing input labels to determine next available letter
+      const existingLabels = new Set<string>();
+      circuitState.components
+        .filter(c => inputTypes.includes(c.type))
+        .forEach(c => {
+          if (c.label) existingLabels.add(c.label);
+        });
+      
+      // Find next available letter (A, B, C, ...)
+      const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      let nextLabel = '';
+      for (let i = 0; i < alphabet.length; i++) {
+        if (!existingLabels.has(alphabet[i])) {
+          nextLabel = alphabet[i];
+          break;
+        }
+      }
+      
+      // If all letters used, use numbered labels
+      if (!nextLabel) {
+        let counter = 1;
+        while (existingLabels.has(`X${counter}`)) counter++;
+        nextLabel = `X${counter}`;
+      }
+      
+      component.label = nextLabel;
+    }
+    
+    // Auto-assign labels Y1, Y2, Y3... to output components (LEDs, etc.)
+    const outputTypes: ComponentType[] = ['LED', 'SEVEN_SEGMENT', 'DIGITAL_DISPLAY'];
+    if (outputTypes.includes(type)) {
+      const existingOutputLabels = new Set<string>();
+      circuitState.components
+        .filter(c => outputTypes.includes(c.type))
+        .forEach(c => {
+          if (c.label) existingOutputLabels.add(c.label);
+        });
+      
+      // Find next available output label (Y, Y1, Y2, ...)
+      let nextLabel = 'Y';
+      if (existingOutputLabels.has('Y')) {
+        let counter = 1;
+        while (existingOutputLabels.has(`Y${counter}`)) counter++;
+        nextLabel = `Y${counter}`;
+      }
+      
+      component.label = nextLabel;
+    }
+    
     setCircuitState(prev => ({ ...prev, components: [...prev.components, component] }));
     return component;
-  }, []);
+  }, [circuitState.components]);
 
   const removeComponent = useCallback((componentId: string) => {
     setCircuitState(prev => {

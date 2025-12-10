@@ -1,260 +1,250 @@
-<div align="center">
-
-![BitwiseUI Logo](https://raw.githubusercontent.com/shadcn-ui/ui/main/apps/www/public/favicon.ico)
-
-# ⚡ BitwiseUI
-
-### _A Modern React Application Built with Best-in-Class Tools_
-
-**Modern • Type-Safe • Scalable • Performance-First**
-
----
-
-[![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=white)](https://react.dev)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.4-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://typescriptlang.org)
-[![Vite](https://img.shields.io/badge/Vite-6-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev)
-[![TailwindCSS](https://img.shields.io/badge/Tailwind-4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
-
-[![TanStack Router](https://img.shields.io/badge/TanStack_Router-v1-FF4154?style=for-the-badge&logo=reactrouter&logoColor=white)](https://tanstack.com/router)
-[![Zustand](https://img.shields.io/badge/Zustand-4.4-FF6B35?style=for-the-badge&logo=react&logoColor=white)](https://zustand-demo.pmnd.rs)
-[![React Query](https://img.shields.io/badge/React_Query-5.0-EF4444?style=for-the-badge&logo=reactquery&logoColor=white)](https://tanstack.com/query)
-[![Shadcn/UI](https://img.shields.io/badge/Shadcn/UI-Latest-000000?style=for-the-badge&logo=shadcnui&logoColor=white)](https://ui.shadcn.com)
-
-</div>
-
----
-
-## 🎯 **About BitwiseUI**
-
-> **A cutting-edge React application built with modern tools and best practices.** BitwiseUI showcases the power of combining React 19, TypeScript, and a carefully curated tech stack to create fast, maintainable, and scalable web applications.
-
-```bash
-# Coming Soon!
-git clone https://github.com/yourusername/bitwiseui.git
-cd bitwiseui
-npm install && npm run dev
-```
-
----
-
-## ✨ **Features & Architecture**
-
-<table>
-<tr>
-<td width="50%">
-
-### 🏗️ **Technical Foundation**
-
-- 🎯 **Type-Safe Development** - Full TypeScript integration
-- 🛣️ **Advanced Routing** - TanStack Router with type safety
-- 🔄 **Smart State Management** - Zustand + React Query
-- 📡 **API-First Design** - Auto-generated clients from OpenAPI
-- 🎨 **Modern UI System** - Shadcn/UI with Radix primitives
-
-</td>
-<td width="50%">
-
-### ⚡ **Developer Experience**
-
-- 🔥 **Lightning Fast** - Vite 6 with optimized builds
-- 🛡️ **Runtime Safety** - Zod validation everywhere
-- 🎪 **Powerful DevTools** - Built-in debugging tools
-- 🧹 **Code Quality** - ESLint, Prettier, Husky
-- 🚀 **Production Ready** - Docker deployment setup
-
-</td>
-</tr>
-</table>
-
----
-
-## 🔧 **Tech Stack**
-
-<div align="center">
-
-### **Frontend Foundation**
+# Bitwise UI
 
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=white)](https://react.dev)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.4-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://typescriptlang.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://typescriptlang.org)
 [![Vite](https://img.shields.io/badge/Vite-6-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev)
-[![Node.js](https://img.shields.io/badge/Node.js-24-339933?style=flat-square&logo=node.js&logoColor=white)](https://nodejs.org)
+[![TailwindCSS](https://img.shields.io/badge/Tailwind-4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
 
-### **Routing & State**
+Modern frontend application for the Bitwise learning platform, built with React 19, TypeScript, and Vite.
 
-[![TanStack Router](https://img.shields.io/badge/TanStack_Router-v1-FF4154?style=flat-square&logo=reactrouter&logoColor=white)](https://tanstack.com/router)
-[![Zustand](https://img.shields.io/badge/Zustand-4.4-FF6B35?style=flat-square&logo=react&logoColor=white)](https://zustand-demo.pmnd.rs)
-[![React Query](https://img.shields.io/badge/React_Query-5.0-EF4444?style=flat-square&logo=reactquery&logoColor=white)](https://tanstack.com/query)
-[![React Hook Form](https://img.shields.io/badge/React_Hook_Form-7.48-EC5990?style=flat-square&logo=reacthookform&logoColor=white)](https://react-hook-form.com)
+## Overview
 
-### **UI & Styling**
+Bitwise UI is a high-performance, type-safe web application that provides an interactive learning experience for computer science education. The application features a modern design system, responsive layouts, and advanced state management to deliver seamless educational content, assessments, and progress tracking.
 
-[![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
-[![Shadcn/UI](https://img.shields.io/badge/Shadcn/UI-Latest-000000?style=flat-square&logo=shadcnui&logoColor=white)](https://ui.shadcn.com)
-[![Radix UI](https://img.shields.io/badge/Radix_UI-Latest-161618?style=flat-square&logo=radixui&logoColor=white)](https://radix-ui.com)
-[![Lucide](https://img.shields.io/badge/Lucide-Icons-F56565?style=flat-square&logo=lucide&logoColor=white)](https://lucide.dev)
+## Core Features
 
-### **Data & Validation**
+- **Interactive Learning Interface** - Engaging lessons with syntax highlighting and code examples
+- **Adaptive Assessment System** - Dynamic quizzes and evaluations with instant feedback
+- **Progress Tracking Dashboard** - Visual analytics and progress monitoring with charts
+- **Binary/Decimal Calculator** - Interactive tools for number system conversions
+- **Circuit Simulator** - Visual circuit design and simulation tools
+- **AI-Powered Assistance** - Integrated AI chatbot for learning support
+- **Bookmark Management** - Save and organize favorite lessons and topics
+- **Responsive Design** - Mobile-first approach with seamless cross-device experience
+- **Dark Mode Support** - Theme switching with next-themes
+- **Authentication** - Secure user authentication with Supabase
 
-[![Zod](https://img.shields.io/badge/Zod-3.22-3E67B1?style=flat-square&logo=zod&logoColor=white)](https://zod.dev)
-[![Axios](https://img.shields.io/badge/Axios-1.6-5A29E4?style=flat-square&logo=axios&logoColor=white)](https://axios-http.com)
-[![Recharts](https://img.shields.io/badge/Recharts-2.8-8884D8?style=flat-square&logo=chart.js&logoColor=white)](https://recharts.org)
-[![Sonner](https://img.shields.io/badge/Sonner-Toast-FFA500?style=flat-square&logo=react&logoColor=white)](https://sonner.emilkowal.ski)
+## Technology Stack
 
-### **Code Quality & Tooling**
+### Core Framework
+- **React 19** - Latest version with concurrent features
+- **TypeScript 5.8** - Strongly typed development
+- **Vite 6** - Next-generation frontend build tool
 
-[![ESLint](https://img.shields.io/badge/ESLint-8.0-4B32C3?style=flat-square&logo=eslint&logoColor=white)](https://eslint.org)
-[![Prettier](https://img.shields.io/badge/Prettier-3.0-F7B93E?style=flat-square&logo=prettier&logoColor=white)](https://prettier.io)
-[![Husky](https://img.shields.io/badge/Husky-8.0-42B883?style=flat-square&logo=git&logoColor=white)](https://typicode.github.io/husky)
-[![lint-staged](https://img.shields.io/badge/lint--staged-15.0-00D4AA?style=flat-square&logo=git&logoColor=white)](https://github.com/okonet/lint-staged)
+### Routing & State Management
+- **TanStack Router** - Type-safe routing with file-based routing
+- **TanStack Query** - Powerful asynchronous state management
+- **Zustand** - Lightweight state management solution
 
-### **Deployment & Infrastructure**
+### UI & Styling
+- **Tailwind CSS 4** - Utility-first CSS framework
+- **Shadcn/UI** - Re-usable component library
+- **Radix UI** - Accessible component primitives
+- **Lucide React** - Beautiful icon set
+- **Motion (Framer Motion)** - Animation library
+- **Material-UI** - Additional UI components
 
-[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker&logoColor=white)](https://docker.com)
-[![Nginx](https://img.shields.io/badge/Nginx-Production-009639?style=flat-square&logo=nginx&logoColor=white)](https://nginx.org)
-[![dotenv](https://img.shields.io/badge/dotenv-Config-ECD53F?style=flat-square&logo=dotenv&logoColor=black)](https://github.com/motdotla/dotenv)
-[![Kubb](https://img.shields.io/badge/Kubb-OpenAPI-FF6B6B?style=flat-square&logo=swagger&logoColor=white)](https://kubb.dev)
+### Forms & Validation
+- **React Hook Form** - Performant form handling
+- **Zod** - TypeScript-first schema validation
+- **Formik** - Form management utilities
 
-</div>
+### Visualization & Animation
+- **Recharts** - Composable charting library
+- **Lottie React** - After Effects animations
+- **React Confetti** - Celebration animations
+- **Canvas Confetti** - Canvas-based confetti effects
+- **COBE** - WebGL globe visualization
 
----
+### Additional Tools
+- **Axios** - HTTP client for API calls
+- **Supabase** - Backend-as-a-Service for authentication and database
+- **MathLive** - Math equation editor
+- **Intro.js** - User onboarding and tutorials
+- **React Syntax Highlighter** - Code syntax highlighting
 
-## 🚀 **Getting Started**
+### Development Tools
+- **ESLint** - Code linting with TypeScript support
+- **Prettier** - Code formatting
+- **Kubb** - OpenAPI code generation
+- **dotenv** - Environment variable management
+
+## Prerequisites
+
+Before running the application, ensure you have the following installed:
+
+- **Node.js** (v18 or higher)
+- **npm** or **yarn**
+- **Git**
+
+## Getting Started
+
+### 1. Clone the Repository
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/bitwiseui.git
-cd bitwiseui
+git clone <repository-url>
+cd bitwise-ui
+```
 
-# Install dependencies
+### 2. Install Dependencies
+
+```bash
 npm install
-
-# Start development server
-npm run dev
-
-# Visit the application
-# http://localhost:5173
 ```
 
-### **Available Scripts**
+### 3. Environment Configuration
+
+Create a `.env` file in the root directory with the following variables:
+
+```env
+# API Configuration
+VITE_API_URL="http://localhost:3000"
+
+# Supabase Configuration
+VITE_SUPABASE_URL="your-supabase-url"
+VITE_SUPABASE_ANON_KEY="your-supabase-anon-key"
+
+# Feature Flags (optional)
+VITE_ENABLE_DEVTOOLS="true"
+```
+
+### 4. Run the Development Server
 
 ```bash
-npm run dev          # 🔥 Start development server
-npm run build        # 📦 Build for production
-npm run preview      # 👀 Preview production build
-npm run lint         # 🧹 Lint code
-npm run format       # ✨ Format with Prettier
-npm run type-check   # 🔍 TypeScript type checking
-npm run generate-api # 🤖 Generate API clients from OpenAPI
+npm run dev
 ```
 
----
+The application will start at `http://localhost:5173`.
 
-## 📁 **Project Structure**
+### 5. Build for Production
 
-```
-bitwiseui/
-├── 📁 src/
-│   ├── 📁 components/     # 🧩 Reusable UI components
-│   │   ├── 📁 ui/         # 🎨 Shadcn/UI components
-│   │   └── 📁 features/   # 🔧 Feature-specific components
-│   ├── 📁 pages/          # 📄 Page components
-│   ├── 📁 hooks/          # 🪝 Custom React hooks
-│   ├── 📁 stores/         # 🗃️ Zustand stores
-│   ├── 📁 services/       # 🌐 API services & clients
-│   ├── 📁 utils/          # 🛠️ Utility functions
-│   ├── 📁 types/          # 📝 TypeScript definitions
-│   └── 📁 styles/         # 🎨 Global styles
-├── 📁 public/             # 📂 Static assets
-├── 📁 docker/             # 🐳 Docker configurations
-└── 📄 package.json        # 📋 Project dependencies
+```bash
+npm run build
 ```
 
----
+### 6. Preview Production Build
 
-## 🎨 **Key Features**
+```bash
+npm run preview
+```
 
-<div align="center">
+## Available Scripts
 
-| Feature                  | Description                                            | Status         |
-| ------------------------ | ------------------------------------------------------ | -------------- |
-| 🛣️ **Type-Safe Routing** | File-based routing with TanStack Router                | 🚧 In Progress |
-| 🎯 **State Management**  | Zustand for client state, React Query for server state | 🚧 In Progress |
-| 📋 **Form Handling**     | React Hook Form + Zod validation                       | 📋 Planned     |
-| 🎨 **UI Components**     | Shadcn/UI + Radix primitives                           | 📋 Planned     |
-| 🌐 **API Integration**   | Auto-generated clients from OpenAPI specs              | 📋 Planned     |
-| 🔥 **Development Tools** | Vite with optimized developer experience               | ✅ Ready       |
-| 🛡️ **Type Safety**       | End-to-end TypeScript implementation                   | 🚧 In Progress |
-| 🚀 **Deployment**        | Docker + production configurations                     | 📋 Planned     |
+### Development
 
-</div>
+```bash
+npm run dev              # Start development server with hot reload
+npm run preview          # Preview production build locally
+```
 
----
+### Production
 
-## 🌟 **What Makes BitwiseUI Special?**
+```bash
+npm run build            # Build application for production
+npm run build:ci         # Build with clean install for CI/CD
+npm run render-build     # Build script for Render deployment
+npm run start            # Serve production build on port 3000
+```
 
-<table>
-<tr>
-<td align="center" width="33%">
+### Code Quality
 
-### 🚀 **Performance Optimized**
+```bash
+npm run lint             # Lint and auto-fix code issues
+```
 
-Built with Vite for blazing-fast development and optimized production builds with smart code splitting.
+## Project Structure
 
-</td>
-<td align="center" width="33%">
+```
+bitwise-ui/
+├── public/
+│   ├── _redirects              # Deployment redirects
+│   └── site.webmanifest        # PWA manifest
+├── src/
+│   ├── assets/                 # Static assets
+│   │   ├── animations/         # Lottie animations
+│   │   ├── audio/             # Audio files
+│   │   ├── icons/             # Icon assets
+│   │   └── photos/            # Images
+│   ├── components/            # React components
+│   │   ├── ui/                # Shadcn/UI components
+│   │   └── *.tsx              # Feature components
+│   ├── constants/             # Application constants
+│   ├── contexts/              # React contexts
+│   ├── hooks/                 # Custom React hooks
+│   ├── lib/                   # Library configurations
+│   │   └── styles/            # Global styles
+│   ├── routes/                # Route components
+│   ├── services/              # API services
+│   ├── tools/                 # Utility tools
+│   │   └── simulator/         # Circuit simulator
+│   ├── types/                 # TypeScript definitions
+│   ├── utils/                 # Utility functions
+│   ├── App.tsx                # Root component
+│   ├── main.tsx               # Application entry point
+│   └── routeTree.gen.ts       # Generated route tree
+├── components.json            # Shadcn/UI config
+├── Dockerfile                 # Docker configuration
+├── eslint.config.js          # ESLint configuration
+├── package.json              # Dependencies and scripts
+├── tsconfig.json             # TypeScript configuration
+└── vite.config.ts            # Vite configuration
+```
 
-### 🛡️ **Type-Safe Architecture**
+## Key Directories
 
-Complete TypeScript coverage ensures reliability and maintainability at scale.
+- **`components/`** - Reusable UI components and feature-specific components
+- **`routes/`** - Page-level components mapped to routes
+- **`services/`** - API client services and data fetching logic
+- **`hooks/`** - Custom React hooks for shared logic
+- **`contexts/`** - React context providers for global state
+- **`tools/`** - Interactive tools like calculators and simulators
+- **`utils/`** - Helper functions and utilities
+- **`types/`** - TypeScript type definitions and interfaces
 
-</td>
-<td align="center" width="33%">
+## Environment Variables
 
-### 🎨 **Modern Design System**
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `VITE_API_URL` | Backend API base URL | Yes |
+| `VITE_SUPABASE_URL` | Supabase project URL | Yes |
+| `VITE_SUPABASE_ANON_KEY` | Supabase anonymous key | Yes |
+| `VITE_ENABLE_DEVTOOLS` | Enable development tools | No |
 
-Beautiful, accessible components built on proven UI primitives with full theming support.
+## Building for Production
 
-</td>
-</tr>
-</table>
+The application is optimized for production deployment with:
 
----
+- Code splitting and lazy loading
+- Minification and compression
+- Tree shaking for minimal bundle size
+- Asset optimization
+- Environment-specific builds
 
-## 📈 **Development Roadmap**
+### Docker Deployment
 
-- [x] 🏗️ **Project Setup** - Initialize with Vite + TypeScript
-- [ ] 🛣️ **Routing System** - Implement TanStack Router
-- [ ] 🎯 **State Management** - Configure Zustand + React Query
-- [ ] 🎨 **UI Foundation** - Set up Shadcn/UI + Tailwind
-- [ ] 📋 **Form System** - Integrate React Hook Form + Zod
-- [ ] 🌐 **API Layer** - Set up Axios + OpenAPI codegen
-- [ ] 🧪 **Testing Suite** - Add Vitest + Testing Library
-- [ ] 🚀 **Deployment** - Configure Docker + CI/CD
-- [ ] 📱 **PWA Features** - Add offline capabilities
-- [ ] 🔐 **Authentication** - Implement auth system
+```bash
+# Build Docker image
+docker build -t bitwise-ui .
 
----
+# Run container
+docker run -p 3000:3000 bitwise-ui
+```
 
-## 🤝 **Contributing**
+## Browser Support
 
-We love contributions! Please read our [Contributing Guide](CONTRIBUTING.md) to get started.
+- Chrome (latest)
+- Firefox (latest)
+- Safari (latest)
+- Edge (latest)
 
-[![Contributors](https://contrib.rocks/image?repo=yourusername/bitwiseui)](https://github.com/yourusername/bitwiseui/graphs/contributors)
+## Contributing
 
----
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/your-feature`)
+3. Commit your changes (`git commit -m 'Add some feature'`)
+4. Push to the branch (`git push origin feature/your-feature`)
+5. Open a Pull Request
 
-<div align="center">
+## License
 
-### **Built with ❤️ by developers, for developers**
-
-**[⭐ Star this repo](https://github.com/yourusername/bitwiseui)** • **[🐛 Report Issues](https://github.com/yourusername/bitwiseui/issues)** • **[💬 Join Discord](https://discord.gg/bitwiseui)**
-
----
-
-**BitwiseUI** - _A modern React application showcasing best practices and cutting-edge tools._
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
-[![Made with TypeScript](https://img.shields.io/badge/Made%20with-TypeScript-blue?style=flat-square&logo=typescript)](https://typescriptlang.org)
-
-</div>
+This project is private and unlicensed.

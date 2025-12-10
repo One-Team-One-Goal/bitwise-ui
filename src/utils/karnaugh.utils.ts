@@ -378,28 +378,42 @@ const findGroupsInRegion = (
 };
 
 // Try to form a group starting at a position with wraparound support
+// IMPORTANT: Uses VISUAL coordinates for adjacency, converts to STORAGE for data access
 const tryGroupWithWraparound = (
   squares: KMapMatrix,
   totalRows: number,
   colStart: number,
   numCols: number,
-  startRow: number,
-  startCol: number,
+  startRow: number,  // This is VISUAL row index
+  startCol: number,  // This is relative column within the region (0 to numCols-1)
   height: number,
   width: number,
   targetValue: CellValue,
   tableIndex: number | undefined
 ): GroupCell[] => {
   const group: GroupCell[] = [];
-  let hasTargetValue = false; // Must have at least one cell with target value (not just X)
+  let hasTargetValue = false;
+  
+  // Gray code mapping for 4 rows: visual [0,1,2,3] -> storage [0,1,3,2]
+  const visualToStorageRow = (visualRow: number): number => {
+    if (totalRows === 4) {
+      const mapping = [0, 1, 3, 2];
+      return mapping[visualRow % 4];
+    }
+    return visualRow;
+  };
   
   for (let dr = 0; dr < height; dr++) {
     for (let dc = 0; dc < width; dc++) {
-      // Use modulo for wraparound
-      const row = (startRow + dr) % totalRows;
-      const col = colStart + ((startCol + dc) % numCols);
+      // Use modulo for wraparound on VISUAL coordinates
+      const visualRow = (startRow + dr) % totalRows;
+      const relativeCol = (startCol + dc) % numCols;
       
-      const cellValue = squares[row]?.[col]?.[0];
+      // Convert to STORAGE coordinates
+      const storageRow = visualToStorageRow(visualRow);
+      const storageCol = colStart + relativeCol;
+      
+      const cellValue = squares[storageRow]?.[storageCol]?.[0];
       
       // Cell must have target value or be don't care ('X')
       if (cellValue !== targetValue && cellValue !== 'X') {
@@ -410,9 +424,10 @@ const tryGroupWithWraparound = (
         hasTargetValue = true;
       }
       
+      // Store using STORAGE coordinates (since that's how groups are looked up)
       group.push({ 
-        riga: row, 
-        col: col,
+        riga: storageRow, 
+        col: storageCol,
         table: tableIndex
       });
     }
@@ -454,29 +469,37 @@ const findCrossTableGroups = (
 ) => {
   if (typeMap !== 5) return; // Only for 5-variable maps
   
+  // Gray code mapping for 4 rows: visual [0,1,2,3] -> storage [0,1,3,2]
+  const visualToStorageRow = (visualRow: number): number => {
+    const mapping = [0, 1, 3, 2];
+    return mapping[visualRow % 4];
+  };
+  
   // Try to find matching patterns in columns 0-3 (E=0) and 4-7 (E=1)
   const factors = getFactors(sizePerTable);
   
   for (const [height, width] of factors) {
-    // Try all possible positions in the 4x4 sub-map
-    for (let startRow = 0; startRow < rows; startRow++) {
+    // Try all possible VISUAL positions in the 4x4 sub-map
+    for (let startVisualRow = 0; startVisualRow < rows; startVisualRow++) {
       for (let startCol = 0; startCol < 4; startCol++) {
         // Check if the same pattern exists in both E=0 and E=1 tables
         const e0Group: GroupCell[] = [];
         const e1Group: GroupCell[] = [];
         let valid = true;
         
-        // Use wraparound for both horizontal and vertical
+        // Use wraparound for both horizontal and vertical (in VISUAL space)
         for (let r = 0; r < height && valid; r++) {
-          const row = (startRow + r) % rows;
+          const visualRow = (startVisualRow + r) % rows;
+          const storageRow = visualToStorageRow(visualRow);
+          
           for (let c = 0; c < width && valid; c++) {
             const col = (startCol + c) % 4;
             
             const e0Col = col; // E=0 table: columns 0-3
             const e1Col = col + 4; // E=1 table: columns 4-7
             
-            const e0Cell = squares[row]?.[e0Col]?.[0];
-            const e1Cell = squares[row]?.[e1Col]?.[0];
+            const e0Cell = squares[storageRow]?.[e0Col]?.[0];
+            const e1Cell = squares[storageRow]?.[e1Col]?.[0];
             
             // Both cells must have target value or be don't care
             if ((e0Cell !== targetValue && e0Cell !== 'X') ||
@@ -485,8 +508,8 @@ const findCrossTableGroups = (
               break;
             }
             
-            e0Group.push({ riga: row, col: e0Col, table: 0 });
-            e1Group.push({ riga: row, col: e1Col, table: 1 });
+            e0Group.push({ riga: storageRow, col: e0Col, table: 0 });
+            e1Group.push({ riga: storageRow, col: e1Col, table: 1 });
           }
         }
         

@@ -3,7 +3,7 @@
  * Each Boolean law gets a unique animation style
  */
 
-export type AnimationType = 
+export type AnimationType =
   | 'fade'
   | 'slide'
   | 'bounce'
@@ -12,53 +12,53 @@ export type AnimationType =
   | 'flip'
   | 'shake'
   | 'pulse'
-  | 'glow';
+  | 'glow'
 
 export interface LawAnimation {
-  type: AnimationType;
-  duration: number;
-  highlightColor: string;
-  description: string;
+  type: AnimationType
+  duration: number
+  highlightColor: string
+  description: string
 }
 
 // Mapping from short law names (backend) to long names (animation keys)
 const LAW_NAME_MAP: Record<string, string> = {
   // Short names from backend
-  'com': 'commutative',
-  'ass': 'associative',
-  'dist': 'distributive',
-  'i': 'identity',
-  'neg': 'negation',
-  'dneg': 'doublenegation',
-  'id': 'idempotent',
-  'ub': 'universalbound',
-  'dm': 'demorgans',
-  'abs': 'absorption',
-  'ntf': 'negationsoftf',
-  'xor': 'xor',
-  'imp': 'implication',
-  'bimp': 'biconditional',
-  'iff': 'biconditional',
+  com: 'commutative',
+  ass: 'associative',
+  dist: 'distributive',
+  i: 'identity',
+  neg: 'negation',
+  dneg: 'doublenegation',
+  id: 'idempotent',
+  ub: 'universalbound',
+  dm: 'demorgans',
+  abs: 'absorption',
+  ntf: 'negationsoftf',
+  xor: 'xor',
+  imp: 'implication',
+  bimp: 'biconditional',
+  iff: 'biconditional',
   // Long names (already normalized)
-  'commutative': 'commutative',
-  'associative': 'associative',
-  'distributive': 'distributive',
-  'identity': 'identity',
-  'negation': 'negation',
-  'doublenegation': 'doublenegation',
-  'idempotent': 'idempotent',
-  'universalbound': 'universalbound',
-  'demorgans': 'demorgans',
-  'absorption': 'absorption',
-  'negationsoftf': 'negationsoftf',
+  commutative: 'commutative',
+  associative: 'associative',
+  distributive: 'distributive',
+  identity: 'identity',
+  negation: 'negation',
+  doublenegation: 'doublenegation',
+  idempotent: 'idempotent',
+  universalbound: 'universalbound',
+  demorgans: 'demorgans',
+  absorption: 'absorption',
+  negationsoftf: 'negationsoftf',
   // XOR/Implication/Biconditional long names
-  'xordefinition': 'xor',
-  'implicationdefinition': 'implication',
-  'biconditionaldefinition': 'biconditional',
-  'simplified': 'start',
-  'start': 'start',
-  'result': 'start',
-};
+  xordefinition: 'xor',
+  implicationdefinition: 'implication',
+  biconditionaldefinition: 'biconditional',
+  simplified: 'start',
+  start: 'start',
+  result: 'start',
+}
 
 export const LAW_ANIMATIONS: Record<string, LawAnimation> = {
   // Identity - Simple fade (element disappears)
@@ -66,7 +66,8 @@ export const LAW_ANIMATIONS: Record<string, LawAnimation> = {
     type: 'fade',
     duration: 0.7,
     highlightColor: '#3b82f6', // blue
-    description: 'Identity elements fade away - T for AND, F for OR leave no trace',
+    description:
+      'Identity elements fade away - T for AND, F for OR leave no trace',
   },
 
   // Negation - Rotate and flip
@@ -114,7 +115,7 @@ export const LAW_ANIMATIONS: Record<string, LawAnimation> = {
     type: 'bounce',
     duration: 0.8,
     highlightColor: '#06b6d4', // cyan
-    description: 'Order doesn\'t matter! A∧B→B∧A, watch them swap places',
+    description: "Order doesn't matter! A∧B→B∧A, watch them swap places",
   },
 
   // Idempotent - Duplicates merge with glow
@@ -138,7 +139,8 @@ export const LAW_ANIMATIONS: Record<string, LawAnimation> = {
     type: 'pulse',
     duration: 0.9,
     highlightColor: '#f97316', // orange
-    description: 'Negation distributes through! ¬(A∧B)→¬A∨¬B, operators flip too',
+    description:
+      'Negation distributes through! ¬(A∧B)→¬A∨¬B, operators flip too',
   },
 
   // Distributive - Split and distribute
@@ -146,7 +148,8 @@ export const LAW_ANIMATIONS: Record<string, LawAnimation> = {
     type: 'slide',
     duration: 1.0,
     highlightColor: '#6366f1', // indigo
-    description: 'Distributing like algebra! A∧(B∨C)→(A∧B)∨(A∧C) - watch it expand',
+    description:
+      'Distributing like algebra! A∧(B∨C)→(A∧B)∨(A∧C) - watch it expand',
   },
 
   // XOR conversion - Pulse to show expansion
@@ -180,7 +183,7 @@ export const LAW_ANIMATIONS: Record<string, LawAnimation> = {
     highlightColor: '#22c55e', // green
     description: 'Expression is already in simplest form',
   },
-};
+}
 
 /**
  * Get animation config for a law, with fallback
@@ -188,18 +191,20 @@ export const LAW_ANIMATIONS: Record<string, LawAnimation> = {
  */
 export function getLawAnimation(lawId: string): LawAnimation {
   // First normalize: lowercase, remove non-alpha chars
-  const normalized = lawId.toLowerCase().replace(/[^a-z]/g, '');
-  
+  const normalized = lawId.toLowerCase().replace(/[^a-z]/g, '')
+
   // Check if it's a short name that needs mapping
-  const mappedName = LAW_NAME_MAP[normalized] || normalized;
-  
+  const mappedName = LAW_NAME_MAP[normalized] || normalized
+
   // Return the animation or fallback
-  return LAW_ANIMATIONS[mappedName] || {
-    type: 'fade',
-    duration: 0.5,
-    highlightColor: '#64748b', // slate
-    description: 'Default transition',
-  };
+  return (
+    LAW_ANIMATIONS[mappedName] || {
+      type: 'fade',
+      duration: 1,
+      highlightColor: '#64748b', // slate
+      description: 'Default transition',
+    }
+  )
 }
 
 /**
@@ -207,43 +212,44 @@ export function getLawAnimation(lawId: string): LawAnimation {
  */
 export function getLawDisplayName(lawId: string): string {
   const displayNames: Record<string, string> = {
-    'com': 'Commutative',
-    'ass': 'Associative',
-    'dist': 'Distributive',
-    'i': 'Identity',
-    'neg': 'Negation',
-    'dneg': 'Double Negation',
-    'id': 'Idempotent',
-    'ub': 'Universal Bound',
-    'dm': "De Morgan's",
-    'abs': 'Absorption',
-    'ntf': 'Negations of T/F',
-    'xor': 'XOR Expansion',
-    'imp': 'Implication',
-    'iff': 'Biconditional',
-    'commutative': 'Commutative',
-    'associative': 'Associative',
-    'distributive': 'Distributive',
-    'identity': 'Identity',
-    'negation': 'Negation',
-    'doublenegation': 'Double Negation',
-    'idempotent': 'Idempotent',
-    'universalbound': 'Universal Bound',
-    'demorgans': "De Morgan's",
-    'absorption': 'Absorption',
-    'negationsoftf': 'Negations of T/F',
-  };
-  
-  const normalized = lawId.toLowerCase().replace(/[^a-z]/g, '');
-  return displayNames[normalized] || lawId;
+    com: 'Commutative',
+    ass: 'Associative',
+    dist: 'Distributive',
+    i: 'Identity',
+    neg: 'Negation',
+    dneg: 'Double Negation',
+    id: 'Idempotent',
+    ub: 'Universal Bound',
+    dm: "De Morgan's",
+    abs: 'Absorption',
+    ntf: 'Negations of T/F',
+    xor: 'XOR Expansion',
+    imp: 'Implication',
+    iff: 'Biconditional',
+    commutative: 'Commutative',
+    associative: 'Associative',
+    distributive: 'Distributive',
+    identity: 'Identity',
+    negation: 'Negation',
+    doublenegation: 'Double Negation',
+    idempotent: 'Idempotent',
+    universalbound: 'Universal Bound',
+    demorgans: "De Morgan's",
+    absorption: 'Absorption',
+    negationsoftf: 'Negations of T/F',
+  }
+
+  const normalized = lawId.toLowerCase().replace(/[^a-z]/g, '')
+  return displayNames[normalized] || lawId
 }
 
 /**
  * Framer Motion animation variants based on law type
+ * Simplified animations for better readability - no stretch effects
  */
 export function getAnimationVariants(lawId: string) {
-  const animation = getLawAnimation(lawId);
-  
+  const animation = getLawAnimation(lawId)
+
   const variants = {
     fade: {
       initial: { opacity: 1 },
@@ -252,60 +258,59 @@ export function getAnimationVariants(lawId: string) {
     },
     slide: {
       initial: { x: 0, opacity: 1 },
-      animate: { x: [0, -20, 20, 0], opacity: [1, 0.7, 0.7, 1] },
-      exit: { x: 50, opacity: 0 },
+      animate: { x: [0, -10, 10, 0], opacity: 1 },
+      exit: { x: 20, opacity: 0 },
     },
     bounce: {
       initial: { y: 0 },
-      animate: { 
-        y: [0, -15, 0, -10, 0],
-        transition: { duration: animation.duration, ease: "easeOut" }
+      animate: {
+        y: [0, -8, 0],
+        transition: { duration: animation.duration, ease: 'easeOut' },
       },
-      exit: { y: 20, opacity: 0 },
+      exit: { y: 10, opacity: 0 },
     },
     rotate: {
-      initial: { rotate: 0 },
-      animate: { rotate: [0, 180, 360] },
-      exit: { rotate: 180, opacity: 0 },
+      initial: { rotate: 0, opacity: 1 },
+      animate: { rotate: 360, opacity: 1 },
+      exit: { opacity: 0 },
     },
     scale: {
-      initial: { scale: 1 },
-      animate: { 
-        scale: [1, 1.3, 0.8, 1.1, 1],
-        transition: { duration: animation.duration }
+      initial: { opacity: 1 },
+      animate: {
+        opacity: [1, 0.6, 1],
+        transition: { duration: animation.duration },
       },
-      exit: { scale: 0 },
+      exit: { opacity: 0 },
     },
     flip: {
-      initial: { rotateY: 0 },
-      animate: { rotateY: [0, 90, 180] },
-      exit: { rotateY: 180, opacity: 0 },
+      initial: { opacity: 1 },
+      animate: { opacity: [1, 0.5, 1] },
+      exit: { opacity: 0 },
     },
     shake: {
       initial: { x: 0 },
-      animate: { 
-        x: [0, -10, 10, -10, 10, 0],
-        transition: { duration: 0.4 }
+      animate: {
+        x: [0, -5, 5, -5, 5, 0],
+        transition: { duration: 0.4 },
       },
       exit: { opacity: 0 },
     },
     pulse: {
-      initial: { scale: 1, opacity: 1 },
-      animate: { 
-        scale: [1, 1.1, 1, 1.05, 1],
-        opacity: [1, 0.8, 1, 0.9, 1]
-      },
-      exit: { scale: 0.8, opacity: 0 },
-    },
-    glow: {
-      initial: { filter: 'brightness(1)' },
-      animate: { 
-        filter: ['brightness(1)', 'brightness(1.5)', 'brightness(1)'],
-        transition: { duration: animation.duration, repeat: 1 }
+      initial: { opacity: 1 },
+      animate: {
+        opacity: [1, 0.7, 1, 0.8, 1],
       },
       exit: { opacity: 0 },
     },
-  };
+    glow: {
+      initial: { filter: 'brightness(1)' },
+      animate: {
+        filter: ['brightness(1)', 'brightness(1.3)', 'brightness(1)'],
+        transition: { duration: animation.duration, repeat: 1 },
+      },
+      exit: { opacity: 0 },
+    },
+  }
 
-  return variants[animation.type] || variants.fade;
+  return variants[animation.type] || variants.fade
 }

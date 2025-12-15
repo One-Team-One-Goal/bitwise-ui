@@ -90,21 +90,6 @@ function RouteComponent() {
   return (
     <TooltipProvider>
       <div className="relative">
-        {/* Floating Action Buttons - Top Right */}
-        <div className="fixed top-20 right-4 z-50 flex gap-2">
-          {/* Help Button */}
-          <Button
-            type="button"
-            onClick={startTutorial}
-            variant="outline"
-            size="icon"
-            className="rounded-full w-12 h-12 shadow-lg hover:shadow-xl hover:bg-primary/10 hover:border-primary transition-all bg-background dark:bg-gray-800 border-2 cursor-pointer"
-            title="Show Tutorial"
-          >
-            <HelpCircle className="h-5 w-5 text-primary" />
-          </Button>
-        </div>
-
         {/* Loading Indicator */}
         {isLoading && (
           <div className="mb-4 p-4 bg-primary/10 border border-primary/30 text-primary rounded-lg dark:bg-primary/20">
@@ -122,10 +107,10 @@ function RouteComponent() {
           </p>
         </div>
 
-        {/* Content Section - Horizontal layout */}
-        <div className="flex justify-center items-start gap-8 flex-wrap">
+        {/* Content Section - keep original structure, stack nicely on mobile */}
+        <div className="flex flex-col items-stretch gap-6 lg:flex-row lg:justify-center lg:items-start lg:gap-8 lg:flex-wrap">
           {/* Truth Table Section */}
-          <div className="flex-1 max-w-sm mt-4 truth-table">
+          <div className="w-full px-3 sm:px-0 sm:max-w-sm mx-auto mt-4 truth-table lg:mx-0 lg:flex-1 lg:max-w-sm">
             <TruthTable
               variables={variables}
               truthTable={truthTable}
@@ -134,25 +119,29 @@ function RouteComponent() {
           </div>
 
           {/* Karnaugh Map Section */}
-          <div className="space-y-4 mt-4 p-4 kmap-container">
-            <Map
-              squares={squares}
-              groups={solution?.groups || []}
-              variableCount={variableCount}
-              onCellClick={handleCellClick}
-              formType={formType}
-            />
+          <div className="w-full space-y-4 mt-4 p-2 sm:p-4 kmap-container lg:w-auto">
+            <div className="w-full overflow-x-auto">
+              <div className="min-w-max w-full flex justify-center">
+                <Map
+                  squares={squares}
+                  groups={solution?.groups || []}
+                  variableCount={variableCount}
+                  onCellClick={handleCellClick}
+                  formType={formType}
+                />
+              </div>
+            </div>
 
             {/* Solution Display */}
             {solution && (
-              <div className="mt-6 p-4 min-w-[320px] w-full solution-display">
+              <div className="mt-4 sm:mt-6 p-3 sm:p-4 w-full solution-display">
                 <p className="font-semibold mb-2 text-sm text-muted-foreground">
                   {formType} Solution:
                 </p>
-                <div className="font-mono text-lg mb-2 border rounded-sm pl-2 p-1 overflow-x-auto whitespace-nowrap max-w-[400px]">
+                <div className="font-mono text-lg mb-2 border rounded-sm pl-2 p-1 overflow-x-auto whitespace-nowrap w-full">
                   {solution.expression}
                 </div>
-                <div className="flex mt-2 gap-12">
+                <div className="flex mt-2 gap-x-12 gap-y-2 flex-wrap">
                   <div className="text-sm text-muted-foreground">
                     Literal Cost: {solution.literalCost}
                   </div>
@@ -167,7 +156,21 @@ function RouteComponent() {
           </div>
 
           {/* Settings Section */}
-          <div className="flex-1 max-w-sm settings-panel">
+          <div className="w-full px-3 sm:px-0 sm:max-w-sm mx-auto settings-panel lg:mx-0 lg:flex-1 lg:max-w-sm">
+            {/* Help Button */}
+            <div className="flex justify-center mb-4">
+              <Button
+                type="button"
+                onClick={startTutorial}
+                variant="outline"
+                size="sm"
+                className="gap-2 shadow-sm hover:shadow-md hover:bg-primary/10 hover:border-primary transition-all"
+                title="Show Tutorial"
+              >
+                <HelpCircle className="h-4 w-4 text-primary" />
+                <span>Help & Tutorial</span>
+              </Button>
+            </div>
             <SettingsCard
               variableCount={variableCount}
               formType={formType}

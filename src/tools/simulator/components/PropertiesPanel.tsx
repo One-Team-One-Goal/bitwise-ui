@@ -465,18 +465,13 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
 
               <Separator />
 
-              {/* Keyboard Shortcuts Dropdown */}
-              <Collapsible>
-                <CollapsibleTrigger className="flex items-center justify-between w-full p-2 rounded-lg hover:bg-muted/50 transition-colors group">
-                  <div className="flex items-center gap-2">
-                    <Keyboard className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">
-                      Keyboard Shortcuts
-                    </span>
-                  </div>
-                  <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
-                </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-3 pt-2 max-h-64 overflow-y-auto scrollbar-hide">
+              {/* Keyboard Shortcuts (always visible) */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 px-2">
+                  <Keyboard className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Keyboard Shortcuts</span>
+                </div>
+                <div className="space-y-3 pt-1 max-h-64 overflow-y-auto scrollbar-hide">
                   {shortcutCategories.map((category) => (
                     <div key={category.category} className="space-y-1">
                       <div className="text-xs font-semibold text-muted-foreground px-1">
@@ -510,8 +505,8 @@ export const PropertiesPanel: React.FC<PropertiesPanelProps> = ({
                       </div>
                     </div>
                   ))}
-                </CollapsibleContent>
-              </Collapsible>
+                </div>
+              </div>
               {/* Symbol Reference Dropdown */}
               <Collapsible>
                 <CollapsibleTrigger className="flex items-center justify-between w-full p-2 rounded-lg hover:bg-muted/50 transition-colors group">

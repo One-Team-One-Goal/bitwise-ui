@@ -686,20 +686,6 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
 
   return (
     <div className="w-full mx-auto relative">
-      {/* Help Button */}
-      <div className="absolute top-4 right-4 z-10">
-        <Button
-          type="button"
-          onClick={startTutorial}
-          variant="ghost"
-          size="icon"
-          className="rounded-full h-9 w-9"
-          title="Show Tutorial"
-        >
-          <HelpCircle className="h-4 w-4 text-muted-foreground" />
-        </Button>
-      </div>
-
       {/* Examples Panel */}
       <ExamplesPanel
         isOpen={showExamples}
@@ -716,7 +702,7 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
           {/* Input Section */}
           <form onSubmit={fetchRemoteScript} className="space-y-3">
             {/* Main Input Row */}
-            <div className="flex gap-2 input-section">
+            <div className="flex flex-col sm:flex-row gap-2 input-section">
               <input
                 ref={inputRef}
                 value={expressionInput}
@@ -728,7 +714,7 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
               <Button
                 variant="default"
                 type="submit"
-                className="simplify-button px-6 cursor-pointer"
+                className="simplify-button px-6 cursor-pointer w-full sm:w-auto"
                 disabled={loadingRemote}
               >
                 {loadingRemote ? 'Solving...' : 'Solve'}
@@ -737,14 +723,14 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
                 variant="ghost"
                 type="button"
                 onClick={() => setShowExamples(true)}
-                className="examples-button px-4 cursor-pointer text-muted-foreground"
+                className="examples-button px-4 cursor-pointer text-muted-foreground w-full sm:w-auto"
               >
                 Examples
               </Button>
               <Button
                 variant="ghost"
                 onClick={handleReset}
-                className="px-3 cursor-pointer text-muted-foreground"
+                className="px-3 cursor-pointer text-muted-foreground w-full sm:w-auto"
                 title="Reset"
               >
                 ↺
@@ -768,17 +754,29 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
                   </button>
                 </SymbolHelpTooltip>
               ))}
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowSymbolHelp(true)}
-                className="ml-auto text-xs text-muted-foreground hover:text-foreground"
-                title="Symbol Reference Guide"
-              >
-                <BookOpen className="h-3.5 w-3.5 mr-1" />
-                Guide
-              </Button>
+              <div className="w-full sm:w-auto sm:ml-auto flex items-center justify-between sm:justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowSymbolHelp(true)}
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                  title="Symbol Reference Guide"
+                >
+                  <BookOpen className="h-3.5 w-3.5 mr-1" />
+                  Guide
+                </Button>
+                <Button
+                  type="button"
+                  onClick={startTutorial}
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full h-8 w-8 shrink-0"
+                  title="Show Tutorial"
+                >
+                  <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              </div>
             </div>
 
             {/* Display Options - Minimal */}

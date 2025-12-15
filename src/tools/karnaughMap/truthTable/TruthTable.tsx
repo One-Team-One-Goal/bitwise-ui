@@ -18,6 +18,7 @@ interface TruthTableProps {
   variables: string[]
   truthTable?: TruthTableRow[]
   onTruthTableChange?: (index: number, value: CellValue) => void
+  variableCount?: number
 }
 
 function generateTruthTables(numVars: number): number[][] {
@@ -39,8 +40,10 @@ const TruthTable: React.FC<TruthTableProps> = ({
   variables,
   truthTable,
   onTruthTableChange,
+  variableCount = variables.length,
 }) => {
   const table = generateTruthTables(variables.length)
+  const isCompact = variableCount >= 5
 
   const handleOutputClick = (index: number) => {
     if (truthTable && onTruthTableChange) {
@@ -61,8 +64,8 @@ const TruthTable: React.FC<TruthTableProps> = ({
 
   // Theme-aware classes for cell states (light + dark)
   const outputCellClass = (value: CellValue) => {
-    const base =
-      'text-center font-mono cursor-pointer transition-all duration-150 p-3 select-none font-semibold'
+    const padding = isCompact ? 'px-1.5' : 'p-3'
+    const base = `text-center font-mono cursor-pointer transition-all duration-150 ${padding} select-none font-semibold`
     const hoverActive =
       'hover:bg-blue-100 dark:hover:bg-blue-900/30 active:bg-blue-200 dark:active:bg-blue-800/40'
 
@@ -80,22 +83,35 @@ const TruthTable: React.FC<TruthTableProps> = ({
     return `${base} text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 ${hoverActive}`
   }
 
+  // Cell classes for input cells
+  const inputCellClass = isCompact
+    ? 'text-center border-r border-border last:border-r-0 font-mono px-1.5'
+    : 'text-center border-r border-border last:border-r-0 font-mono p-3'
+
+  // Header cell classes
+  const headerCellClass = isCompact
+    ? 'px-1.5 text-center font-semibold text-primary border-r last:border-r-0'
+    : 'p-2 text-center font-semibold text-primary border-r last:border-r-0'
+
   return (
-    // Make truth table scrollable with fixed height
-    <div className="w-full max-w-md mx-auto mb-20">
-      <div className="border overflow-auto max-h-[600px]" data-tour="truth-table">
+    // Allow height to overflow so page scrolls instead of the div
+    <div className={`w-full max-w-md mx-auto mb-20 ${isCompact ? 'pl-4' : ''}`}>
+      <div className="border" data-tour="truth-table">
         <Table className="w-full">
-          <TableHeader className="sticky top-0 z-10 bg-background">
+          <TableHeader className="bg-background">
             <TableRow className="bg-muted hover:bg-muted/80 transition-colors">
               {variables.map((variable) => (
-                <TableHead
-                  key={variable}
-                  className="p-2 text-center font-semibold text-primary border-r last:border-r-0"
-                >
+                <TableHead key={variable} className={headerCellClass}>
                   {variable}
                 </TableHead>
               ))}
-              <TableHead className="p-2 text-center font-semibold text-primary">
+              <TableHead
+                className={
+                  isCompact
+                    ? 'px-1.5 text-center font-semibold text-primary'
+                    : 'p-2 text-center font-semibold text-primary'
+                }
+              >
                 R
               </TableHead>
             </TableRow>
@@ -114,10 +130,7 @@ const TruthTable: React.FC<TruthTableProps> = ({
                   }`}
                 >
                   {row.map((val, colIdx) => (
-                    <TableCell
-                      key={colIdx}
-                      className="text-center border-r border-border last:border-r-0 font-mono p-3"
-                    >
+                    <TableCell key={colIdx} className={inputCellClass}>
                       <span className="font-semibold">{val}</span>
                     </TableCell>
                   ))}

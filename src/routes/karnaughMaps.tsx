@@ -4,10 +4,6 @@ import SettingsCard from '@/tools/karnaughMap/settings/SettingsCard'
 import { useKMaps } from '@/hooks/useKMaps'
 import Map from '@/components/kmap/Map'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import introJs from 'intro.js'
-import 'intro.js/introjs.css'
-import { HelpCircle } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 
 export const Route = createFileRoute('/karnaughMaps')({
   component: RouteComponent,
@@ -31,61 +27,6 @@ function RouteComponent() {
     handleSetAllCells,
     handleExpressionApply,
   } = useKMaps()
-
-  // Start the intro.js tutorial
-  const startTutorial = () => {
-    const intro = introJs()
-    intro.setOptions({
-      steps: [
-        {
-          title: '👋 Welcome to Karnaugh Map Solver!',
-          intro:
-            'This interactive tool helps you visualize and simplify Boolean expressions using Karnaugh Maps. Let me show you around!',
-        },
-        {
-          element: '.truth-table',
-          title: '📊 Truth Table',
-          intro:
-            "This truth table shows all possible input combinations and their outputs. Click any output cell to toggle between 0, 1, or X (don't care).",
-          position: 'right',
-        },
-        {
-          element: '.kmap-container',
-          title: '🗺️ Karnaugh Map',
-          intro:
-            'The K-Map visualizes your truth table in a special arrangement. Click cells to toggle values. Groups of 1s (or 0s) are automatically detected and highlighted!',
-          position: 'left',
-        },
-        {
-          element: '.solution-display',
-          title: '✨ Solution',
-          intro:
-            'The simplified Boolean expression appears here, along with the literal cost (number of literals) and group count. The tool automatically finds the optimal groupings!',
-          position: 'top',
-        },
-        {
-          element: '.settings-panel',
-          title: '⚙️ Settings',
-          intro:
-            'Change the number of variables (2-5), switch between SOP (Sum of Products) and POS (Product of Sums), or quickly fill all cells with a value.',
-          position: 'left',
-        },
-        {
-          title: '🎓 Ready to Simplify!',
-          intro:
-            "You're all set! Try clicking cells in the truth table or K-Map to set values, then watch the solution update automatically. Happy simplifying!",
-        },
-      ],
-      showProgress: true,
-      showBullets: true,
-      exitOnOverlayClick: false,
-      doneLabel: 'Got it!',
-      nextLabel: 'Next',
-      prevLabel: 'Back',
-      skipLabel: 'Skip',
-    })
-    intro.start()
-  }
 
   return (
     <TooltipProvider>
@@ -115,6 +56,7 @@ function RouteComponent() {
               variables={variables}
               truthTable={truthTable}
               onTruthTableChange={handleTruthTableChange}
+              variableCount={variableCount}
             />
           </div>
 
@@ -157,20 +99,6 @@ function RouteComponent() {
 
           {/* Settings Section */}
           <div className="w-full px-3 sm:px-0 sm:max-w-sm mx-auto settings-panel lg:mx-0 lg:flex-1 lg:max-w-sm">
-            {/* Help Button */}
-            <div className="flex justify-center mb-4">
-              <Button
-                type="button"
-                onClick={startTutorial}
-                variant="outline"
-                size="sm"
-                className="gap-2 shadow-sm hover:shadow-md hover:bg-primary/10 hover:border-primary transition-all"
-                title="Show Tutorial"
-              >
-                <HelpCircle className="h-4 w-4 text-primary" />
-                <span>Help & Tutorial</span>
-              </Button>
-            </div>
             <SettingsCard
               variableCount={variableCount}
               formType={formType}

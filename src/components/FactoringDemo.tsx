@@ -110,7 +110,6 @@ const CharMotion = React.forwardRef(function CharMotion(
 
   // Define exit animation - glow first, then fade out for merge effect
   const getExitAnimation = () => {
-    const glowColor = lawAnimation?.highlightColor || '#fbbf24'
     // Glow brightly first (filter brightness), then fade to 0
     const glowEffect = {
       filter: [

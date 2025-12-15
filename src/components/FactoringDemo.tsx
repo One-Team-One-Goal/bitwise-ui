@@ -1,5 +1,5 @@
 import React from 'react'
-import { motion } from 'motion/react'
+import { motion, AnimatePresence, LayoutGroup } from 'motion/react'
 import { calculatorService } from '../services/calculator.service'
 import { Button } from './ui/button'
 import { Switch } from './ui/switch'
@@ -68,10 +68,10 @@ const CharMotion = React.forwardRef(function CharMotion(
 
     // State-based highlighting with law-specific colors
     if (token.isNew && lawId) {
-      return `${baseClasses} font-bold scale-110`
+      return `${baseClasses} font-bold`
     }
     if (token.isNew) {
-      return `${baseClasses} text-emerald-600 font-bold scale-110 animate-pulse`
+      return `${baseClasses} text-emerald-600 font-bold`
     }
     if (token.highlight && lawId) {
       return `${baseClasses} font-semibold px-1`
@@ -96,11 +96,66 @@ const CharMotion = React.forwardRef(function CharMotion(
   // Get highlight styling based on law animation
   const getHighlightStyle = () => {
     if (!token.highlight || !lawId) return {}
-    
+
     const animation = getLawAnimation(lawId)
     return {
       color: animation.highlightColor,
       textShadow: `0 0 8px ${animation.highlightColor}40`,
+    }
+  }
+
+  // Get animation configuration for the current law
+  const lawAnimation = lawId ? getLawAnimation(lawId) : null
+  const animDuration = lawAnimation?.duration ?? 1.0 // Increased for better tracking of merges
+
+  // Define exit animation - glow first, then fade out for merge effect
+  const getExitAnimation = () => {
+    // Glow brightly first (filter brightness), then fade to 0
+    const glowEffect = {
+      filter: [
+        'brightness(1)',
+        'brightness(1.8)',
+        'brightness(1.5)',
+        'brightness(1)',
+      ],
+      opacity: [1, 1, 0.7, 0],
+    }
+
+    if (!lawAnimation) return glowEffect
+
+    switch (lawAnimation.type) {
+      case 'slide':
+        return { ...glowEffect, x: [0, 0, 0, -20] }
+      case 'bounce':
+        return { ...glowEffect, y: [0, 0, 0, -15] }
+      default:
+        return glowEffect
+    }
+  }
+
+  // Define enter animation for new tokens (no scale to avoid stretch)
+  const getEnterAnimation = () => {
+    if (!lawAnimation) return { opacity: 0 }
+
+    switch (lawAnimation.type) {
+      case 'fade':
+        return { opacity: 0 }
+      case 'scale':
+        return { opacity: 0 }
+      case 'flip':
+        return { opacity: 0 }
+      case 'rotate':
+        return { opacity: 0 }
+      case 'slide':
+        return { opacity: 0, x: 20 }
+      case 'bounce':
+        return { opacity: 0, y: 15 }
+      case 'pulse':
+        return { opacity: 0 }
+      case 'glow':
+        return { opacity: 0 }
+      default:
+        return { opacity: 0 }
     }
   }
 
@@ -109,18 +164,23 @@ const CharMotion = React.forwardRef(function CharMotion(
       ref={ref}
       layout
       layoutId={layoutIdOverride ?? token.id}
-      initial={{ opacity: token.isNew ? 0 : 1, scale: token.isNew ? 0.8 : 1 }}
-      animate={{ 
-        opacity: 1, 
-        scale: token.highlight ? 1.1 : 1,
+      initial={token.isNew ? getEnterAnimation() : false}
+      animate={{
+        opacity: 1,
+        x: 0,
+        y: 0,
       }}
+      exit={getExitAnimation()}
       transition={{
         layout: {
-          duration: lawId ? getLawAnimation(lawId).duration : 0.4,
-          ease: 'easeInOut',
+          type: 'spring',
+          stiffness: 200,
+          damping: 22,
         },
-        opacity: { duration: 0.3 },
-        scale: { duration: 0.3, ease: 'easeOut' },
+        opacity: { duration: animDuration * 1.5, ease: 'easeInOut' },
+        filter: { duration: animDuration * 1.5, ease: 'easeInOut' },
+        x: { duration: animDuration * 1.5, ease: 'easeInOut' },
+        y: { duration: animDuration * 1.5, ease: 'easeInOut' },
       }}
       className={getTokenClass()}
       onMouseEnter={onEnter}
@@ -154,7 +214,6 @@ interface TimelineState {
   raw: string
   law: string
 }
-type DOMRectLike = { left: number; top: number; width: number; height: number }
 
 // ============================================================================
 // Main FactoringDemo Component
@@ -172,7 +231,7 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
     }
     return '(A ∨ B) ∧ (A ∨ ¬B)'
   }
-  
+
   const [expressionInput, setExpressionInput] =
     React.useState<string>(getInitialExpression)
   const [loadingRemote, setLoadingRemote] = React.useState<boolean>(false)
@@ -194,33 +253,12 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
   const tokenRefs = React.useRef<Map<string, HTMLElement>>(new Map())
   const containerRef = React.useRef<HTMLDivElement | null>(null)
 
-  // Animation state
-  const [clones, setClones] = React.useState<
-    Array<{
-      key: string
-      text: string
-      from: DOMRectLike
-      to: DOMRectLike
-      lawId?: string
-    }>
-  >([])
-  const pendingFromRects = React.useRef<Map<string, DOMRectLike>>(new Map())
-  const pendingMappings = React.useRef<Map<string, string>>(new Map())
+  // Animation state - track if animation is in progress
+  const [isAnimating, setIsAnimating] = React.useState<boolean>(false)
 
   // ============================================================================
   // Helper Functions
   // ============================================================================
-  const getRelativeRect = (el: HTMLElement | null): DOMRectLike | null => {
-    if (!el || !containerRef.current) return null
-    const c = containerRef.current.getBoundingClientRect()
-    const r = el.getBoundingClientRect()
-    return {
-      left: r.left - c.left,
-      top: r.top - c.top,
-      width: r.width,
-      height: r.height,
-    }
-  }
 
   // Tokenize a raw expression string into display tokens
   const tokenizeExpression = (expr: string): ScriptToken[] => {
@@ -293,7 +331,47 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
   }
 
   // ============================================================================
-  // Timeline Computation
+  // Token ID Stabilization - Match tokens between steps by text/position
+  // ============================================================================
+  const stabilizeTokenIds = (
+    currentTokens: ScriptToken[],
+    previousTokens: ScriptToken[]
+  ): ScriptToken[] => {
+    // Track which previous token IDs have been used
+    const usedPrevIds = new Set<string>()
+    // Map from text to available previous IDs with that text
+    const textToAvailableIds: Record<string, string[]> = {}
+
+    // Build a map of text -> available IDs from previous tokens
+    previousTokens.forEach((tok) => {
+      if (!textToAvailableIds[tok.text]) {
+        textToAvailableIds[tok.text] = []
+      }
+      textToAvailableIds[tok.text].push(tok.id)
+    })
+
+    // Counter for generating new stable IDs
+    let newIdCounter = 0
+
+    return currentTokens.map((tok) => {
+      const availableIds = textToAvailableIds[tok.text] || []
+      // Find first unused ID with matching text
+      const matchedId = availableIds.find((id) => !usedPrevIds.has(id))
+
+      if (matchedId) {
+        // Reuse the ID from previous step - this token persists
+        usedPrevIds.add(matchedId)
+        return { ...tok, id: matchedId, isNew: false }
+      } else {
+        // This is a new token - generate a stable ID based on text and position
+        const stableId = `stable_${tok.text}_${tok.kind}_${newIdCounter++}`
+        return { ...tok, id: stableId, isNew: true }
+      }
+    })
+  }
+
+  // ============================================================================
+  // Timeline Computation with Stable IDs
   // ============================================================================
   const timeline = React.useMemo<TimelineState[]>(() => {
     const arr: TimelineState[] = []
@@ -323,45 +401,68 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
       return arr
     }
 
+    // First pass: collect all timeline states with original tokens
+    const rawStates: {
+      tokens: ScriptToken[]
+      raw: string
+      law: string
+      step: ScriptStep
+      phase: 'before' | 'after'
+      key: string
+    }[] = []
+
     steps.forEach((step, idx) => {
-      const beforeIds = new Set(step.before.tokens.map((t) => t.id))
-      const beforeTokens = step.before.tokens.map((t) => ({ ...t }))
-      const afterTokens = step.after.tokens.map((t) => ({
-        ...t,
-        isNew: !beforeIds.has(t.id),
-      }))
-      // Only add 'before' state for the very first step (original expression)
       if (idx === 0) {
-        arr.push({
+        rawStates.push({
           key: `${step.id || idx}-before`,
           phase: 'before',
           step,
-          tokens: beforeTokens,
+          tokens: step.before.tokens.map((t) => ({ ...t })),
           raw: step.before.raw,
           law: step.law,
         })
       }
-      // Always add 'after' state (the result after applying the law)
-      arr.push({
+      rawStates.push({
         key: `${step.id || idx}-after`,
         phase: 'after',
         step,
-        tokens: afterTokens,
+        tokens: step.after.tokens.map((t) => ({ ...t })),
         raw: step.after.raw,
         law: step.law,
       })
     })
 
-    // Debug: Log the timeline structure
+    // Second pass: stabilize token IDs across consecutive states
+    for (let i = 0; i < rawStates.length; i++) {
+      const state = rawStates[i]
+      const prevTokens = i > 0 ? arr[i - 1].tokens : []
+      const stabilizedTokens = stabilizeTokenIds(state.tokens, prevTokens)
+
+      arr.push({
+        key: state.key,
+        phase: state.phase,
+        step: state.step,
+        tokens: stabilizedTokens,
+        raw: state.raw,
+        law: state.law,
+      })
+    }
+
+    // Debug: Log the timeline structure with stabilized IDs
     if (arr.length > 0) {
       console.log(
-        '📊 Timeline structure:',
+        '📊 Timeline structure (stabilized):',
         arr.map((t, i) => ({
           index: i,
           raw: t.raw,
           law: t.law,
           tokenCount: t.tokens.length,
-          tokens: t.tokens.map((tok) => tok.text).join(' '),
+          tokens: t.tokens
+            .map(
+              (tok) =>
+                `${tok.text}(${tok.id.slice(0, 15)}${tok.isNew ? '*' : ''})`
+            )
+            .join(' '),
         }))
       )
     }
@@ -382,6 +483,31 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
     return index
   }, [index])
 
+  // ============================================================================
+  // Animation Logic - Simplified using Framer Motion's built-in capabilities
+  // ============================================================================
+  const animateToIndex = React.useCallback(
+    (newIndex: number) => {
+      if (newIndex < 0 || newIndex > maxIndex) return
+      if (isAnimating) return // Prevent rapid clicking during animation
+
+      setIsAnimating(true)
+      setIndex(Math.max(0, Math.min(maxIndex, newIndex)))
+
+      // Get animation duration for the target step's law
+      const targetState = timeline[Math.max(0, Math.min(maxIndex, newIndex))]
+      const lawDuration = targetState?.law
+        ? getLawAnimation(targetState.law).duration * 1000
+        : 500
+
+      // Clear animating flag after animation completes
+      setTimeout(() => {
+        setIsAnimating(false)
+      }, lawDuration + 100)
+    },
+    [maxIndex, isAnimating, timeline]
+  )
+
   // Auto-play functionality
   React.useEffect(() => {
     if (!autoPlay || !remoteScript || index >= maxIndex) return
@@ -391,7 +517,7 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
     }, 2500) // 2.5 seconds between steps
 
     return () => clearTimeout(timer)
-  }, [autoPlay, index, maxIndex, remoteScript])
+  }, [autoPlay, index, maxIndex, remoteScript, animateToIndex])
 
   // ============================================================================
   // API Handlers
@@ -403,10 +529,8 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
     setRemoteScript(null)
     // Reset timeline to step 0 when starting a new solve
     setIndex(0)
-    setClones([])
+    setIsAnimating(false)
     tokenRefs.current.clear()
-    pendingFromRects.current = new Map()
-    pendingMappings.current = new Map()
 
     try {
       const res = await calculatorService.simplify(expressionInput)
@@ -431,121 +555,37 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
     }
   }
 
-  // ============================================================================
-  // Animation Logic
-  // ============================================================================
-  const animateToIndex = (newIndex: number) => {
-    if (newIndex < 0 || newIndex > maxIndex) return
-    const prev = timeline[index]
-    if (!prev) {
-      setIndex(Math.max(0, Math.min(maxIndex, newIndex)))
-      return
-    }
-
-    const from = new Map<string, DOMRectLike>()
-    prev.tokens.forEach((t) => {
-      const el = tokenRefs.current.get(t.id) || null
-      const r = getRelativeRect(el)
-      if (r) from.set(t.id, r)
-    })
-
-    const target = timeline[Math.max(0, Math.min(maxIndex, newIndex))]
-    const mappings = new Map<string, string>()
-    const destUsed = new Set<string>()
-
-    // exact id match
-    prev.tokens.forEach((s) => {
-      if (target.tokens.find((d) => d.id === s.id)) {
-        mappings.set(s.id, s.id)
-        destUsed.add(s.id)
-      }
-    })
-    // match by text remaining
-    prev.tokens.forEach((s) => {
-      if (mappings.has(s.id)) return
-      const m = target.tokens.find(
-        (d) => !destUsed.has(d.id) && d.text === s.text
-      )
-      if (m) {
-        mappings.set(s.id, m.id)
-        destUsed.add(m.id)
-      }
-    })
-
-    pendingFromRects.current = from
-    pendingMappings.current = mappings
-    setIndex(Math.max(0, Math.min(maxIndex, newIndex)))
-  }
-
-  React.useLayoutEffect(() => {
-    const state = timeline[index]
-    if (!state) return
-    const to = new Map<string, DOMRectLike>()
-    state.tokens.forEach((t) => {
-      const r = getRelativeRect(tokenRefs.current.get(t.id) || null)
-      if (r) to.set(t.id, r)
-    })
-
-    const from = pendingFromRects.current
-    const mappings = pendingMappings.current
-    if (!from || from.size === 0) {
-      pendingFromRects.current = new Map()
-      pendingMappings.current = new Map()
-      return
-    }
-
-    const toSpawn: typeof clones = []
-    for (const [srcId, fromRect] of from.entries()) {
-      const destId = mappings.get(srcId) ?? srcId
-      const toRect = to.get(destId)
-      if (!toRect) continue
-      // determine text from previous state or current
-      const prevState = timeline[Math.max(0, index - 1)]
-      const text =
-        prevState?.tokens.find((t) => t.id === srcId)?.text ??
-        state.tokens.find((t) => t.id === destId)?.text ??
-        ''
-      toSpawn.push({
-        key: `${srcId}-${Date.now()}`,
-        text,
-        from: fromRect,
-        to: toRect,
-        lawId: state.law, // Include law for animation styling
-      })
-    }
-
-    if (toSpawn.length > 0) {
-      setClones((prev) => prev.concat(toSpawn))
-      pendingFromRects.current = new Map()
-      pendingMappings.current = new Map()
-      // Adjust timeout based on law animation duration
-      const lawDuration = state.law
-        ? getLawAnimation(state.law).duration * 1000
-        : 450
-      setTimeout(() => {
-        setClones((prev) => prev.slice(toSpawn.length))
-      }, lawDuration + 100)
-    } else {
-      pendingFromRects.current = new Map()
-      pendingMappings.current = new Map()
-    }
-  }, [index, timeline])
-
   const setTokenRef = (id: string) => (el: HTMLElement | null) => {
     if (el) tokenRefs.current.set(id, el)
     else tokenRefs.current.delete(id)
   }
 
-  // Debug: Log what's being displayed
+  // Debug: Log what's being displayed and token IDs for animation debugging
   React.useEffect(() => {
     if (timeline[index]) {
-      console.log(`🎯 Displaying step ${index}:`, {
+      const currentTokenIds = timeline[index].tokens.map((t) => t.id)
+      const prevTokenIds =
+        index > 0 ? timeline[index - 1]?.tokens.map((t) => t.id) : []
+      const sharedIds = currentTokenIds.filter((id) =>
+        prevTokenIds.includes(id)
+      )
+      const newIds = currentTokenIds.filter((id) => !prevTokenIds.includes(id))
+      const removedIds = prevTokenIds.filter(
+        (id) => !currentTokenIds.includes(id)
+      )
+
+      console.log(`🎯 Step ${index} animation debug:`, {
         raw: timeline[index].raw,
         law: timeline[index].law,
-        tokenCount: timeline[index].tokens.length,
         tokens: timeline[index].tokens
-          .map((t) => `${t.text}(${t.id})`)
+          .map((t) => `${t.text}(${t.id}${t.isNew ? '*' : ''})`)
           .join(' '),
+        sharedWithPrev: sharedIds.length,
+        newTokens: newIds.length,
+        removedTokens: removedIds.length,
+        sharedIds,
+        newIds,
+        removedIds,
       })
     }
   }, [index, timeline])
@@ -578,12 +618,10 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
     setExpressionInput('')
     setRemoteScript(null)
     setIndex(0)
-    setClones([])
+    setIsAnimating(false)
     setErrorRemote(null)
     setLoadingRemote(false)
     tokenRefs.current.clear()
-    pendingFromRects.current = new Map()
-    pendingMappings.current = new Map()
   }
 
   const baseIntro = (content: string) => `
@@ -870,17 +908,24 @@ export const FactoringDemo: React.FC<FactoringDemoProps> = () => {
                     {/* Expression */}
                     <div className="p-6 md:p-8 expression-display">
                       <div className="p-6 md:p-8 min-h-20 flex items-center justify-center">
-                        <div className="flex flex-wrap items-center justify-center gap-1 text-2xl md:text-3xl font-mono">
-                          {/* Display current timeline state tokens */}
-                          {timeline[index]?.tokens.map((tok, tokIdx) => (
-                            <CharMotion
-                              key={`${index}-${tok.id}-${tokIdx}`}
-                              ref={setTokenRef(tok.id)}
-                              token={tok}
-                              lawId={timeline[index]?.law}
-                            />
-                          ))}
-                        </div>
+                        <LayoutGroup>
+                          <motion.div
+                            layout
+                            className="flex flex-wrap items-center justify-center gap-1 text-2xl md:text-3xl font-mono"
+                          >
+                            <AnimatePresence mode="sync">
+                              {/* Display current timeline state tokens */}
+                              {timeline[index]?.tokens.map((tok) => (
+                                <CharMotion
+                                  key={tok.id}
+                                  ref={setTokenRef(tok.id)}
+                                  token={tok}
+                                  lawId={timeline[index]?.law}
+                                />
+                              ))}
+                            </AnimatePresence>
+                          </motion.div>
+                        </LayoutGroup>
                       </div>
                     </div>
 

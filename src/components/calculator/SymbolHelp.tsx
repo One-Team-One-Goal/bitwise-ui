@@ -80,6 +80,10 @@ interface SymbolHelpModalProps {
  * Full modal showing all operators and their alternatives
  */
 export const SymbolHelpModal: React.FC<SymbolHelpModalProps> = ({ isOpen, onClose }) => {
+  const operatorsForGuide = OPERATOR_SYMBOLS.filter(
+    (op) => op.symbol !== '→' && op.symbol !== '↔'
+  )
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -121,7 +125,7 @@ export const SymbolHelpModal: React.FC<SymbolHelpModalProps> = ({ isOpen, onClos
               </p>
               
               <div className="space-y-4">
-                {OPERATOR_SYMBOLS.map((op) => (
+                {operatorsForGuide.map((op) => (
                   <OperatorCard key={op.symbol} operator={op} />
                 ))}
               </div>

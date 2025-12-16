@@ -10,7 +10,6 @@ import { LawBadge, RuleCard } from './RuleCard'
 import type { ScriptStep } from '../FactoringDemo'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Progress } from '@/components/ui/progress'
 import { Button } from '@/components/ui/button'
 import {
@@ -43,16 +42,37 @@ export const ProgressTimeline: React.FC<ProgressTimelineProps> = ({
   const progressPercentage =
     steps.length > 0 ? (currentStepIndex / steps.length) * 100 : 0
 
+  const scrollContainerRef = React.useRef<HTMLDivElement | null>(null)
+  const activeNodeRef = React.useRef<HTMLDivElement | null>(null)
+
+  React.useEffect(() => {
+    const activeNode = activeNodeRef.current
+    if (!activeNode) return
+
+    // Ensure the active node stays centered (carousel-like)
+    activeNode.scrollIntoView({
+      behavior: 'smooth',
+      block: 'nearest',
+      inline: 'center',
+    })
+  }, [currentStepIndex, steps.length])
+
   return (
-    <Card className="p-6 rounded-none border-none">
+    <Card className="p-3 sm:p-6 rounded-none border-none">
       {/* Container with centered alignment */}
       <div className="flex flex-col items-center justify-center gap-6">
         {/* Timeline - Centered */}
         <div className="w-full flex justify-center overflow-visible">
-          <ScrollArea className="max-w-full">
-            <div className="flex items-center justify-center gap-3 px-4 py-6">
+          <div
+            ref={scrollContainerRef}
+            className="w-full max-w-full overflow-x-auto overscroll-x-contain"
+          >
+            <div className="min-w-max flex items-center justify-start gap-3 px-3 sm:px-4 py-4 sm:py-6">
               {/* Start node */}
-              <div className="flex flex-col items-center">
+              <div
+                ref={currentStepIndex === 0 ? activeNodeRef : null}
+                className="flex flex-col items-center"
+              >
                 <Badge
                   variant={currentStepIndex === 0 ? 'default' : 'outline'}
                   className={`cursor-pointer px-4 py-2 transition-all ${
@@ -84,7 +104,10 @@ export const ProgressTimeline: React.FC<ProgressTimelineProps> = ({
 
                 return (
                   <React.Fragment key={step.id}>
-                    <div className="flex flex-col items-center">
+                    <div
+                      ref={isActive ? activeNodeRef : null}
+                      className="flex flex-col items-center"
+                    >
                       {/* Law badge with tooltip */}
                       <Tooltip delayDuration={200}>
                         <TooltipTrigger asChild>
@@ -220,7 +243,10 @@ export const ProgressTimeline: React.FC<ProgressTimelineProps> = ({
                   </div>
 
                   {/* Final result node */}
-                  <div className="flex flex-col items-center">
+                  <div
+                    ref={currentStepIndex === steps.length ? activeNodeRef : null}
+                    className="flex flex-col items-center"
+                  >
                     <Badge
                       variant={
                         currentStepIndex === steps.length
@@ -243,7 +269,7 @@ export const ProgressTimeline: React.FC<ProgressTimelineProps> = ({
                 </>
               )}
             </div>
-          </ScrollArea>
+          </div>
         </div>
 
         {/* Navigation Controls - Centered */}

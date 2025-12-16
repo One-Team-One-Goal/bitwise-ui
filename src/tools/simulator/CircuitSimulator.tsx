@@ -149,13 +149,10 @@ export const CircuitSimulator: React.FC = () => {
   }
 
   return (
-    <div className="h-full flex flex-col bg-background relative border-t border-border">
-      <div className="flex flex-1 overflow-hidden min-h-0">
+    <div className="h-full bg-background relative">
+      <div className="grid h-full min-h-0 grid-cols-1 lg:grid-cols-[16rem_1fr] xl:grid-cols-[16rem_1fr_20rem]">
         {/* Component Palette - Desktop sidebar */}
-        <div
-          className="hidden lg:flex w-64 xl:w-70 flex-shrink-0"
-          data-tour="component-palette"
-        >
+        <div className="hidden lg:block min-h-0" data-tour="component-palette">
           <ComponentPalette
             onComponentSelect={handleComponentTypeSelect}
             selectedComponentType={toolbarState.selectedComponentType}
@@ -163,7 +160,7 @@ export const CircuitSimulator: React.FC = () => {
         </div>
 
         {/* Main Circuit Canvas */}
-        <div className="flex-1 relative min-w-0" data-tour="canvas">
+        <div className="relative min-w-0 min-h-0" data-tour="canvas">
           <CircuitCanvas
             circuitHook={circuitHook}
             toolbarState={toolbarState}
@@ -183,10 +180,7 @@ export const CircuitSimulator: React.FC = () => {
         </div>
 
         {/* Properties Panel - Desktop sidebar */}
-        <div
-          className="hidden xl:flex w-72 2xl:w-80 flex-shrink-0"
-          data-tour="properties"
-        >
+        <div className="hidden xl:block min-h-0" data-tour="properties">
           <PropertiesPanel circuitHook={circuitHook} />
         </div>
       </div>

@@ -57,12 +57,6 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet'
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion'
 import { useBackendProfile } from '@/hooks/useAuthQueries'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import ThemeToggle from '@/components/ui/theme-toggle'
@@ -174,15 +168,15 @@ const HomeHeader = () => {
           </Link>
         </div>
 
-        {/* Desktop Navigation - Hidden on mobile */}
-        <div className="hidden lg:flex flex-1 justify-center items-center">
+        {/* Desktop Navigation - Hidden on small screens */}
+        <div className="hidden md:flex flex-1 justify-center items-center">
           <nav aria-label="Primary" className="flex items-center gap-6">
             {primaryItems.map((item) => {
               return (
                 <Link
                   key={item.key}
                   to={item.to}
-                  className="group relative flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200"
+                  className="group relative flex items-center gap-2 whitespace-nowrap px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200"
                 >
                   <span className="relative">
                     {item.label}
@@ -197,7 +191,7 @@ const HomeHeader = () => {
                 <Link
                   key={item.key}
                   to={item.to}
-                  className="group relative flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200"
+                  className="group relative flex items-center gap-2 whitespace-nowrap px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200"
                 >
                   <span className="relative">
                     {item.label}
@@ -209,8 +203,8 @@ const HomeHeader = () => {
           </nav>
         </div>
 
-        {/* Desktop Right Side - Hidden on mobile */}
-        <div className="hidden lg:flex">
+        {/* Desktop Right Side - Hidden on small screens */}
+        <div className="hidden md:flex">
           {isAuthenticated ? (
             <NavigationMenu>
               <div className="hover:bg-muted rounded-full">
@@ -284,8 +278,8 @@ const HomeHeader = () => {
           )}
         </div>
 
-        {/* Mobile Menu Button - Visible on mobile only */}
-        <div className="flex lg:hidden items-center gap-2">
+        {/* Mobile Menu Button - Visible on small screens only */}
+        <div className="flex md:hidden items-center gap-2">
           <ThemeToggle />
           <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
@@ -335,74 +329,44 @@ const HomeHeader = () => {
                   </>
                 )}
 
-                {/* Learn Section */}
-                <Accordion type="single" collapsible className="w-full">
-                  <AccordionItem value="learn" className="border-none">
-                    <AccordionTrigger className="text-base font-semibold hover:no-underline py-2">
-                      Learn
-                    </AccordionTrigger>
-                    <AccordionContent className="space-y-2 pl-4">
-                      <Link
-                        to="/roadmap"
-                        className="block py-2 text-sm hover:text-primary transition-colors"
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        <div className="font-medium">Basics</div>
-                        <div className="text-xs text-muted-foreground">
-                          Grasp variables, constants, and logic operations.
-                        </div>
-                      </Link>
-                      <Link
-                        to="/roadmap"
-                        className="block py-2 text-sm hover:text-primary transition-colors"
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        <div className="font-medium">Laws</div>
-                        <div className="text-xs text-muted-foreground">
-                          Key rules behind Boolean expressions.
-                        </div>
-                      </Link>
-                      <Link
-                        to="/roadmap"
-                        className="block py-2 text-sm hover:text-primary transition-colors"
-                        onClick={() => setMobileMenuOpen(false)}
-                      >
-                        <div className="font-medium">Uses</div>
-                        <div className="text-xs text-muted-foreground">
-                          Real-world logic design and computing examples.
-                        </div>
-                      </Link>
-                    </AccordionContent>
-                  </AccordionItem>
+                {/* Primary nav (mobile) */}
+                <div className="w-full">
+                  <Link
+                    to="/roadmap"
+                    className="flex items-center justify-between rounded-lg px-3 py-2 text-base font-semibold hover:bg-accent/30 transition-colors"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Learn
+                  </Link>
+                </div>
 
-                  {/* Tools (mobile) - rendered as individual links for easier access on small screens */}
-                  <div className="w-full px-4">
-                    <div className="text-base font-semibold pb-2">Tools</div>
-                      <div className="flex flex-col space-y-3">
-                        {toolItems.map((item) => {
-                          const Icon = item.icon
-                          return (
-                            <Link
-                              key={item.key}
-                              to={item.to}
-                              className="flex items-start gap-3 p-2 rounded-lg hover:bg-accent/30 transition-colors"
-                              onClick={() => setMobileMenuOpen(false)}
-                            >
-                              <Icon className="h-5 w-5 mt-1" />
-                              <div>
-                                <div className="font-medium">{item.label}</div>
-                                {item.description && (
-                                  <div className="text-xs text-muted-foreground">
-                                    {item.description}
-                                  </div>
-                                )}
+                {/* Tools (mobile) */}
+                <div className="w-full px-2">
+                  <div className="px-1 text-base font-semibold pb-2">Tools</div>
+                  <div className="flex flex-col space-y-2">
+                    {toolItems.map((item) => {
+                      const Icon = item.icon
+                      return (
+                        <Link
+                          key={item.key}
+                          to={item.to}
+                          className="flex items-start gap-3 rounded-lg px-3 py-2 hover:bg-accent/30 transition-colors"
+                          onClick={() => setMobileMenuOpen(false)}
+                        >
+                          <Icon className="h-5 w-5 mt-0.5" />
+                          <div>
+                            <div className="font-medium">{item.label}</div>
+                            {item.description && (
+                              <div className="text-xs text-muted-foreground">
+                                {item.description}
                               </div>
-                            </Link>
-                          )
-                        })}
-                      </div>
+                            )}
+                          </div>
+                        </Link>
+                      )
+                    })}
                   </div>
-                </Accordion>
+                </div>
 
                 <Separator />
 

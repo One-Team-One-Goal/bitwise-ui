@@ -1,12 +1,31 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  CALCULATOR_EXAMPLES, 
-  getDifficultyColor,
-  getDifficultyIcon,
-  type CalculatorExample 
-} from '@/constants/calculatorExamples';
 import { Button } from '../ui/button';
+import { useExamples } from '@/hooks/useExamples';
+import type { BooleanExample } from '@/services/examples.service';
+
+// Helper functions for UI display
+function getDifficultyColor(difficulty: BooleanExample['difficulty']): string {
+  switch (difficulty) {
+    case 'beginner':
+      return 'bg-green-100 text-green-800 border-green-300 dark:bg-green-900/30 dark:text-green-400 dark:border-green-700';
+    case 'intermediate':
+      return 'bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-700';
+    case 'advanced':
+      return 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-700';
+  }
+}
+
+function getDifficultyIcon(difficulty: BooleanExample['difficulty']): string {
+  switch (difficulty) {
+    case 'beginner':
+      return '●';
+    case 'intermediate':
+      return '●●';
+    case 'advanced':
+      return '●●●';
+  }
+}
 
 interface ExamplesPanelProps {
   onSelectExample: (expression: string) => void;
@@ -19,16 +38,20 @@ export const ExamplesPanel: React.FC<ExamplesPanelProps> = ({
   isOpen,
   onClose,
 }) => {
-  const [selectedDifficulty, setSelectedDifficulty] = useState<'all' | CalculatorExample['difficulty']>('all');
-  const [selectedCategory, setSelectedCategory] = useState<'all' | CalculatorExample['category']>('all');
+  const [selectedDifficulty, setSelectedDifficulty] = useState<'all' | BooleanExample['difficulty']>('all');
+  const [selectedCategory, setSelectedCategory] = useState<'all' | BooleanExample['category']>('all');
 
-  const filteredExamples = CALCULATOR_EXAMPLES.filter(ex => {
-    const matchesDifficulty = selectedDifficulty === 'all' || ex.difficulty === selectedDifficulty;
-    const matchesCategory = selectedCategory === 'all' || ex.category === selectedCategory;
-    return matchesDifficulty && matchesCategory;
-  });
+  // Fetch examples from backend with filters
+  const { data: examples = [], isLoading, error } = useExamples(
+    selectedDifficulty === 'all' && selectedCategory === 'all'
+      ? undefined
+      : {
+          ...(selectedDifficulty !== 'all' && { difficulty: selectedDifficulty }),
+          ...(selectedCategory !== 'all' && { category: selectedCategory }),
+        }
+  );
 
-  const handleSelectExample = (example: CalculatorExample) => {
+  const handleSelectExample = (example: BooleanExample) => {
     onSelectExample(example.expression);
     onClose();
   };
@@ -121,19 +144,38 @@ export const ExamplesPanel: React.FC<ExamplesPanelProps> = ({
 
               {/* Results count */}
               <div className="text-xs text-gray-600 dark:text-gray-400 pt-2 border-t dark:border-gray-700">
-                Showing <span className="font-semibold text-blue-600 dark:text-blue-400">{filteredExamples.length}</span> examples
+                {isLoading ? (
+                  <span>Loading examples...</span>
+                ) : error ? (
+                  <span className="text-red-600 dark:text-red-400">Error loading examples</span>
+                ) : (
+                  <>
+                    Showing <span className="font-semibold text-blue-600 dark:text-blue-400">{examples.length}</span> examples
+                  </>
+                )}
               </div>
             </div>
 
             {/* Examples List */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              {filteredExamples.length === 0 ? (
+              {isLoading ? (
+                <div className="flex flex-col items-center justify-center py-16 text-gray-400 dark:text-gray-500">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+                  <p>Loading examples...</p>
+                </div>
+              ) : error ? (
+                <div className="flex flex-col items-center justify-center py-16 text-red-400 dark:text-red-500">
+                  <div className="text-6xl mb-4">⚠</div>
+                  <p>Failed to load examples</p>
+                  <p className="text-sm mt-2">Please check your connection</p>
+                </div>
+              ) : examples.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-gray-400 dark:text-gray-500">
                   <div className="text-6xl mb-4">∅</div>
                   <p>No examples match your filters</p>
                 </div>
               ) : (
-                filteredExamples.map(example => (
+                examples.map(example => (
                   <ExampleCard
                     key={example.id}
                     example={example}
@@ -151,7 +193,7 @@ export const ExamplesPanel: React.FC<ExamplesPanelProps> = ({
 
 // Individual Example Card
 const ExampleCard: React.FC<{
-  example: CalculatorExample;
+  example: BooleanExample;
   onSelect: () => void;
 }> = ({ example, onSelect }) => {
   const [expanded, setExpanded] = useState(false);
@@ -170,9 +212,6 @@ const ExampleCard: React.FC<{
             <div className="flex items-center gap-2 mb-2">
               <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-bold border ${difficultyColor}`}>
                 {difficultyIcon} {example.difficulty.toUpperCase()}
-              </span>
-              <span className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-300">
-                ~{example.estimatedSteps} steps
               </span>
             </div>
             <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">{example.title}</h3>

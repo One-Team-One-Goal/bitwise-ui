@@ -17,6 +17,9 @@ import {
   generateRandomExpression,
 } from '@/utils/expressionEvaluator'
 import { Separator } from '@/components/ui/separator'
+import introJs from 'intro.js'
+import 'intro.js/introjs.css'
+import { HelpCircle } from 'lucide-react'
 
 interface SettingsCardProps {
   variableCount: number
@@ -135,14 +138,81 @@ const SettingsCard: React.FC<SettingsCardProps> = ({
     return null
   }
 
+  // Start the intro.js tutorial
+  const startTutorial = () => {
+    const intro = introJs()
+    intro.setOptions({
+      steps: [
+        {
+          title: '👋 Welcome to Karnaugh Map Solver!',
+          intro:
+            'This interactive tool helps you visualize and simplify Boolean expressions using Karnaugh Maps. Let me show you around!',
+        },
+        {
+          element: '.truth-table',
+          title: '📊 Truth Table',
+          intro:
+            "This truth table shows all possible input combinations and their outputs. Click any output cell to toggle between 0, 1, or X (don't care).",
+          position: 'right',
+        },
+        {
+          element: '.kmap-container',
+          title: '🗺️ Karnaugh Map',
+          intro:
+            'The K-Map visualizes your truth table in a special arrangement. Click cells to toggle values. Groups of 1s (or 0s) are automatically detected and highlighted!',
+          position: 'left',
+        },
+        {
+          element: '.solution-display',
+          title: '✨ Solution',
+          intro:
+            'The simplified Boolean expression appears here, along with the literal cost (number of literals) and group count. The tool automatically finds the optimal groupings!',
+          position: 'top',
+        },
+        {
+          element: '.settings-panel',
+          title: '⚙️ Settings',
+          intro:
+            'Change the number of variables (2-5), switch between SOP (Sum of Products) and POS (Product of Sums), or quickly fill all cells with a value.',
+          position: 'left',
+        },
+        {
+          title: '🎓 Ready to Simplify!',
+          intro:
+            "You're all set! Try clicking cells in the truth table or K-Map to set values, then watch the solution update automatically. Happy simplifying!",
+        },
+      ],
+      showProgress: true,
+      showBullets: true,
+      exitOnOverlayClick: false,
+      doneLabel: 'Got it!',
+      nextLabel: 'Next',
+      prevLabel: 'Back',
+      skipLabel: 'Skip',
+    })
+    intro.start()
+  }
+
   const variables = ['A', 'B', 'C', 'D', 'E'].slice(0, variableCount)
   return (
-    <Card className="w-full max-w-md border-0 shadow-none">
+    <Card className="w-full max-w-md border-0 shadow-none py-3">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Settings className="h-5 w-5" />
-          Karnaugh Map Settings
-        </CardTitle>
+        <div className="flex flex-row justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Settings className="h-5 w-5" />
+            Karnaugh Map Settings
+          </CardTitle>
+          <Button
+            type="button"
+            onClick={startTutorial}
+            variant="outline"
+            size="sm"
+            className="gap-2 shadow-sm hover:shadow-md hover:bg-primary/10 hover:border-primary transition-all rounded-full w-9 h-9"
+            title="Show Tutorial"
+          >
+            <HelpCircle className="h-4 w-4 text-primary" />
+          </Button>
+        </div>
       </CardHeader>
 
       <CardContent className="space-y-3">

@@ -64,7 +64,7 @@ export function LessonMasteryRadar({ analytics }: LessonMasteryRadarProps) {
     <div className="w-full h-[240px] relative">
       <ChartContainer config={chartConfig} className="w-full h-full">
         <ResponsiveContainer width="100%" height="100%">
-          <RadarChart data={radarData} margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
+          <RadarChart data={radarData} margin={{ top: 2, right: 2, bottom: 2, left: 2 }}>
             <defs>
               <radialGradient id="layer1">
                 <stop offset="0%" stopColor="#dbeafe" stopOpacity="0.03" />

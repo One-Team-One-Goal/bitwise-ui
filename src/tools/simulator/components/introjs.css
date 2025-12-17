@@ -21,6 +21,8 @@
   padding: 7px 7px;
   font-size: small;
   margin-right: 5px;
+  grid-area: skip !important;
+  justify-self: end !important;
 }
 
 .introjs-skipbutton:hover {
@@ -39,6 +41,7 @@
   height: 20px;
   text-align: center;
   min-width: 40px;
+  grid-area: next !important;
 }
 
 .introjs-nextbutton:hover {
@@ -60,6 +63,7 @@
   height: 20px;
   width: 40px;
   text-align: center;
+  grid-area: back !important;
 }
 
 .introjs-prevbutton:hover {
@@ -168,10 +172,35 @@ body.dark .introjs-overlay,
   box-shadow: none !important;
 }
 
+/* Position bullets between buttons */
+.introjs-bullets {
+  grid-area: bullets !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+}
+
+.introjs-bullets ul {
+  display: flex !important;
+  gap: 8px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  list-style: none !important;
+  align-items: center !important;
+}
+
 /* Ensure the buttons area has no top border or separator */
 .introjs-tooltip .introjs-tooltipbuttons {
   border-top: none !important;
   padding-top: 0.5rem !important;
+  display: grid !important;
+  grid-template-columns: auto 1fr auto auto !important;
+  grid-template-areas: 'back bullets next skip' !important;
+  align-items: center !important;
+  gap: 10px !important;
 }
 
 /* Keep progress bar visible but without a surrounding line */
@@ -182,12 +211,7 @@ body.dark .introjs-overlay,
 
 /* Fix: make inner progress fill the parent height exactly and remove padding that shrinks the bar */
 .introjs-progress {
-  height: 3px !important;
-  padding: 0 !important;
-  margin: 0px 10px;
-  border-radius: 999px !important;
-  overflow: hidden !important;
-  display: block !important;
+  display: none !important;
 }
 
 .introjs-progressbar {
